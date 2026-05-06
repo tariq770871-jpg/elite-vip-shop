@@ -1,8 +1,17 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+
 User-agent: Googlebot
 Allow: /
+Disallow: /api/
+Disallow: /_next/
 
 User-agent: Bingbot
 Allow: /
+Disallow: /api/
+Disallow: /_next/
 
 User-agent: Twitterbot
 Allow: /
@@ -10,5 +19,8 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-User-agent: *
-Allow: /
+# Sitemaps
+Sitemap: https://my-project-vipmarket.vercel.app/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1
