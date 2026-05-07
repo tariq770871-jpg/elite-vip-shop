@@ -17,14 +17,32 @@ interface AuthStore {
   isLoading: boolean
   session: Session | null
   error: string | null
+  needsEmailConfirmation: boolean
   login: (email: string, password: string) => Promise<boolean>
   register: (name: string, email: string, password: string, phone?: string) => Promise<boolean>
+  loginWithGoogle: () => Promise<void>
+  loginWithFacebook: () => Promise<void>
   logout: () => Promise<void>
   resetPassword: (email: string) => Promise<boolean>
   updateProfile: (data: Partial<AuthUser>) => void
   checkSession: () => Promise<void>
   clearError: () => void
+  _initAuthListener: () => void
 }
+
+function extractUser(user: User, fallbackEmail?: string): AuthUser {
+  const meta = user.user_metadata || {}
+  return {
+    id: user.id,
+    name: meta.full_name || meta.name || 'مستخدم',
+    email: user.email || fallbackEmail || '',
+    phone: meta.phone || '',
+    avatar: meta.avatar_url || meta.picture || '',
+    role: meta.role || 'user',
+  }
+}
+
+let authListenerInitialized = false
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
@@ -32,24 +50,61 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   isLoading: true,
   session: null,
   error: null,
+  needsEmailConfirmation: false,
 
-  checkSession: async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        const meta = session.user.user_metadata || {}
+  _initAuthListener: () => {
+    if (authListenerInitialized || typeof window === 'undefined') return
+    authListenerInitialized = true
+
+    supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[Auth] State changed:', event)
+
+      if (event === 'SIGNED_IN' && session?.user) {
         set({
-          user: {
-            id: session.user.id,
-            name: meta.full_name || meta.name || 'مستخدم',
-            email: session.user.email || '',
-            phone: meta.phone || '',
-            avatar: meta.avatar_url || session.user.user_metadata?.avatar_url || '',
-            role: meta.role || 'user',
-          },
+          user: extractUser(session.user),
           isAuthenticated: true,
           isLoading: false,
           session,
+          needsEmailConfirmation: false,
+          error: null,
+        })
+      } else if (event === 'SIGNED_OUT') {
+        set({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          session: null,
+          needsEmailConfirmation: false,
+          error: null,
+        })
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        set({
+          user: extractUser(session.user),
+          session,
+        })
+      } else if (event === 'USER_UPDATED' && session?.user) {
+        set({
+          user: extractUser(session.user),
+          session,
+        })
+      }
+    })
+  },
+
+  checkSession: async () => {
+    set({ isLoading: true })
+    try {
+      // Initialize auth listener on first check
+      get()._initAuthListener()
+
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        set({
+          user: extractUser(session.user),
+          isAuthenticated: true,
+          isLoading: false,
+          session,
+          needsEmailConfirmation: false,
         })
       } else {
         set({ user: null, isAuthenticated: false, isLoading: false, session: null })
@@ -60,7 +115,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   login: async (email: string, password: string) => {
-    set({ error: null, isLoading: true })
+    set({ error: null, isLoading: true, needsEmailConfirmation: false })
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -73,6 +128,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
         } else if (error.message.includes('Email not confirmed')) {
           errorMessage = 'البريد الإلكتروني غير مفعّل. تحقق من بريدك الإلكتروني لتفعيل الحساب'
+          set({ needsEmailConfirmation: true })
         } else if (error.message.includes('Too many requests')) {
           errorMessage = 'محاولات كثيرة. حاول مرة أخرى بعد قليل'
         }
@@ -80,21 +136,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         return false
       }
 
-      const meta = data.user.user_metadata || {}
-      set({
-        user: {
-          id: data.user.id,
-          name: meta.full_name || meta.name || 'مستخدم',
-          email: data.user.email || email,
-          phone: meta.phone || '',
-          avatar: meta.avatar_url || '',
-          role: meta.role || 'user',
-        },
-        isAuthenticated: true,
-        isLoading: false,
-        session: data.session,
-        error: null,
-      })
+      // Auth listener handles the session automatically
+      set({ isLoading: false, error: null })
       return true
     } catch {
       set({ error: 'حدث خطأ غير متوقع. حاول مرة أخرى', isLoading: false })
@@ -103,7 +146,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   register: async (name: string, email: string, password: string, phone?: string) => {
-    set({ error: null, isLoading: true })
+    set({ error: null, isLoading: true, needsEmailConfirmation: false })
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -131,39 +174,22 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         return false
       }
 
-      // User might need email confirmation
+      // If no session = email confirmation required — DO NOT auto-login
       if (data.user && !data.session) {
         set({
-          user: {
-            id: data.user.id,
-            name: name,
-            email: email,
-            phone: phone || '',
-            role: 'user',
-          },
-          isAuthenticated: true,
+          user: null,
+          isAuthenticated: false,
           isLoading: false,
           session: null,
+          needsEmailConfirmation: true,
           error: null,
         })
-        return true
+        return true // Return true so UI shows "check email" message
       }
 
+      // If session exists = auto-confirmed (Supabase setting), auth listener handles it
       if (data.session?.user) {
-        const meta = data.user.user_metadata || {}
-        set({
-          user: {
-            id: data.user.id,
-            name: meta.full_name || name,
-            email: email,
-            phone: phone || '',
-            role: 'user',
-          },
-          isAuthenticated: true,
-          isLoading: false,
-          session: data.session,
-          error: null,
-        })
+        set({ isLoading: false, error: null })
         return true
       }
 
@@ -175,13 +201,51 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
+  loginWithGoogle: async () => {
+    set({ error: null, isLoading: true })
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}`,
+        },
+      })
+
+      if (error) {
+        set({ error: 'فشل الاتصال بجوجل. حاول مرة أخرى.', isLoading: false })
+      }
+      // If no error, browser will redirect to Google — loading stays true
+    } catch {
+      set({ error: 'حدث خطأ في الاتصال بجوجل.', isLoading: false })
+    }
+  },
+
+  loginWithFacebook: async () => {
+    set({ error: null, isLoading: true })
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: {
+          redirectTo: `${window.location.origin}`,
+        },
+      })
+
+      if (error) {
+        set({ error: 'فشل الاتصال بفيسبوك. حاول مرة أخرى.', isLoading: false })
+      }
+      // If no error, browser will redirect to Facebook — loading stays true
+    } catch {
+      set({ error: 'حدث خطأ في الاتصال بفيسبوك.', isLoading: false })
+    }
+  },
+
   logout: async () => {
     try {
       await supabase.auth.signOut()
     } catch {
       // Continue with local logout even if Supabase fails
     }
-    set({ user: null, isAuthenticated: false, session: null, error: null })
+    set({ user: null, isAuthenticated: false, session: null, error: null, needsEmailConfirmation: false })
   },
 
   resetPassword: async (email: string) => {

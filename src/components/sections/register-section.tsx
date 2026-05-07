@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuthStore } from "@/store/auth-store";
 import { useNavStore } from "@/store/nav-store";
-import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail, ArrowRight } from "lucide-react";
 
 function PasswordStrength({ password }: { password: string }) {
   const getStrength = () => {
@@ -49,7 +49,7 @@ function PasswordStrength({ password }: { password: string }) {
 }
 
 export function RegisterSection() {
-  const { register, isAuthenticated, isLoading, error, clearError, checkSession } = useAuthStore();
+  const { register, loginWithGoogle, loginWithFacebook, isAuthenticated, isLoading, error, clearError, needsEmailConfirmation, checkSession } = useAuthStore();
   const { setCurrentPage } = useNavStore();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -60,6 +60,7 @@ export function RegisterSection() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [localError, setLocalError] = useState("");
+  const [registeredEmail, setRegisteredEmail] = useState("");
 
   useEffect(() => {
     checkSession();
@@ -79,7 +80,6 @@ export function RegisterSection() {
     clearError();
     setSuccessMessage("");
 
-    // Client-side validation
     if (!name.trim() || name.trim().length < 2) {
       setLocalError("الاسم مطلوب ويجب أن يكون حرفين على الأقل");
       return;
@@ -111,20 +111,67 @@ export function RegisterSection() {
       return;
     }
 
+    setRegisteredEmail(email.trim());
     const success = await register(name.trim(), email.trim(), password, phone.trim() || undefined);
+
+    if (success && needsEmailConfirmation) {
+      // Email confirmation needed — stay on page, show message
+      return;
+    }
+
     if (success) {
       setSuccessMessage("تم إنشاء الحساب بنجاح! مرحباً بك في متجر النخبة.");
       setTimeout(() => setCurrentPage("home"), 1500);
     }
   };
 
-  const handleSocialLogin = async (provider: string) => {
-    setLocalError("");
-    clearError();
-    useAuthStore.setState({ error: `تسجيل الدخول عبر ${provider} قيد التفعيل. استخدم البريد الإلكتروني وكلمة المرور حالياً.` });
-  };
-
   const currentError = getError();
+
+  // Show email confirmation screen
+  if (needsEmailConfirmation && registeredEmail && !isAuthenticated) {
+    return (
+      <section className="flex min-h-[70vh] items-center justify-center py-12 px-4 md:px-8">
+        <div className="w-full max-w-md card-3d p-8">
+          <div className="mb-8 flex flex-col items-center text-center">
+            <div className="mb-6 flex size-20 items-center justify-center rounded-full bg-blue-500/10">
+              <Mail className="size-10 text-blue-500" />
+            </div>
+            <h1 className="text-2xl font-bold mb-2">تحقق من بريدك الإلكتروني</h1>
+            <span className="mx-auto mb-4 block h-1 w-16 rounded-full bg-gold-gradient" />
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              تم إرسال رابط تفعيل الحساب إلى بريدك الإلكتروني
+            </p>
+            <p className="mt-3 text-base font-bold" dir="ltr" style={{ color: "#f0d078" }}>
+              {registeredEmail}
+            </p>
+            <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
+              تحقق من صندوق الوارد أو مجلد الرسائل غير المرغوب فيها (Spam).<br />
+              بعد التفعيل، سجل دخولك باستخدام البريد وكلمة المرور.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <Button
+              onClick={() => setCurrentPage("login")}
+              className="btn-3d-sm w-full"
+            >
+              <ArrowRight className="ms-2 size-4" />
+              الذهاب لتسجيل الدخول
+            </Button>
+            <button
+              onClick={() => {
+                useAuthStore.setState({ needsEmailConfirmation: false });
+                setRegisteredEmail("");
+              }}
+              className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              إنشاء حساب ببريد آخر
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="flex min-h-[70vh] items-center justify-center py-12 px-4 md:px-8">
@@ -253,7 +300,6 @@ export function RegisterSection() {
             )}
           </div>
 
-          {/* Terms checkbox */}
           <div className="flex items-start gap-2">
             <input
               type="checkbox"
@@ -308,7 +354,7 @@ export function RegisterSection() {
             variant="outline"
             className="w-full gap-2 rounded-lg"
             disabled={isLoading}
-            onClick={() => handleSocialLogin("Google")}
+            onClick={loginWithGoogle}
           >
             <svg className="size-5" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -316,19 +362,33 @@ export function RegisterSection() {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
             </svg>
-            تسجيل بجوجل
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="size-4 animate-spin" />
+                جارٍ الاتصال بجوجل...
+              </span>
+            ) : (
+              "تسجيل بجوجل"
+            )}
           </Button>
 
           <Button
             variant="outline"
             className="w-full gap-2 rounded-lg"
             disabled={isLoading}
-            onClick={() => handleSocialLogin("Facebook")}
+            onClick={loginWithFacebook}
           >
             <svg className="size-5" viewBox="0 0 24 24" fill="#1877F2">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
             </svg>
-            تسجيل بفيسبوك
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="size-4 animate-spin" />
+                جارٍ الاتصال بفيسبوك...
+              </span>
+            ) : (
+              "تسجيل بفيسبوك"
+            )}
           </Button>
         </div>
 

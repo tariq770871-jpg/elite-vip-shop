@@ -22,6 +22,7 @@ export type PageName =
   | 'forgot-password'
   | 'values'
   | 'criticism'
+  | 'zero-protocols'
 
 interface NavStore {
   currentPage: PageName

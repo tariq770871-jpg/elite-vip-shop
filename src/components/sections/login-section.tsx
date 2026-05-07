@@ -9,22 +9,20 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuthStore } from "@/store/auth-store";
 import { useNavStore } from "@/store/nav-store";
-import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail } from "lucide-react";
 
 export function LoginSection() {
-  const { login, isAuthenticated, isLoading, error, clearError, checkSession } = useAuthStore();
+  const { login, loginWithGoogle, loginWithFacebook, isAuthenticated, isLoading, error, clearError, needsEmailConfirmation, checkSession } = useAuthStore();
   const { setCurrentPage } = useNavStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
-  // Check if already authenticated
   useEffect(() => {
     checkSession();
   }, [checkSession]);
 
-  // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated) {
       setCurrentPage("home");
@@ -36,7 +34,6 @@ export function LoginSection() {
     clearError();
     setSuccessMessage("");
 
-    // Client-side validation
     if (!email.trim()) {
       useAuthStore.setState({ error: "البريد الإلكتروني مطلوب" });
       return;
@@ -65,14 +62,6 @@ export function LoginSection() {
     }
   };
 
-  const handleSocialLogin = async (provider: string) => {
-    clearError();
-    setSuccessMessage("");
-    // Social login would need Supabase OAuth configured
-    // For now show a message
-    useAuthStore.setState({ error: `تسجيل الدخول عبر ${provider} قيد التفعيل. استخدم البريد الإلكتروني وكلمة المرور حالياً.` });
-  };
-
   return (
     <section className="flex min-h-[70vh] items-center justify-center py-12 px-4 md:px-8">
       <div className="w-full max-w-md card-3d p-8">
@@ -90,6 +79,16 @@ export function LoginSection() {
           <Alert className="mb-6 border-green-500/30 bg-green-500/5">
             <CheckCircle2 className="size-4 text-green-500" />
             <AlertDescription className="text-sm text-green-600">{successMessage}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Email Confirmation Needed */}
+        {needsEmailConfirmation && !error && (
+          <Alert className="mb-6 border-blue-500/30 bg-blue-500/5">
+            <Mail className="size-4 text-blue-500" />
+            <AlertDescription className="text-sm text-blue-600">
+              البريد الإلكتروني يحتاج تفعيل. تحقق من صندوق الوارد أو مجلد Spam واضغط على رابط التفعيل.
+            </AlertDescription>
           </Alert>
         )}
 
@@ -177,7 +176,7 @@ export function LoginSection() {
             variant="outline"
             className="w-full gap-2 rounded-lg"
             disabled={isLoading}
-            onClick={() => handleSocialLogin("Google")}
+            onClick={loginWithGoogle}
           >
             <svg className="size-5" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -185,19 +184,33 @@ export function LoginSection() {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
             </svg>
-            تسجيل بجوجل
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="size-4 animate-spin" />
+                جارٍ الاتصال بجوجل...
+              </span>
+            ) : (
+              "تسجيل بجوجل"
+            )}
           </Button>
 
           <Button
             variant="outline"
             className="w-full gap-2 rounded-lg"
             disabled={isLoading}
-            onClick={() => handleSocialLogin("Facebook")}
+            onClick={loginWithFacebook}
           >
             <svg className="size-5" viewBox="0 0 24 24" fill="#1877F2">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
             </svg>
-            تسجيل بفيسبوك
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="size-4 animate-spin" />
+                جارٍ الاتصال بفيسبوك...
+              </span>
+            ) : (
+              "تسجيل بفيسبوك"
+            )}
           </Button>
         </div>
 

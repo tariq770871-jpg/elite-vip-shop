@@ -28,6 +28,7 @@ import {
   ArrowRight,
   Heart,
   MessageSquareWarning,
+  ShieldX,
 } from "lucide-react";
 import { NotificationButton } from "@/components/notification-panel";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,7 @@ const infoLinks: { label: string; page: PageName; icon: React.ReactNode }[] = [
   { label: "سياسة الشحن", page: "shipping-policy", icon: <Truck className="size-4" /> },
   { label: "قيم الموقع", page: "values", icon: <Heart className="size-4" /> },
   { label: "بروتوكول النقد الصريح", page: "criticism", icon: <MessageSquareWarning className="size-4" /> },
+  { label: "بروتوكولات الصفر", page: "zero-protocols", icon: <ShieldX className="size-4" /> },
 ];
 
 const socialLinks = [

@@ -38,6 +38,7 @@ import { CookieConsent } from "@/components/cookie-consent";
 import { FlashDealsSection } from "@/components/sections/flash-deals-section";
 import { TestimonialsSection } from "@/components/sections/testimonials-section";
 import { RecentlyViewedSection } from "@/components/sections/recently-viewed-section";
+import { ZeroProtocolsSection } from "@/components/sections/zero-protocols-section";
 
 function ScrollToTopButton() {
   const [visible, setVisible] = useState(false);
@@ -156,6 +157,8 @@ export function App() {
         return <ValuesSection />;
       case "criticism":
         return <CriticismSection />;
+      case "zero-protocols":
+        return <ZeroProtocolsSection />;
       default:
         return null;
     }
