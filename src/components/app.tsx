@@ -29,6 +29,7 @@ import { CartPageSection } from "@/components/sections/cart-page-section";
 import { ForgotPasswordSection } from "@/components/sections/forgot-password-section";
 import { ValuesSection } from "@/components/sections/values-section";
 import { CriticismSection } from "@/components/sections/criticism-section";
+import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 
 function ScrollToTopButton() {
   const [visible, setVisible] = useState(false);
@@ -111,6 +112,20 @@ export function App() {
     setPageKey((k) => k + 1);
   }, [currentPage]);
 
+  // Register Service Worker
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((reg) => {
+          console.log("Service Worker registered:", reg.scope);
+        })
+        .catch((err) => {
+          console.log("Service Worker registration failed:", err);
+        });
+    }
+  }, []);
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar onToggleSearch={() => { setSearchOpen((prev) => !prev); setSearchKey((k) => k + 1); }} />
@@ -121,6 +136,7 @@ export function App() {
       <Footer />
       <CartDrawer />
       <ScrollToTopButton />
+      <PWAInstallPrompt />
     </div>
   );
 }
