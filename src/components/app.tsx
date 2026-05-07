@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ChevronUp } from "lucide-react";
+import { ChevronUp, Lock, ArrowRight } from "lucide-react";
 import { useNavStore } from "@/store/nav-store";
 import { useCartStore } from "@/store/cart-store";
+import { useAuthStore } from "@/store/auth-store";
+import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { SearchBar } from "@/components/search-bar";
 import { Footer } from "@/components/footer";
@@ -59,6 +61,51 @@ function ScrollToTopButton() {
   );
 }
 
+// Protected routes wrapper
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuthStore();
+  const { setCurrentPage } = useNavStore();
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
+        <div className="size-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <p className="text-sm text-muted-foreground">جارٍ التحقق...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-6 px-4">
+        <div className="flex size-20 items-center justify-center rounded-full bg-amber-500/10">
+          <Lock className="size-10 text-amber-500" />
+        </div>
+        <div className="text-center">
+          <h2 className="mb-2 text-xl font-bold">هذه الصفحة محمية</h2>
+          <p className="text-sm text-muted-foreground">يجب عليك تسجيل الدخول للوصول إلى هذه الصفحة</p>
+        </div>
+        <Button
+          className="btn-3d-sm flex items-center gap-2"
+          onClick={() => setCurrentPage("login")}
+        >
+          تسجيل الدخول
+          <ArrowRight className="size-4" />
+        </Button>
+        <button
+          onClick={() => setCurrentPage("home")}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowRight className="size-3" />
+          العودة للرئيسية
+        </button>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 export function App() {
   const { currentPage } = useNavStore();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -96,11 +143,11 @@ export function App() {
       case "shipping-policy":
         return <ShippingSection />;
       case "dashboard":
-        return <DashboardSection />;
+        return <ProtectedRoute><DashboardSection /></ProtectedRoute>;
       case "orders":
-        return <OrdersSection />;
+        return <ProtectedRoute><OrdersSection /></ProtectedRoute>;
       case "profile":
-        return <ProfileSection />;
+        return <ProtectedRoute><ProfileSection /></ProtectedRoute>;
       case "cart":
         return <CartPageSection />;
       case "forgot-password":
@@ -117,6 +164,11 @@ export function App() {
   useEffect(() => {
     setPageKey((k) => k + 1);
   }, [currentPage]);
+
+  // Check auth session on mount
+  useEffect(() => {
+    useAuthStore.getState().checkSession();
+  }, []);
 
   // Register Service Worker
   useEffect(() => {

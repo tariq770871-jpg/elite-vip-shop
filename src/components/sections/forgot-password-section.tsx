@@ -1,30 +1,50 @@
 'use client'
 
 import { useState } from 'react'
-import { Mail, ArrowRight, CheckCircle } from 'lucide-react'
+import { Mail, ArrowRight, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { Logo } from '@/components/logo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useNavStore } from '@/store/nav-store'
+import { useAuthStore } from '@/store/auth-store'
 
 export function ForgotPasswordSection() {
   const { setCurrentPage } = useNavStore()
+  const { resetPassword, isLoading, error, clearError } = useAuthStore()
   const [email, setEmail] = useState('')
   const [step, setStep] = useState<1 | 2>(1)
-  const [loading, setLoading] = useState(false)
+  const [localError, setLocalError] = useState('')
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email) return
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
+    setLocalError('')
+    clearError()
+
+    if (!email.trim()) {
+      setLocalError('البريد الإلكتروني مطلوب')
+      return
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      setLocalError('البريد الإلكتروني غير صالح')
+      return
+    }
+
+    const success = await resetPassword(email.trim())
+    if (success) {
       setStep(2)
-    }, 1500)
+    }
   }
 
-  const goToLogin = () => setCurrentPage('login')
+  const goToLogin = () => {
+    clearError()
+    setCurrentPage('login')
+  }
+
+  const currentError = localError || error
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
@@ -46,23 +66,32 @@ export function ForgotPasswordSection() {
                 </h1>
                 <span className="mx-auto mb-4 block h-1 w-16 rounded-full bg-gold-gradient" />
                 <p className="text-sm text-muted-foreground">
-                  أدخل بريدك الإلكتروني وسنرسل لك رابط لإعادة تعيين كلمة
-                  المرور
+                  أدخل بريدك الإلكتروني المسجل وسنرسل لك رابط لإعادة تعيين كلمة المرور
                 </p>
               </div>
+
+              {/* Error */}
+              {currentError && (
+                <Alert className="mb-4 border-red-500/30 bg-red-500/5">
+                  <AlertCircle className="size-4 text-red-500" />
+                  <AlertDescription className="text-sm text-red-600">{currentError}</AlertDescription>
+                </Alert>
+              )}
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">البريد الإلكتروني</Label>
+                  <Label htmlFor="reset-email">البريد الإلكتروني</Label>
                   <div className="relative">
                     <Input
-                      id="email"
+                      id="reset-email"
                       type="email"
                       placeholder="example@email.com"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="ps-10"
+                      onChange={(e) => { setEmail(e.target.value); setLocalError(''); clearError() }}
+                      dir="ltr"
+                      className="text-right ps-10"
+                      autoComplete="email"
                       required
                     />
                     <Mail className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -72,9 +101,16 @@ export function ForgotPasswordSection() {
                 <Button
                   type="submit"
                   className="btn-3d-sm w-full"
-                  disabled={loading}
+                  disabled={isLoading}
                 >
-                  {loading ? 'جاري الإرسال...' : 'إرسال رابط إعادة التعيين'}
+                  {isLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 className="size-4 animate-spin" />
+                      جاري الإرسال...
+                    </span>
+                  ) : (
+                    'إرسال رابط إعادة التعيين'
+                  )}
                 </Button>
               </form>
 
@@ -97,10 +133,12 @@ export function ForgotPasswordSection() {
                 <h1 className="mb-2 text-2xl font-bold">
                   تم الإرسال بنجاح!
                 </h1>
-                <p className="text-sm text-muted-foreground">
-                  تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك
-                  الإلكتروني. يرجى التحقق من صندوق الوارد أو الرسائل
-                  غير المرغوب فيها.
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني
+                  <span className="block mt-1 font-medium text-foreground" dir="ltr">{email}</span>
+                </p>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  يرجى التحقق من صندوق الوارد أو مجلد الرسائل غير المرغوب فيها (Spam).
                 </p>
               </div>
 
