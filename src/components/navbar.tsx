@@ -29,6 +29,7 @@ import {
   Heart,
   MessageSquareWarning,
 } from "lucide-react";
+import { NotificationButton } from "@/components/notification-panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -196,17 +197,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
           </Button>
 
           {/* Notification */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative size-8 md:size-9"
-            aria-label="الإشعارات"
-          >
-            <Bell className="size-[18px]" />
-            <Badge className="absolute -top-1 -left-1 flex size-5 items-center justify-center rounded-full bg-red-500 p-0 text-[10px] text-white hover:bg-red-500">
-              3
-            </Badge>
-          </Button>
+          <NotificationButton />
 
           {/* User menu - desktop only */}
           <div className="hidden md:block">

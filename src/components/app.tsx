@@ -30,6 +30,12 @@ import { ForgotPasswordSection } from "@/components/sections/forgot-password-sec
 import { ValuesSection } from "@/components/sections/values-section";
 import { CriticismSection } from "@/components/sections/criticism-section";
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
+import { AnnouncementBanner } from "@/components/announcement-banner";
+import { FloatingWhatsApp } from "@/components/floating-whatsapp";
+import { CookieConsent } from "@/components/cookie-consent";
+import { FlashDealsSection } from "@/components/sections/flash-deals-section";
+import { TestimonialsSection } from "@/components/sections/testimonials-section";
+import { RecentlyViewedSection } from "@/components/sections/recently-viewed-section";
 
 function ScrollToTopButton() {
   const [visible, setVisible] = useState(false);
@@ -128,6 +134,7 @@ export function App() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <AnnouncementBanner />
       <Navbar onToggleSearch={() => { setSearchOpen((prev) => !prev); setSearchKey((k) => k + 1); }} />
       <SearchBar key={searchKey} isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
       <main className="flex-1" key={pageKey}>
@@ -137,6 +144,8 @@ export function App() {
       <CartDrawer />
       <ScrollToTopButton />
       <PWAInstallPrompt />
+      <FloatingWhatsApp />
+      <CookieConsent />
     </div>
   );
 }

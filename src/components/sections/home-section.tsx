@@ -13,6 +13,9 @@ import {
   Bell,
   Loader2,
 } from "lucide-react";
+import { FlashDealsSection } from "@/components/sections/flash-deals-section";
+import { TestimonialsSection } from "@/components/sections/testimonials-section";
+import { RecentlyViewedSection } from "@/components/sections/recently-viewed-section";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { getProducts, getApps, getAiTools, getAcademyCourses, getEarningMethods } from "@/lib/supabase-data";
@@ -465,6 +468,12 @@ export function HomeSection({ onOpenCart }: HomeSectionProps) {
         </>
       )}
 
+      {/* Flash Deals Section */}
+      <FlashDealsSection />
+
+      {/* Testimonials Section */}
+      <TestimonialsSection />
+
       {/* Stats Section */}
       <section className="border-y bg-card py-6">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
@@ -486,6 +495,9 @@ export function HomeSection({ onOpenCart }: HomeSectionProps) {
           </div>
         </div>
       </section>
+
+      {/* Recently Viewed Section */}
+      <RecentlyViewedSection />
 
       {/* Newsletter / CTA Section */}
       <section className="relative overflow-hidden bg-gradient-to-bl from-black via-black/95 to-black/90 py-8 md:py-10">
