@@ -204,7 +204,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   loginWithGoogle: async () => {
     set({ error: null, isLoading: true })
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}`,
@@ -212,18 +212,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       })
 
       if (error) {
-        set({ error: 'فشل الاتصال بجوجل. حاول مرة أخرى.', isLoading: false })
+        set({ error: 'تسجيل الدخول بجوجل غير مفعّل بعد. جارٍ إعداد الخدمة قريباً.', isLoading: false })
       }
       // If no error, browser will redirect to Google — loading stays true
     } catch {
-      set({ error: 'حدث خطأ في الاتصال بجوجل.', isLoading: false })
+      set({ error: 'تسجيل الدخول بجوجل غير مفعّل بعد. جارٍ إعداد الخدمة قريباً.', isLoading: false })
     }
   },
 
   loginWithFacebook: async () => {
     set({ error: null, isLoading: true })
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
           redirectTo: `${window.location.origin}`,
@@ -231,11 +231,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       })
 
       if (error) {
-        set({ error: 'فشل الاتصال بفيسبوك. حاول مرة أخرى.', isLoading: false })
+        set({ error: 'تسجيل الدخول بفيسبوك غير مفعّل بعد. جارٍ إعداد الخدمة قريباً.', isLoading: false })
       }
       // If no error, browser will redirect to Facebook — loading stays true
     } catch {
-      set({ error: 'حدث خطأ في الاتصال بفيسبوك.', isLoading: false })
+      set({ error: 'تسجيل الدخول بفيسبوك غير مفعّل بعد. جارٍ إعداد الخدمة قريباً.', isLoading: false })
     }
   },
 
