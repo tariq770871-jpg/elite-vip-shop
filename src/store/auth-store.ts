@@ -212,11 +212,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       })
 
       if (error) {
-        set({ error: 'تسجيل الدخول بجوجل غير مفعّل بعد. جارٍ إعداد الخدمة قريباً.', isLoading: false })
+        set({ error: 'فشل الاتصال بجوجل. حاول مرة أخرى.', isLoading: false })
       }
       // If no error, browser will redirect to Google — loading stays true
     } catch {
-      set({ error: 'تسجيل الدخول بجوجل غير مفعّل بعد. جارٍ إعداد الخدمة قريباً.', isLoading: false })
+      set({ error: 'حدث خطأ في الاتصال بجوجل.', isLoading: false })
     }
   },
 
@@ -231,11 +231,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       })
 
       if (error) {
-        set({ error: 'تسجيل الدخول بفيسبوك غير مفعّل بعد. جارٍ إعداد الخدمة قريباً.', isLoading: false })
+        set({ error: 'فشل الاتصال بفيسبوك. حاول مرة أخرى.', isLoading: false })
       }
       // If no error, browser will redirect to Facebook — loading stays true
     } catch {
-      set({ error: 'تسجيل الدخول بفيسبوك غير مفعّل بعد. جارٍ إعداد الخدمة قريباً.', isLoading: false })
+      set({ error: 'حدث خطأ في الاتصال بفيسبوك.', isLoading: false })
     }
   },
 
