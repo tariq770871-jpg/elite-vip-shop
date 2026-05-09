@@ -47,35 +47,7 @@ interface Order {
   notes?: string;
 }
 
-const mockOrders: Order[] = [
-  {
-    id: "ORD-1024", date: "2025-01-15", status: "new", total: 1899, payment_method: "whatsapp",
-    items: [{ name: "سماعة بلوتوث فاخرة Elite Pro", quantity: 1, price: 1899 }],
-  },
-  {
-    id: "ORD-1025", date: "2025-01-14", status: "reviewing", total: 3939, payment_method: "whatsapp",
-    items: [
-      { name: "ساعة ذكية VIP Series X", quantity: 1, price: 3500 },
-      { name: "بور شارجر سريع 65W", quantity: 1, price: 350 },
-      { name: "كتاب أسرار الربح من الإنترنت", quantity: 1, price: 89 },
-    ],
-  },
-  {
-    id: "ORD-1026", date: "2025-01-13", status: "confirmed", total: 799, payment_method: "sms",
-    items: [{ name: "اشتراك VPN Premium - سنة كاملة", quantity: 1, price: 799 }],
-  },
-  {
-    id: "ORD-1027", date: "2025-01-12", status: "shipped", total: 299, payment_method: "whatsapp", discount: 0,
-    items: [{ name: "كورس التداول الاحترافي", quantity: 1, price: 299 }],
-  },
-  {
-    id: "ORD-1028", date: "2025-01-11", status: "cancelled", total: 1149,
-    items: [
-      { name: "ماوس لاسلكي ميكانيكي للجيمرز", quantity: 1, price: 499 },
-      { name: "طقم أدوات متعددة الاستخدام", quantity: 1, price: 650 },
-    ],
-  },
-];
+// Mock data removed — orders are now fetched from API only
 
 function getStepIndex(status: string): number {
   if (status === "cancelled") return -1;
@@ -202,7 +174,7 @@ export function OrdersSection() {
   const { navigateTo } = useNavigation();
   const [activeFilter, setActiveFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(isAuthenticated && !!user?.id);
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const [orders, setOrders] = useState<Order[]>([]);
   const userId = user?.id;
 
   useEffect(() => {
@@ -217,7 +189,9 @@ export function OrdersSection() {
         return null;
       })
       .then((data) => {
-        if (cancelled || !data || !data.orders || data.orders.length === 0) {
+        if (cancelled) return;
+        if (!data || !data.orders || data.orders.length === 0) {
+          setOrders([]);
           setIsLoading(false);
           return;
         }
