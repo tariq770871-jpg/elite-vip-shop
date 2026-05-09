@@ -95,12 +95,17 @@ export const rateLimiter = new RateLimiter();
 
 /**
  * Extract a client identifier from a Request object.
- * Uses X-Forwarded-For (first IP) or falls back to "unknown".
+ * Uses the LAST IP in X-Forwarded-For (set by closest trusted proxy)
+ * to prevent spoofing. Falls back to x-real-ip or "unknown".
  */
 export function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
-    return forwarded.split(",")[0].trim();
+    // Use LAST IP (set by the closest trusted proxy) instead of first (client-controlled)
+    const ips = forwarded.split(",").map((ip) => ip.trim()).filter(Boolean);
+    if (ips.length > 0) {
+      return ips[ips.length - 1];
+    }
   }
   const realIp = request.headers.get("x-real-ip");
   if (realIp) {

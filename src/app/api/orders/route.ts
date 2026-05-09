@@ -86,7 +86,10 @@ export async function POST(request: Request) {
         user_id: userId,
         status: "new",
         total_amount: calculatedTotal,
-        notes: notes || `طريقة الدفع: ${paymentMethod === "whatsapp" ? "واتساب" : "رسالة نصية"}${customerName ? ` | العميل: ${customerName}` : ""}${customerPhone ? ` | الهاتف: ${customerPhone}` : ""}${customerAddress ? ` | العنوان: ${customerAddress}` : ""}${discount ? ` | خصم: ${discount} ر.ي` : ""}${couponCode ? ` | كود: ${couponCode}` : ""}`,
+        notes: (() => {
+          const sanitize = (val: string | undefined | null) => (val || "").replace(/\|/g, "│");
+          return notes || `طريقة الدفع: ${paymentMethod === "whatsapp" ? "واتساب" : "رسالة نصية"}${customerName ? ` | العميل: ${sanitize(customerName)}` : ""}${customerPhone ? ` | الهاتف: ${sanitize(customerPhone)}` : ""}${customerAddress ? ` | العنوان: ${sanitize(customerAddress)}` : ""}${discount ? ` | خصم: ${discount} ر.ي` : ""}${couponCode ? ` | كود: ${sanitize(couponCode)}` : ""}`;
+        })(),
       })
       .select()
       .single();

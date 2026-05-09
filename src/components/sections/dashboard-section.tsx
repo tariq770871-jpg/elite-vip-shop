@@ -381,7 +381,9 @@ function AdminDashboard() {
   };
 
   useEffect(() => {
+    const controller = new AbortController();
     fetchAdminProducts();
+    return () => controller.abort();
   }, []);
 
   const openAddProduct = () => {
@@ -541,7 +543,9 @@ function AdminDashboard() {
   };
 
   useEffect(() => {
+    const controller = new AbortController();
     fetchAdminData();
+    return () => controller.abort();
   }, []);
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
@@ -1090,12 +1094,14 @@ function SellerDashboard() {
   };
 
   useEffect(() => {
+    const controller = new AbortController();
     const load = async () => {
       setLoading(true);
       await Promise.all([fetchSellerProducts(), fetchSellerOrders()]);
       setLoading(false);
     };
     load();
+    return () => controller.abort();
   }, []);
 
   const openAddProduct = () => {
@@ -1451,6 +1457,7 @@ function UserDashboard() {
       }
     }
     fetchOrders();
+    return () => {};
   }, [user?.id]);
 
   return (

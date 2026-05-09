@@ -41,7 +41,7 @@ function extractUser(user: User, fallbackEmail?: string, serverRole?: string): A
     avatar: meta.avatar_url || meta.picture || '',
     // Never trust user_metadata.role — use server-verified role from users table
     // Fallback to 'user' only if server role is not yet fetched
-    role: serverRole || 'user',
+    role: (serverRole as 'visitor' | 'user' | 'seller' | 'admin') || 'user',
   }
 }
 
@@ -92,7 +92,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           if (role) {
             const currentUser = get().user
             if (currentUser?.id === session.user.id) {
-              set({ user: { ...currentUser, role } })
+              set({ user: { ...currentUser, role: role as 'visitor' | 'user' | 'seller' | 'admin' } })
             }
           }
         })

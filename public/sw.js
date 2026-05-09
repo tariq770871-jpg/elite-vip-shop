@@ -43,10 +43,20 @@ self.addEventListener('fetch', (event) => {
 
   // For navigation requests (HTML pages): Network first, fallback to cache
   if (request.mode === 'navigate') {
+    // Never cache authenticated/private pages — expose user data if cached
+    const privatePaths = ['/dashboard', '/profile', '/orders', '/cart', '/wishlist', '/settings'];
+    const isPrivate = privatePaths.some(p => url.pathname.startsWith(p));
+
+    if (isPrivate) {
+      // Network-only for private pages — never cache
+      event.respondWith(fetch(request));
+      return;
+    }
+
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Cache successful responses
+          // Cache successful responses (public pages only)
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(request, responseClone);

@@ -215,7 +215,9 @@ export function OrdersSection() {
   };
 
   useEffect(() => {
+    const controller = new AbortController();
     fetchOrders();
+    return () => controller.abort();
   }, [isAuthenticated, userId]);
 
   const filteredOrders = activeFilter === "all"
