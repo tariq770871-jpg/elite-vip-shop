@@ -698,20 +698,24 @@ INSERT INTO public.roles (role_name, description) VALUES
 ON CONFLICT (role_name) DO NOTHING;
 
 -- ──────────────────────────────────────────────────────────────
--- ترقية أول مستخدم لأدمن تلقائياً
--- أول مستخدم يسجل في النظام يصبح مديراً تلقائياً
+-- المدير: tariq770871@gmail.com — ترقيته لأدمن تلقائياً عند التسجيل
 -- ──────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.auto_promote_first_user()
 RETURNS TRIGGER AS $$
 DECLARE
-  v_user_count INTEGER;
   v_admin_role_id UUID;
 BEGIN
-  -- Count existing users
-  SELECT COUNT(*) INTO v_user_count FROM public.users;
+  -- Auto-promote tariq770871@gmail.com to admin
+  IF NEW.email = 'tariq770871@gmail.com' THEN
+    SELECT role_id INTO v_admin_role_id FROM public.roles WHERE role_name = 'admin' LIMIT 1;
+    IF v_admin_role_id IS NOT NULL THEN
+      NEW.role_id := v_admin_role_id;
+    END IF;
+    RETURN NEW;
+  END IF;
 
-  -- If this is the first user, promote to admin
-  IF v_user_count = 0 THEN
+  -- Also promote the very first user if no users exist yet
+  IF (SELECT COUNT(*) FROM public.users) = 0 THEN
     SELECT role_id INTO v_admin_role_id FROM public.roles WHERE role_name = 'admin' LIMIT 1;
     IF v_admin_role_id IS NOT NULL THEN
       NEW.role_id := v_admin_role_id;
