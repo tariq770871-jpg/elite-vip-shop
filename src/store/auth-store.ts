@@ -59,8 +59,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     authListenerInitialized = true
 
     supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[Auth] State changed:', event)
-
       if (event === 'SIGNED_IN' && session?.user) {
         set({
           user: extractUser(session.user),

@@ -71,11 +71,11 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("/sw.js")
-        .then((reg) => {
-          console.log("Service Worker registered:", reg.scope);
+        .then(() => {
+          // Service Worker registered successfully
         })
-        .catch((err) => {
-          console.log("Service Worker registration failed:", err);
+        .catch(() => {
+          // Service Worker registration failed — non-critical
         });
     }
   }, []);
