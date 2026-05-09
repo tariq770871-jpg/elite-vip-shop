@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken } from "@/lib/supabase-server";
+import { rateLimitResponse } from "@/lib/rate-limit";
 
 const COUPONS: Record<string, { discount: number; minOrder: number; maxUses: number; usedCount: number; isActive: boolean; expiresAt: string | null }> = {
   WELCOME10: { discount: 10, minOrder: 0, maxUses: 1000, usedCount: 0, isActive: true, expiresAt: null },
@@ -9,6 +10,8 @@ const COUPONS: Record<string, { discount: number; minOrder: number; maxUses: num
 };
 
 export async function POST(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
   try {
     const body = await request.json();
     const { code, orderTotal } = body;
@@ -61,7 +64,9 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
   return NextResponse.json({
     coupons: Object.entries(COUPONS).map(([code, c]) => ({
       code,
@@ -75,6 +80,8 @@ export async function GET() {
 
 // PUT: Update a coupon (admin only)
 export async function PUT(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
   try {
     const { user, error: authError } = await verifyAuthToken(request);
     if (authError || !user) {
@@ -110,6 +117,8 @@ export async function PUT(request: Request) {
 
 // DELETE: Deactivate a coupon (admin only)
 export async function DELETE(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
   try {
     const { user, error: authError } = await verifyAuthToken(request);
     if (authError || !user) {

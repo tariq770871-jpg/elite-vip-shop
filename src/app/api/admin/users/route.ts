@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { rateLimitResponse } from "@/lib/rate-limit";
 
 // GET: Fetch all users with their roles
-export async function GET() {
+export async function GET(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
   try {
     if (!supabase) {
       return NextResponse.json({ users: [], total: 0 });

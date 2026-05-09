@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { sendOrderNotification } from "@/lib/telegram";
 import { verifyAuthToken } from "@/lib/supabase-server";
+import { rateLimitResponse } from "@/lib/rate-limit";
 
 // POST: Save a new order to Supabase
 export async function POST(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
   try {
     // Auth check: verify user is authenticated
     const { user, error: authError } = await verifyAuthToken(request);
@@ -105,6 +108,8 @@ export async function POST(request: Request) {
 
 // GET: Fetch orders for a user
 export async function GET(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
   try {
     // Auth check: verify user is authenticated
     const { user, error: authError } = await verifyAuthToken(request);

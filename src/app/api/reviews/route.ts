@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { rateLimitResponse } from "@/lib/rate-limit";
 
 // GET: Fetch reviews for a product (query param: product_id)
 export async function GET(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
   try {
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get("product_id");
@@ -60,6 +63,8 @@ export async function GET(request: Request) {
 
 // POST: Create a new review
 export async function POST(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
   try {
     const body = await request.json();
     const { product_id, rating, comment } = body;

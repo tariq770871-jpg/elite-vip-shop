@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { verifyAuthToken } from "@/lib/supabase-server";
+import { rateLimitResponse } from "@/lib/rate-limit";
 
 // GET: Check if Telegram bot is configured
-export async function GET() {
+export async function GET(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
   try {
     if (!supabase) return NextResponse.json({ configured: false });
 
@@ -28,6 +31,8 @@ export async function GET() {
 
 // POST: Save config and optionally send a test message (admin only)
 export async function POST(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
   try {
     // Admin auth check
     const { user, error: authError } = await verifyAuthToken(request);
@@ -89,6 +94,8 @@ export async function POST(request: Request) {
 
 // DELETE: Remove Telegram configuration (admin only)
 export async function DELETE(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
   try {
     // Admin auth check
     const { user, error: authError } = await verifyAuthToken(request);

@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { rateLimitResponse } from "@/lib/rate-limit";
 
 // GET: Fetch all orders for admin (with user info and items)
 export async function GET(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
   try {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "100");
@@ -115,6 +118,8 @@ export async function GET(request: Request) {
 
 // PATCH: Update order status
 export async function PATCH(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
   try {
     const body = await request.json();
     const { orderId, status } = body;

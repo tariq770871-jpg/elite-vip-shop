@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { verifyAuthToken } from "@/lib/supabase-server";
+import { rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const blocked = rateLimitResponse(request, "contact");
+  if (blocked) return blocked;
   try {
     const body = await request.json();
     const { name, email, phone, subject, message } = body;
@@ -46,6 +49,8 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
   try {
     // Auth check: only authenticated users can list contact messages
     const { user, error: authError } = await verifyAuthToken(request);

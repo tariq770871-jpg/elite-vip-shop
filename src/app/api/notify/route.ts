@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sendTelegramNotification } from "@/lib/telegram";
 import { verifyAuthToken } from "@/lib/supabase-server";
+import { rateLimitResponse } from "@/lib/rate-limit";
 
 const EMOJIS: Record<string, string> = {
   visit: "👁️",
@@ -12,6 +13,8 @@ const EMOJIS: Record<string, string> = {
 };
 
 export async function POST(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
   try {
     // Auth check: only authenticated users can send notifications
     const { user, error: authError } = await verifyAuthToken(request);
