@@ -13,6 +13,7 @@ import {
   Truck,
   Store,
   MessageCircle,
+  Bot,
 } from "lucide-react";
 import {
   Dialog,
@@ -25,18 +26,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/auth-store";
-import { useCartStore } from "@/store/cart-store";
 import { useNavigation } from "@/lib/navigation";
 import { getWhatsAppOrderLink } from "@/lib/mock-data";
-import { WhatsAppIcon } from "@/components/whatsapp-icon";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
 /*  Zod Schemas                                                        */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
 
 const deliverySchema = z.object({
   customerName: z.string().min(2, "الاسم مطلوب"),
@@ -55,9 +54,9 @@ const pickupSchema = z.object({
 type DeliveryFormData = z.infer<typeof deliverySchema>;
 type PickupFormData = z.infer<typeof pickupSchema>;
 
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
 /*  Types                                                              */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
 
 interface OrderModalProduct {
   id: string;
@@ -86,18 +85,17 @@ interface ChatMessage {
 
 type ChatStep =
   | "IDLE"
-  | "AUTH_CHECK"
-  | "WELCOME"
-  | "CHOOSE_ACTION"
-  | "DELIVERY_TYPE"
+  | "AUTH_GATE"
+  | "PRODUCT_INFO"
+  | "CHOOSE_OPTION"
   | "DELIVERY_FORM"
   | "PICKUP_FORM"
-  | "CONFIRMATION"
+  | "SUBMITTING"
   | "SUCCESS";
 
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
 /*  Component                                                          */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
 
 export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -129,7 +127,6 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
   useEffect(() => {
     if (open && product) {
       setMessages([]);
-      setCurrentStep("AUTH_CHECK");
       setQuantity(1);
       setDeliveryType("pickup");
       setIsSubmitting(false);
@@ -137,21 +134,12 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
       deliveryForm.reset();
       pickupForm.reset();
 
-      // Small delay for transition, then start the flow
       const timer = setTimeout(() => {
         startChatFlow();
       }, 300);
       return () => clearTimeout(timer);
     }
   }, [open, product?.id]);
-
-  // Re-open modal automatically when user logs in (if was previously blocked)
-  useEffect(() => {
-    if (isAuthenticated && product && !open && currentStep === "AUTH_CHECK") {
-      // This handles the case where user was sent to login/register
-      // and then came back — the parent component should handle re-opening
-    }
-  }, [isAuthenticated]);
 
   const addMessage = useCallback((msg: Omit<ChatMessage, "id" | "timestamp">) => {
     const newMsg: ChatMessage = {
@@ -163,25 +151,35 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
     return newMsg.id;
   }, []);
 
+  /* ────────────────────────────────────────────────────────────────── */
+  /*  Step 1: Auth Gate                                                */
+  /* ────────────────────────────────────────────────────────────────── */
+
   const startChatFlow = useCallback(() => {
+    if (!product) return;
+
     if (!isAuthenticated) {
-      setCurrentStep("AUTH_CHECK");
+      setCurrentStep("AUTH_GATE");
       addMessage({
         type: "bot",
-        content: "يجب تسجيل الدخول أو إنشاء حساب أولاً لإكمال الطلب. 🔒",
+        content: "مرحباً! يجب تسجيل الدخول أو إنشاء حساب أولاً لإكمال الطلب.",
         actions: [
           { label: "تسجيل الدخول", value: "login" },
           { label: "إنشاء حساب جديد", value: "register" },
         ],
       });
     } else {
-      showWelcome();
+      showProductInfo();
     }
-  }, [isAuthenticated, addMessage]);
+  }, [isAuthenticated, addMessage, product]);
 
-  const showWelcome = useCallback(() => {
+  /* ────────────────────────────────────────────────────────────────── */
+  /*  Step 2: Auto-message with product details                       */
+  /* ────────────────────────────────────────────────────────────────── */
+
+  const showProductInfo = useCallback(() => {
     if (!product) return;
-    setCurrentStep("WELCOME");
+    setCurrentStep("PRODUCT_INFO");
 
     const effectivePrice =
       product.salePrice && product.salePrice < product.price
@@ -190,59 +188,59 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
 
     addMessage({
       type: "bot",
-      content: `🎉 مرحباً بك في متجر النخبة!\n\n📦 المنتج: ${product.name}\n💰 السعر: ${effectivePrice.toLocaleString("ar-SA")} ر.ي\n📊 الكمية: ${quantity}\n\n⚠️ لا تقم بأي عملية دفع إلا بعد تأكيد الطلب والتواصل الرسمي مع فريقنا.`,
+      content: `📦 ${product.name}\n💰 السعر: ${effectivePrice.toLocaleString("ar-SA")} ر.ي\n📊 الكمية: ${quantity}\n💵 المجموع: ${(effectivePrice * quantity).toLocaleString("ar-SA")} ر.ي\n\n⚠️ لا تقم بأي عملية دفع إلا بعد تأكيد الطلب`,
     });
 
-    // Then show action buttons
+    // Step 3: Show the 3 options after product info
     setTimeout(() => {
-      setCurrentStep("CHOOSE_ACTION");
+      setCurrentStep("CHOOSE_OPTION");
       addMessage({
         type: "bot",
-        content: "كيف تريد المتابعة؟",
+        content: "اختر كيف تريد المتابعة:",
         actions: [
-          { label: "🛒 طلب المنتج", value: "order" },
+          { label: "🚚 خدمة توصيل", value: "delivery" },
+          { label: "🏪 بدون توصيل", value: "pickup" },
           { label: "❓ استعلام عن المنتج", value: "inquiry" },
         ],
       });
-    }, 600);
+    }, 700);
   }, [product, quantity, addMessage]);
 
-  // Update welcome message when quantity changes
+  // Update product info message when quantity changes
   useEffect(() => {
-    if (currentStep === "WELCOME" || currentStep === "CHOOSE_ACTION") {
-      // Re-add the welcome message with updated quantity
-      // We do NOT re-add, just update the existing first bot message content
-      if (product && messages.length > 0) {
-        const effectivePrice =
-          product.salePrice && product.salePrice < product.price
-            ? product.salePrice
-            : product.price;
-        setMessages((prev) =>
-          prev.map((msg, idx) => {
-            if (idx === 0 && msg.type === "bot") {
-              return {
-                ...msg,
-                content: `🎉 مرحباً بك في متجر النخبة!\n\n📦 المنتج: ${product.name}\n💰 السعر: ${effectivePrice.toLocaleString("ar-SA")} ر.ي\n📊 الكمية: ${quantity}\n\n⚠️ لا تقم بأي عملية دفع إلا بعد تأكيد الطلب والتواصل الرسمي مع فريقنا.`,
-              };
-            }
-            return msg;
-          })
-        );
-      }
+    if ((currentStep === "PRODUCT_INFO" || currentStep === "CHOOSE_OPTION") && product && messages.length > 0) {
+      const effectivePrice =
+        product.salePrice && product.salePrice < product.price
+          ? product.salePrice
+          : product.price;
+      setMessages((prev) =>
+        prev.map((msg, idx) => {
+          if (idx === 0 && msg.type === "bot") {
+            return {
+              ...msg,
+              content: `📦 ${product.name}\n💰 السعر: ${effectivePrice.toLocaleString("ar-SA")} ر.ي\n📊 الكمية: ${quantity}\n💵 المجموع: ${(effectivePrice * quantity).toLocaleString("ar-SA")} ر.ي\n\n⚠️ لا تقم بأي عملية دفع إلا بعد تأكيد الطلب`,
+            };
+          }
+          return msg;
+        })
+      );
     }
   }, [quantity]);
 
+  /* ────────────────────────────────────────────────────────────────── */
+  /*  Handle user actions                                              */
+  /* ────────────────────────────────────────────────────────────────── */
+
   const handleActionClick = useCallback(
     (actionValue: string) => {
-      // Add user message showing their choice
       const actionLabels: Record<string, string> = {
         login: "تسجيل الدخول",
         register: "إنشاء حساب جديد",
-        order: "🛒 طلب المنتج",
-        inquiry: "❓ استعلام عن المنتج",
         delivery: "🚚 خدمة توصيل",
         pickup: "🏪 بدون توصيل",
+        inquiry: "❓ استعلام عن المنتج",
       };
+
       addMessage({
         type: "user",
         content: actionLabels[actionValue] || actionValue,
@@ -263,26 +261,13 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
             onOpenChange(false);
           }
           break;
-        case "order":
-          setCurrentStep("DELIVERY_TYPE");
-          setTimeout(() => {
-            addMessage({
-              type: "bot",
-              content: "اختر نوع الاستلام:",
-              actions: [
-                { label: "🚚 خدمة توصيل", value: "delivery" },
-                { label: "🏪 بدون توصيل", value: "pickup" },
-              ],
-            });
-          }, 400);
-          break;
         case "delivery":
           setDeliveryType("delivery");
           setCurrentStep("DELIVERY_FORM");
           setTimeout(() => {
             addMessage({
               type: "bot",
-              content: "يرجى إدخال بيانات التوصيل:",
+              content: "يرجى إدخال بيانات التوصيل كاملة:",
               formData: "delivery",
             });
           }, 400);
@@ -303,11 +288,15 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
     [addMessage, navigateTo, onOpenChange, product]
   );
 
+  /* ────────────────────────────────────────────────────────────────── */
+  /*  Form submissions                                                 */
+  /* ────────────────────────────────────────────────────────────────── */
+
   const handleDeliverySubmit = useCallback(
     async (data: DeliveryFormData) => {
       addMessage({
         type: "user",
-        content: `👤 ${data.customerName}\n📞 ${data.customerPhone}\n📍 ${data.province}, ${data.district}, ${data.street}\n🏗️ ${data.landmark}`,
+        content: `👤 ${data.customerName}\n📞 ${data.customerPhone}\n📍 ${data.province}، ${data.district}، ${data.street}\n🏗️ ${data.landmark}`,
       });
 
       await submitOrder({
@@ -339,6 +328,10 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
     [addMessage, product, quantity]
   );
 
+  /* ────────────────────────────────────────────────────────────────── */
+  /*  Step 5: Create order in DB → Step 6: Confirmation               */
+  /* ────────────────────────────────────────────────────────────────── */
+
   const submitOrder = useCallback(
     async (params: {
       customerName: string;
@@ -358,16 +351,13 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
       }
 
       setIsSubmitting(true);
-      setCurrentStep("CONFIRMATION");
+      setCurrentStep("SUBMITTING");
 
       const effectivePrice =
         product.salePrice && product.salePrice < product.price
           ? product.salePrice
           : product.price;
       const totalPrice = effectivePrice * quantity;
-
-      const cartStore = useCartStore.getState();
-      const appliedCoupon = cartStore.appliedCoupon;
 
       try {
         const res = await fetch("/api/orders", {
@@ -385,33 +375,33 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
             district: params.district,
             street: params.street,
             landmark: params.landmark,
-            couponCode: appliedCoupon?.code,
-            discount: 0,
           }),
         });
 
         const data = await res.json();
 
         if (res.ok && data.success) {
-          setOrderNumber(data.orderNumber || "N/A");
+          const ordNum = data.orderNumber || "N/A";
+          setOrderNumber(ordNum);
           setCurrentStep("SUCCESS");
+
+          // Step 6: Confirmation message inside chat
           addMessage({
             type: "bot",
-            content: `شكراً لك، تم استلام طلبك بنجاح وسيتم التواصل معك قريباً. 🎉\n\n📦 رقم الطلب: ${data.orderNumber || "N/A"}`,
+            content: `شكراً لك، تم استلام طلبك بنجاح! 🎉\n\n📦 رقم الطلب: ${ordNum}\n📊 الحالة: قيد الانتظار\n\nسيتم التواصل معك قريباً لتأكيد الطلب.`,
           });
           toast.success("تم تأكيد طلبك بنجاح! 🎉");
 
-          // Auto close after 4 seconds
           setTimeout(() => {
             onOpenChange(false);
-          }, 4000);
+          }, 5000);
         } else {
           addMessage({
             type: "system",
             content: `❌ ${data.error || "حدث خطأ أثناء إرسال الطلب"}`,
           });
           toast.error(data.error || "حدث خطأ أثناء إرسال الطلب");
-          setCurrentStep("CHOOSE_ACTION");
+          setCurrentStep("CHOOSE_OPTION");
         }
       } catch {
         addMessage({
@@ -419,13 +409,17 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
           content: "❌ حدث خطأ في الاتصال بالخادم",
         });
         toast.error("حدث خطأ في الاتصال بالخادم");
-        setCurrentStep("CHOOSE_ACTION");
+        setCurrentStep("CHOOSE_OPTION");
       } finally {
         setIsSubmitting(false);
       }
     },
     [product, quantity, addMessage, onOpenChange]
   );
+
+  /* ────────────────────────────────────────────────────────────────── */
+  /*  Render                                                           */
+  /* ────────────────────────────────────────────────────────────────── */
 
   if (!product) return null;
 
@@ -441,9 +435,12 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
         className="sm:max-w-md max-h-[90vh] flex flex-col p-0 gap-0"
         dir="rtl"
       >
+        {/* Header */}
         <DialogHeader className="px-4 pt-4 pb-2 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2 text-right text-base">
-            <ShoppingCart className="size-5 text-gold-gradient" />
+            <div className="flex size-7 items-center justify-center rounded-lg bg-amber-500/15">
+              <Bot className="size-4 text-amber-600" />
+            </div>
             طلب المنتج
           </DialogTitle>
           <DialogDescription className="text-right text-xs">
@@ -451,8 +448,8 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        {/* Quantity Selector - always visible at top */}
-        {currentStep !== "SUCCESS" && (
+        {/* Quantity Selector */}
+        {currentStep !== "SUCCESS" && currentStep !== "SUBMITTING" && (
           <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30 shrink-0">
             <span className="text-sm font-medium">الكمية</span>
             <div className="flex items-center gap-3">
@@ -478,11 +475,11 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
           </div>
         )}
 
-        {/* Chat Messages Area */}
+        {/* ─── Chat Messages Area ─── */}
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[300px] max-h-[50vh]">
           {messages.map((msg) => (
             <div key={msg.id}>
-              {/* Bot / System messages - right side in RTL */}
+              {/* Bot / System messages */}
               {(msg.type === "bot" || msg.type === "system") && (
                 <div className="flex justify-start">
                   <div
@@ -519,7 +516,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
                 </div>
               )}
 
-              {/* User messages - left side in RTL */}
+              {/* User messages */}
               {msg.type === "user" && (
                 <div className="flex justify-end">
                   <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-gradient-to-r from-amber-500 to-yellow-600 px-4 py-3 text-sm text-black font-medium leading-relaxed">
@@ -537,6 +534,8 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
               {msg.type === "form" && msg.formData && (
                 <div className="flex justify-start">
                   <div className="max-w-[95%] w-full rounded-2xl rounded-tr-sm bg-muted/70 border px-4 py-3">
+
+                    {/* ─── Delivery Form ─── */}
                     {msg.formData === "delivery" && (
                       <form
                         onSubmit={deliveryForm.handleSubmit(handleDeliverySubmit)}
@@ -655,13 +654,14 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
                           ) : (
                             <>
                               <CheckCircle2 className="size-4" />
-                              تأكيد البيانات
+                              تأكيد الطلب
                             </>
                           )}
                         </button>
                       </form>
                     )}
 
+                    {/* ─── Pickup Form ─── */}
                     {msg.formData === "pickup" && (
                       <form
                         onSubmit={pickupForm.handleSubmit(handlePickupSubmit)}
@@ -716,7 +716,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
                           ) : (
                             <>
                               <CheckCircle2 className="size-4" />
-                              تأكيد البيانات
+                              تأكيد الطلب
                             </>
                           )}
                         </button>
@@ -756,12 +756,12 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
                   {effectivePrice.toLocaleString("ar-SA")} ر.ي
                 </p>
               </div>
-              {deliveryType === "delivery" && currentStep !== "DELIVERY_TYPE" && currentStep !== "WELCOME" && currentStep !== "CHOOSE_ACTION" && currentStep !== "AUTH_CHECK" && (
+              {deliveryType === "delivery" && currentStep !== "CHOOSE_OPTION" && currentStep !== "PRODUCT_INFO" && currentStep !== "AUTH_GATE" && (
                 <Badge variant="outline" className="text-[10px] gap-1 border-amber-500/30 text-amber-600">
                   <Truck className="size-3" /> توصيل
                 </Badge>
               )}
-              {deliveryType === "pickup" && currentStep !== "DELIVERY_TYPE" && currentStep !== "WELCOME" && currentStep !== "CHOOSE_ACTION" && currentStep !== "AUTH_CHECK" && (
+              {deliveryType === "pickup" && currentStep !== "CHOOSE_OPTION" && currentStep !== "PRODUCT_INFO" && currentStep !== "AUTH_GATE" && (
                 <Badge variant="outline" className="text-[10px] gap-1 border-emerald-500/30 text-emerald-600">
                   <Store className="size-3" /> استلام
                 </Badge>
