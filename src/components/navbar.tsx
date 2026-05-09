@@ -1,0 +1,486 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
+import {
+  Search,
+  Moon,
+  Sun,
+  Bell,
+  User,
+  Menu,
+  LogOut,
+  LayoutDashboard,
+  Package,
+  Home,
+  ShoppingBag,
+  Smartphone,
+  Bot,
+  DollarSign,
+  Info,
+  Phone,
+  ShieldCheck,
+  FileText,
+  RotateCcw,
+  Truck,
+  X,
+  ArrowRight,
+  Heart,
+  MessageSquareWarning,
+  ShieldX,
+  Palette,
+  TrendingUp,
+  HelpCircle,
+  BookOpen,
+} from "lucide-react";
+import { NotificationButton } from "@/components/notification-panel";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useTheme } from "@/components/theme-provider";
+import { useNavigation, type PageName, PAGE_PATHS } from "@/lib/navigation";
+import { useAuthStore } from "@/store/auth-store";
+import { useNotificationStore } from "@/store/notification-store";
+import { Logo } from "@/components/logo";
+import {
+  WhatsAppBrandIcon,
+  TelegramBrandIcon,
+  EmailBrandIcon,
+  FacebookBrandIcon,
+} from "@/components/icons";
+
+interface NavbarProps {
+  onToggleSearch: () => void;
+}
+
+const navLinks: { label: string; page: PageName; icon: React.ReactNode }[] = [
+  { label: "الرئيسية", page: "home", icon: <Home className="size-4" /> },
+  { label: "المتجر", page: "products", icon: <ShoppingBag className="size-4" /> },
+  { label: "التطبيقات والأدوات", page: "apps", icon: <Smartphone className="size-4" /> },
+  { label: "الخدمات", page: "services", icon: <Palette className="size-4" /> },
+  { label: "التداول", page: "trading", icon: <TrendingUp className="size-4" /> },
+  { label: "الربح من الإنترنت", page: "earning", icon: <DollarSign className="size-4" /> },
+  { label: "أدوات AI", page: "ai-tools", icon: <Bot className="size-4" /> },
+];
+
+const infoLinks: { label: string; page: PageName; icon: React.ReactNode }[] = [
+  { label: "المدونة", page: "blog", icon: <BookOpen className="size-4" /> },
+  { label: "من نحن", page: "about", icon: <Info className="size-4" /> },
+  { label: "اتصل بنا", page: "contact", icon: <Phone className="size-4" /> },
+  { label: "الأسئلة الشائعة", page: "faq", icon: <HelpCircle className="size-4" /> },
+  { label: "سياسة الخصوصية", page: "privacy", icon: <ShieldCheck className="size-4" /> },
+  { label: "الشروط والأحكام", page: "terms", icon: <FileText className="size-4" /> },
+  { label: "سياسة الاسترجاع", page: "return-policy", icon: <RotateCcw className="size-4" /> },
+  { label: "سياسة الشحن", page: "shipping-policy", icon: <Truck className="size-4" /> },
+  { label: "قيم الموقع", page: "values", icon: <Heart className="size-4" /> },
+  { label: "بروتوكول النقد الصريح", page: "criticism", icon: <MessageSquareWarning className="size-4" /> },
+  { label: "بروتوكولات الصفر", page: "zero-protocols", icon: <ShieldX className="size-4" /> },
+];
+
+const socialLinks = [
+  {
+    label: "واتساب",
+    icon: <WhatsAppBrandIcon className="size-5" />,
+    href: "https://wa.me/967782138587",
+    hoverClass: "hover:bg-green-600/10 hover:text-green-500 hover:border-green-500/30",
+  },
+  {
+    label: "تيليجرام",
+    icon: <TelegramBrandIcon className="size-5" />,
+    href: "https://t.me/tariq77087",
+    hoverClass: "hover:bg-sky-500/10 hover:text-sky-500 hover:border-sky-500/30",
+  },
+  {
+    label: "بريد",
+    icon: <EmailBrandIcon className="size-5" />,
+    href: "mailto:tariq770871@gmail.com",
+    hoverClass: "hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30",
+  },
+  {
+    label: "فيسبوك",
+    icon: <FacebookBrandIcon className="size-5" />,
+    href: "https://www.facebook.com/share/1Gr8vRUE4M/",
+    hoverClass: "hover:bg-blue-600/10 hover:text-blue-600 hover:border-blue-600/30",
+  },
+];
+
+export function Navbar({ onToggleSearch }: NavbarProps) {
+  const { theme, toggleTheme } = useTheme();
+  const { currentPage, isActive, navigateTo, goBack, getPath } = useNavigation();
+  const pathname = usePathname();
+  const router = useRouter();
+  const { isAuthenticated, user, logout } = useAuthStore();
+  const unreadCount = useNotificationStore((s) => s.unreadCount());
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  return (
+    <>
+    <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md">
+      {/* Desktop: h-14 / Mobile: h-12 */}
+      <div className="mx-auto flex h-12 items-center justify-between px-3 md:h-14 md:px-8">
+        {/* Right side (RTL): Logo */}
+        <Logo compact />
+
+        {/* Center: Desktop nav links (hidden on mobile) */}
+        <nav className="hidden items-center gap-1 lg:flex" role="navigation" aria-label="التنقل الرئيسي">
+          {navLinks.map((link) => (
+            <Link
+              key={link.page}
+              href={PAGE_PATHS[link.page]}
+              className={`relative rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                isActive(link.page)
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              }`}
+            >
+              {link.label}
+              {isActive(link.page) && (
+                <span className="absolute bottom-0 right-2 left-2 h-[2px] rounded-full" style={{ background: "linear-gradient(to left, #d4a843, #f0d078, #d4a843)" }} />
+              )}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Left side (RTL left): Actions */}
+        <div className="flex items-center gap-0.5 md:gap-1.5">
+          {/* Search */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleSearch}
+            aria-label="البحث"
+            className="size-9 md:size-9"
+          >
+            <Search className="size-4 md:size-[18px]" />
+          </Button>
+
+          {/* Theme toggle - desktop only */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTheme}
+            aria-label="تبديل الوضع"
+            className="hidden size-9 md:inline-flex"
+          >
+            {theme === "dark" ? (
+              <Sun className="size-[18px]" />
+            ) : (
+              <Moon className="size-[18px]" />
+            )}
+          </Button>
+
+          {/* Notification */}
+          <NotificationButton />
+
+          {/* User menu - desktop only */}
+          <div className="hidden md:block">
+            {isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="القائمة" className="size-9">
+                    <div className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                      {user?.name?.charAt(0) || "م"}
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>{user?.name || "المستخدم"}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigateTo("profile")}>
+                    <User className="ms-2 size-4" />
+                    الملف الشخصي
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigateTo("orders")}>
+                    <Package className="ms-2 size-4" />
+                    الطلبات
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigateTo("dashboard")}>
+                    <LayoutDashboard className="ms-2 size-4" />
+                    لوحة التحكم
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+                    <LogOut className="ms-2 size-4" />
+                    تسجيل الخروج
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigateTo("login")}
+                className="gap-1.5"
+              >
+                <User className="size-4" />
+                <span>تسجيل الدخول</span>
+              </Button>
+            )}
+          </div>
+
+          {/* Mobile sidebar */}
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-9 lg:hidden"
+                aria-label="القائمة"
+              >
+                <Menu className="size-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent
+              side="left"
+              className="w-[85vw] max-w-[320px] overflow-y-auto overflow-x-hidden border-border/50 bg-card p-0 [&>button]:hidden"
+            >
+              {/* ===== SIDEBAR HEADER ===== */}
+              <div className="px-4 pb-3 pt-4">
+                <div className="flex items-center justify-between">
+                  <Link href={getPath("home")} onClick={() => setMobileOpen(false)} className="shrink-0">
+                    <Logo />
+                  </Link>
+                  <div className="flex items-center gap-1">
+                    {/* Theme Toggle */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleTheme}
+                      className="size-11 rounded-xl border border-border/50 text-muted-foreground hover:text-foreground"
+                      aria-label="تبديل الوضع"
+                    >
+                      {theme === "dark" ? (
+                        <Sun className="size-5 text-amber-400" />
+                      ) : (
+                        <Moon className="size-5" />
+                      )}
+                    </Button>
+                    {/* Close button */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setMobileOpen(false)}
+                      className="size-11 rounded-xl border border-border/50 text-muted-foreground hover:text-foreground"
+                      aria-label="إغلاق القائمة"
+                    >
+                      <X className="size-5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* ===== 1. PROFILE SECTION (FIRST) ===== */}
+              <div className="px-3 pb-2">
+                {isAuthenticated && user ? (
+                  <div className="rounded-2xl border border-border/50 bg-gradient-to-br from-card via-card to-primary/5 p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex size-12 items-center justify-center rounded-full bg-gold-gradient shrink-0">
+                        <User className="size-6 text-black" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-bold truncate">{user.name}</h3>
+                        <p className="text-xs text-muted-foreground truncate" dir="ltr">{user.email}</p>
+                      </div>
+                    </div>
+                    {/* Quick action buttons */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => { navigateTo("profile"); setMobileOpen(false); }}
+                        className="flex flex-col items-center gap-1.5 rounded-xl bg-primary/10 py-3 min-h-[44px] text-primary transition-all hover:bg-primary/20 hover:scale-[1.02]"
+                      >
+                        <User className="size-5" />
+                        <span className="text-[10px] font-bold">الملف الشخصي</span>
+                      </button>
+                      <button
+                        onClick={() => { navigateTo("orders"); setMobileOpen(false); }}
+                        className="flex flex-col items-center gap-1.5 rounded-xl bg-primary/10 py-3 min-h-[44px] text-primary transition-all hover:bg-primary/20 hover:scale-[1.02]"
+                      >
+                        <Package className="size-5" />
+                        <span className="text-[10px] font-bold">الطلبات</span>
+                      </button>
+                      <button
+                        onClick={() => { navigateTo("dashboard"); setMobileOpen(false); }}
+                        className="flex flex-col items-center gap-1.5 rounded-xl bg-primary/10 py-3 min-h-[44px] text-primary transition-all hover:bg-primary/20 hover:scale-[1.02]"
+                      >
+                        <LayoutDashboard className="size-5" />
+                        <span className="text-[10px] font-bold">لوحة التحكم</span>
+                      </button>
+                    </div>
+                    {/* Notifications & Logout row */}
+                    <div className="flex items-center gap-2 mt-3">
+                      <button className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-card border border-border/50 min-h-[44px] py-2.5 text-sm text-muted-foreground hover:bg-accent transition-all">
+                        <Bell className="size-4" />
+                        <span className="text-xs font-medium">الإشعارات</span>
+                        <Badge className="flex size-4 items-center justify-center rounded-full bg-red-500 p-0 text-[9px] text-white hover:bg-red-500">{unreadCount}</Badge>
+                      </button>
+                      <button
+                        onClick={() => { handleLogout(); setMobileOpen(false); }}
+                        className="flex items-center justify-center gap-1.5 rounded-xl border border-red-500/20 px-3 min-h-[44px] py-2.5 text-xs font-medium text-red-400 hover:bg-red-500/10 transition-all"
+                      >
+                        <LogOut className="size-4" />
+                        خروج
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-border/50 bg-gradient-to-br from-card via-card to-primary/5 p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex size-12 items-center justify-center rounded-full bg-muted shrink-0">
+                        <User className="size-6 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold">زائر</h3>
+                        <p className="text-xs text-muted-foreground">سجل دخولك للاستمتاع بجميع الخدمات</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { navigateTo("login"); setMobileOpen(false); }}
+                      className="btn-3d w-full flex items-center justify-center gap-2 min-h-[44px] py-3.5 text-sm"
+                    >
+                      <User className="size-4" />
+                      تسجيل الدخول / إنشاء حساب
+                    </button>
+                    {/* Notifications for guest */}
+                    <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-card border border-border/50 min-h-[44px] py-2.5 text-sm text-muted-foreground hover:bg-accent transition-all mt-2">
+                      <Bell className="size-4" />
+                      <span className="text-xs font-medium">الإشعارات</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Gold separator */}
+              <div className="mx-4 h-px bg-gradient-to-l from-transparent via-primary/30 to-transparent" />
+
+              {/* ===== 3. MAIN NAVIGATION ===== */}
+              <div className="px-3 py-2">
+                <p className="mb-2 px-2 text-xs font-bold tracking-wide text-primary uppercase">
+                  القائمة الرئيسية
+                </p>
+                <nav className="flex flex-col gap-1" role="navigation" aria-label="التنقل الرئيسي">
+                  {navLinks.map((link) => {
+                    const active = isActive(link.page);
+                    return (
+                      <Link
+                        key={link.page}
+                        href={getPath(link.page)}
+                        onClick={() => setMobileOpen(false)}
+                        className={`relative flex w-full items-center gap-3 rounded-xl px-4 text-sm font-medium transition-all duration-200 hover:scale-[1.01] hover:shadow-sm text-right min-h-[44px] ${
+                          active
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:bg-primary/5 hover:text-foreground"
+                        }`}
+                      >
+                        {/* Active indicator - gold bar on the right (RTL) */}
+                        {active && (
+                          <span className="absolute right-0 top-2 bottom-2 w-[3px] rounded-l-full" style={{ background: "linear-gradient(to bottom, #d4a843, #f0d078, #d4a843)" }} />
+                        )}
+                        <span className="shrink-0">{link.icon}</span>
+                        <span className="truncate">{link.label}</span>
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </div>
+
+              {/* Gold separator */}
+              <div className="mx-4 h-px bg-gradient-to-l from-transparent via-primary/30 to-transparent" />
+
+              {/* ===== 4. INFO LINKS ===== */}
+              <div className="px-3 py-2">
+                <p className="mb-2 px-2 text-xs font-bold tracking-wide text-primary uppercase">
+                  معلومات
+                </p>
+                <nav className="flex flex-col gap-1" role="navigation" aria-label="روابط المعلومات">
+                  {infoLinks.map((link) => {
+                    const active = isActive(link.page);
+                    return (
+                      <Link
+                        key={link.page}
+                        href={getPath(link.page)}
+                        onClick={() => setMobileOpen(false)}
+                        className={`relative flex w-full items-center gap-3 rounded-xl px-4 text-sm font-medium transition-all duration-200 hover:scale-[1.01] hover:shadow-sm text-right min-h-[44px] ${
+                          active
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:bg-primary/5 hover:text-foreground"
+                        }`}
+                      >
+                        {/* Active indicator - gold bar on the right (RTL) */}
+                        {active && (
+                          <span className="absolute right-0 top-2 bottom-2 w-[3px] rounded-l-full" style={{ background: "linear-gradient(to bottom, #d4a843, #f0d078, #d4a843)" }} />
+                        )}
+                        <span className="shrink-0">{link.icon}</span>
+                        <span className="truncate">{link.label}</span>
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </div>
+
+              {/* Gold separator */}
+              <div className="mx-4 h-px bg-gradient-to-l from-transparent via-primary/30 to-transparent" />
+
+              {/* ===== 5. SOCIAL LINKS ===== */}
+              <div className="px-3 py-2 pb-6">
+                <p className="mb-2 px-2 text-xs font-bold tracking-wide text-primary uppercase">
+                  تواصل اجتماعي
+                </p>
+                <div className="grid grid-cols-2 gap-2 px-1">
+                  {socialLinks.map((social) => (
+                    <a
+                      key={social.label}
+                      href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-card/50 px-3 min-h-[44px] py-3 text-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-sm ${social.hoverClass}`}
+                    >
+                      {social.icon}
+                      {social.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+    </header>
+
+    {/* ===== FLOATING BACK BUTTON ===== */}
+    {pathname !== "/" && (
+      <button
+        onClick={() => {
+          if (window.history.length > 1) {
+            router.back();
+          } else {
+            router.push("/");
+          }
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+        className="fixed top-14 left-3 z-50 flex items-center justify-center gap-1.5 rounded-full bg-amber-500 text-black shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110 active:scale-95 md:top-[4.2rem] md:left-6 size-11 md:size-10 md:px-3 md:py-2"
+        aria-label="رجوع"
+      >
+        <ArrowRight className="size-5 md:size-5" />
+        <span className="text-xs font-bold">رجوع</span>
+      </button>
+    )}
+    </>
+  );
+}
