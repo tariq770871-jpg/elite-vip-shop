@@ -177,19 +177,17 @@ export function OrdersSection() {
   const [orders, setOrders] = useState<Order[]>([]);
   const userId = user?.id;
 
-  useEffect(() => {
+  const fetchOrders = () => {
     if (!isAuthenticated || !userId) {
       return;
     }
-    let cancelled = false;
+    setIsLoading(true);
     fetch(`/api/orders?userId=${userId}`)
       .then((res) => {
-        if (cancelled) return;
         if (res.ok) return res.json();
         return null;
       })
       .then((data) => {
-        if (cancelled) return;
         if (!data || !data.orders || data.orders.length === 0) {
           setOrders([]);
           setIsLoading(false);
@@ -212,9 +210,12 @@ export function OrdersSection() {
         setIsLoading(false);
       })
       .catch(() => {
-        if (!cancelled) setIsLoading(false);
+        setIsLoading(false);
       });
-    return () => { cancelled = true; };
+  };
+
+  useEffect(() => {
+    fetchOrders();
   }, [isAuthenticated, userId]);
 
   const filteredOrders = activeFilter === "all"
@@ -247,7 +248,7 @@ export function OrdersSection() {
             <span className="title-icon"><Package className="size-6" /></span>
             طلباتي
           </div>
-          <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="gap-2">
+          <Button variant="outline" size="sm" onClick={() => { setIsLoading(true); fetchOrders(); }} className="gap-2">
             <RefreshCw className="size-4" /> تحديث
           </Button>
         </div>

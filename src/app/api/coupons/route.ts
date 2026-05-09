@@ -23,13 +23,7 @@ async function verifyAdmin(request: Request) {
   return { user, errorResponse: null };
 }
 
-const COUPONS: Record<string, { discount: number; minOrder: number; maxUses: number; usedCount: number; isActive: boolean; expiresAt: string | null }> = {
-  WELCOME10: { discount: 10, minOrder: 0, maxUses: 1000, usedCount: 0, isActive: true, expiresAt: null },
-  VIP20: { discount: 20, minOrder: 5000, maxUses: 500, usedCount: 0, isActive: true, expiresAt: null },
-  SUMMER15: { discount: 15, minOrder: 3000, maxUses: 200, usedCount: 0, isActive: true, expiresAt: "2025-09-01" },
-  ELITE25: { discount: 25, minOrder: 10000, maxUses: 100, usedCount: 0, isActive: true, expiresAt: null },
-};
-
+// POST: Validate a coupon code
 export async function POST(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
@@ -37,46 +31,63 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { code, orderTotal } = body;
 
-    if (!code || !orderTotal) {
+    if (!code || orderTotal === undefined) {
       return NextResponse.json({ valid: false, error: "بيانات غير مكتملة" }, { status: 400 });
     }
 
     const upperCode = code.toUpperCase();
-    const coupon = COUPONS[upperCode];
+    const serviceClient = getSupabaseServiceClient();
+    if (!serviceClient) {
+      return NextResponse.json({ valid: false, error: "خدمة غير متاحة" }, { status: 503 });
+    }
 
-    if (!coupon) {
+    // Fetch coupon from database
+    const { data: coupon, error: dbError } = await serviceClient
+      .from("coupons")
+      .select("*")
+      .eq("code", upperCode)
+      .single();
+
+    if (dbError || !coupon) {
       return NextResponse.json({ valid: false, error: "كود الخصم غير موجود" });
     }
 
-    if (!coupon.isActive) {
+    if (!coupon.is_active) {
       return NextResponse.json({ valid: false, error: "هذا الكود غير مفعل" });
     }
 
-    if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
+    if (coupon.valid_until && new Date(coupon.valid_until) < new Date()) {
       return NextResponse.json({ valid: false, error: "هذا الكود منتهي الصلاحية" });
     }
 
-    if (coupon.usedCount >= coupon.maxUses) {
+    if (coupon.valid_from && new Date(coupon.valid_from) > new Date()) {
+      return NextResponse.json({ valid: false, error: "هذا الكود لم يبدأ بعد" });
+    }
+
+    if (coupon.max_uses && coupon.used_count >= coupon.max_uses) {
       return NextResponse.json({ valid: false, error: "تم استخدام هذا الكود الحد الأقصى" });
     }
 
-    if (orderTotal < coupon.minOrder) {
+    if (Number(orderTotal) < Number(coupon.min_order_amount)) {
       return NextResponse.json({
         valid: false,
-        error: `الحد الأدنى للطلب ${coupon.minOrder.toLocaleString("ar-SA")} ر.ي`,
+        error: `الحد الأدنى للطلب ${Number(coupon.min_order_amount).toLocaleString("ar-SA")} ر.ي`,
       });
     }
 
-    // Fix: Increment usedCount when coupon is successfully validated
-    coupon.usedCount += 1;
+    // Increment usedCount atomically
+    await serviceClient
+      .from("coupons")
+      .update({ used_count: coupon.used_count + 1 })
+      .eq("code", upperCode);
 
-    const discountAmount = Math.round((orderTotal * coupon.discount) / 100);
-    const finalTotal = orderTotal - discountAmount;
+    const discountAmount = Math.round((Number(orderTotal) * Number(coupon.discount_value)) / 100);
+    const finalTotal = Number(orderTotal) - discountAmount;
 
     return NextResponse.json({
       valid: true,
       code: upperCode,
-      discount: coupon.discount,
+      discount: Number(coupon.discount_value),
       discountAmount,
       finalTotal,
     });
@@ -85,18 +96,37 @@ export async function POST(request: Request) {
   }
 }
 
+// GET: List all coupons
 export async function GET(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
-  return NextResponse.json({
-    coupons: Object.entries(COUPONS).map(([code, c]) => ({
-      code,
-      discount: c.discount,
-      minOrder: c.minOrder,
-      isActive: c.isActive,
-      expiresAt: c.expiresAt,
-    })),
-  });
+  try {
+    const serviceClient = getSupabaseServiceClient();
+    if (!serviceClient) {
+      return NextResponse.json({ coupons: [] });
+    }
+
+    const { data: coupons, error } = await serviceClient
+      .from("coupons")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error || !coupons) {
+      return NextResponse.json({ coupons: [] });
+    }
+
+    return NextResponse.json({
+      coupons: coupons.map((c) => ({
+        code: c.code,
+        discount: Number(c.discount_value),
+        minOrder: Number(c.min_order_amount),
+        isActive: c.is_active,
+        expiresAt: c.valid_until,
+      })),
+    });
+  } catch {
+    return NextResponse.json({ coupons: [] });
+  }
 }
 
 // PUT: Update a coupon (admin only)
@@ -104,7 +134,7 @@ export async function PUT(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
   try {
-    const { user, errorResponse } = await verifyAdmin(request);
+    const { errorResponse } = await verifyAdmin(request);
     if (errorResponse) return errorResponse;
 
     const body = await request.json();
@@ -115,20 +145,44 @@ export async function PUT(request: Request) {
     }
 
     const upperCode = code.toUpperCase();
-    const coupon = COUPONS[upperCode];
-
-    if (!coupon) {
-      return NextResponse.json({ error: "كود الخصم غير موجود" }, { status: 404 });
+    const serviceClient = getSupabaseServiceClient();
+    if (!serviceClient) {
+      return NextResponse.json({ error: "خدمة غير متاحة" }, { status: 503 });
     }
 
-    // Update provided fields
-    if (discount !== undefined) coupon.discount = discount;
-    if (minOrder !== undefined) coupon.minOrder = minOrder;
-    if (maxUses !== undefined) coupon.maxUses = maxUses;
-    if (isActive !== undefined) coupon.isActive = isActive;
-    if (expiresAt !== undefined) coupon.expiresAt = expiresAt;
+    // Build update object from provided fields — map to DB column names
+    const updateData: Record<string, unknown> = {};
+    if (discount !== undefined) updateData.discount_value = discount;
+    if (minOrder !== undefined) updateData.min_order_amount = minOrder;
+    if (maxUses !== undefined) updateData.max_uses = maxUses;
+    if (isActive !== undefined) updateData.is_active = isActive;
+    if (expiresAt !== undefined) updateData.valid_until = expiresAt;
 
-    return NextResponse.json({ success: true, coupon: { code: upperCode, ...coupon } });
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: "لا توجد بيانات للتحديث" }, { status: 400 });
+    }
+
+    const { data: updated, error: updateError } = await serviceClient
+      .from("coupons")
+      .update(updateData)
+      .eq("code", upperCode)
+      .select()
+      .single();
+
+    if (updateError || !updated) {
+      return NextResponse.json({ error: "كود الخصم غير موجود أو فشل التحديث" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      coupon: {
+        code: updated.code,
+        discount: Number(updated.discount_value),
+        minOrder: Number(updated.min_order_amount),
+        isActive: updated.is_active,
+        expiresAt: updated.valid_until,
+      },
+    });
   } catch {
     return NextResponse.json({ error: "حدث خطأ في التحديث" }, { status: 500 });
   }
@@ -139,7 +193,7 @@ export async function DELETE(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
   try {
-    const { user, errorResponse } = await verifyAdmin(request);
+    const { errorResponse } = await verifyAdmin(request);
     if (errorResponse) return errorResponse;
 
     const { searchParams } = new URL(request.url);
@@ -150,14 +204,22 @@ export async function DELETE(request: Request) {
     }
 
     const upperCode = code.toUpperCase();
-    const coupon = COUPONS[upperCode];
-
-    if (!coupon) {
-      return NextResponse.json({ error: "كود الخصم غير موجود" }, { status: 404 });
+    const serviceClient = getSupabaseServiceClient();
+    if (!serviceClient) {
+      return NextResponse.json({ error: "خدمة غير متاحة" }, { status: 503 });
     }
 
-    // Deactivate instead of deleting to preserve usedCount data
-    coupon.isActive = false;
+    // Soft delete — deactivate instead of removing to preserve usedCount data
+    const { data: deactivated, error: deactError } = await serviceClient
+      .from("coupons")
+      .update({ is_active: false })
+      .eq("code", upperCode)
+      .select()
+      .single();
+
+    if (deactError || !deactivated) {
+      return NextResponse.json({ error: "كود الخصم غير موجود" }, { status: 404 });
+    }
 
     return NextResponse.json({ success: true, message: "تم تعطيل الكود" });
   } catch {

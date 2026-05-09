@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ShieldCheck, X, Cookie } from "lucide-react";
 
 export function CookieConsent() {
+  const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -49,7 +50,7 @@ export function CookieConsent() {
               لك. بالموافقة، ساعدنا على تقديم خدمة أفضل. يمكنك قراءة{" "}
               <button
                 onClick={() => {
-                  window.location.href = "/privacy";
+                  router.push("/privacy");
                 }}
                 className="text-primary underline underline-offset-2 hover:text-primary/80"
               >

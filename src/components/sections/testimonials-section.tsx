@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Star, ChevronRight, ChevronLeft, Quote, BadgeCheck, ExternalLink } from "lucide-react";
 
 interface Testimonial {
@@ -16,6 +17,7 @@ interface Testimonial {
 }
 
 export function TestimonialsSection() {
+  const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -215,7 +217,7 @@ export function TestimonialsSection() {
         <div className="mt-6 text-center">
           <button
             className="inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-5 py-2.5 text-sm font-semibold text-primary transition-all hover:bg-primary/10 hover:border-primary/30 hover:shadow-md"
-            onClick={() => window.location.href = '/about'}
+            onClick={() => router.push('/about')}
           >
             <ExternalLink className="size-4" />
             شاهد المزيد من التقييمات
