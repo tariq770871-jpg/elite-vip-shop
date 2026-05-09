@@ -1,53 +1,78 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
 
 /**
- * Middleware: Admin API Authentication
+ * Middleware: Session refresh + Admin API Authentication
  *
- * Protects /api/admin/* routes by verifying the Supabase auth session.
- * - Reads the Authorization header (Bearer token) or sb-* cookies
- * - Validates the session using Supabase Auth
- * - Checks that the authenticated user has an admin role
- * - Returns 401 Unauthorized if no valid session
- * - Returns 403 Forbidden if user is not an admin
- * - Allows all other routes to pass through
+ * 1. Refreshes Supabase auth sessions on every matched route by reading
+ *    and updating cookies via @supabase/ssr. This ensures server components
+ *    and API routes always have a valid session.
+ *
+ * 2. Protects /api/admin/* routes by verifying the Supabase auth session.
+ *    - Reads the Authorization header (Bearer token) or cookies
+ *    - Validates the session using Supabase Auth
+ *    - Checks that the authenticated user has an admin role
+ *    - Returns 401 Unauthorized if no valid session
+ *    - Returns 403 Forbidden if user is not an admin
+ *    - Allows all other routes to pass through
  */
-
-// Helper: create a Supabase client for middleware (uses service role to verify tokens)
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey) return null;
-  return createClient(url, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // ─── Admin API route protection ──────────────────────────────────
-  if (pathname.startsWith("/api/admin")) {
-    const supabaseAdmin = getSupabaseAdmin();
+  // ─── Step 1: Refresh session cookies on ALL matched routes ────────
+  // This ensures that server components always have fresh session data.
+  let supabaseResponse = NextResponse.next({
+    request,
+  });
 
-    // If Supabase is not configured, deny access by default
-    if (!supabaseAdmin) {
-      return NextResponse.json(
-        { error: "Authentication service unavailable" },
-        { status: 503 }
-      );
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (supabaseUrl && supabaseAnonKey) {
+      const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            // Set cookies on the request so downstream handlers can read them
+            cookiesToSet.forEach(({ name, value }) =>
+              request.cookies.set(name, value)
+            );
+            // Create a new response with updated cookies
+            supabaseResponse = NextResponse.next({
+              request,
+            });
+            // Set cookies on the response so the browser stores them
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options)
+            );
+          },
+        },
+      });
+
+      // Refresh the session — this will update the cookie if needed
+      await supabase.auth.getUser();
     }
+  } catch {
+    // If session refresh fails, continue without auth context
+    // (e.g., user is not logged in)
+  }
 
-    // Extract token from Authorization header (Bearer <token>)
+  // ─── Step 2: Admin API route protection ──────────────────────────
+  if (pathname.startsWith("/api/admin")) {
+    // Try Authorization header first (set by client-side API calls)
     const authHeader = request.headers.get("authorization");
-    const token =
+    const headerToken =
       authHeader?.startsWith("Bearer ") && authHeader.split(" ")[1];
 
-    // Fallback: check for sb-access-token cookie (Supabase default cookie name)
+    // Fallback: check for sb-access-token cookie (set by @supabase/ssr browser client)
     const cookieToken = request.cookies.get("sb-access-token")?.value;
 
-    const accessToken = token || cookieToken;
+    const accessToken = headerToken || cookieToken;
 
     if (!accessToken) {
       return NextResponse.json(
@@ -56,7 +81,23 @@ export async function middleware(request: NextRequest) {
       );
     }
 
-    // Verify the token with Supabase Auth
+    // Verify the token with Supabase Auth using service role
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceKey) {
+      return NextResponse.json(
+        { error: "Authentication service unavailable" },
+        { status: 503 }
+      );
+    }
+
+    // Use a fresh client with service role to verify the token
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
     const {
       data: { user },
       error,
@@ -92,15 +133,31 @@ export async function middleware(request: NextRequest) {
     requestHeaders.set("x-user-email", user.email || "");
     requestHeaders.set("x-user-role", "admin");
 
-    return NextResponse.next({
+    // Merge with any cookie updates from Step 1
+    const adminResponse = NextResponse.next({
       request: { headers: requestHeaders },
     });
+
+    // Preserve any cookie updates from the session refresh
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      adminResponse.cookies.set(cookie.name, cookie.value);
+    });
+
+    return adminResponse;
   }
 
-  // ─── All other routes pass through ───────────────────────────────
-  return NextResponse.next();
+  // ─── All other routes — return session-refreshed response ─────────
+  return supabaseResponse;
 }
 
 export const config = {
-  matcher: ["/api/admin/:path*"],
+  // Match all routes except static assets and Next.js internals
+  matcher: [
+    "/api/:path*",
+    "/dashboard/:path*",
+    "/orders/:path*",
+    "/cart/:path*",
+    "/profile/:path*",
+    "/checkout/:path*",
+  ],
 };

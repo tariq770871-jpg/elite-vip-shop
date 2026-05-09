@@ -10,13 +10,13 @@
  *   1. Reads cookies from the request context (no localStorage)
  *   2. Uses SUPABASE_SERVICE_ROLE_KEY (server-only, no NEXT_PUBLIC_ prefix)
  *      for admin/service operations that bypass RLS
- *   3. Uses the anon key + user's access token for user-scoped operations
- *      that respect RLS
+ *   3. Uses @supabase/ssr createServerClient for cookie-based auth
  *
  * IMPORTANT: This file must ONLY be imported in server-side code.
  * Do NOT import this in client components.
  */
 
+import { createServerClient as createSsrServerClient } from "@supabase/ssr";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
@@ -53,11 +53,11 @@ export function getSupabaseServiceClient(): SupabaseClient | null {
 }
 
 // ─── Server Component Client ────────────────────────────────────
-// Respects RLS — uses the anon key + user's access token from cookies
+// Uses @supabase/ssr createServerClient with cookie-based auth
 
 /**
  * Create a Supabase client for Server Components that respects RLS.
- * Reads the user's access token from cookies to authenticate requests.
+ * Reads the user's session from cookies set by the browser client.
  *
  * Usage in Server Components:
  * ```tsx
@@ -74,59 +74,24 @@ export async function createServerClient(): Promise<SupabaseClient | null> {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
 
   const cookieStore = await cookies();
-  const accessToken = cookieStore.get("sb-access-token")?.value;
-  const refreshToken = cookieStore.get("sb-refresh-token")?.value;
 
-  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-    global: {
-      headers: accessToken
-        ? {
-            Authorization: `Bearer ${accessToken}`,
-          }
-        : {},
+  return createSsrServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        } catch {
+          // The `setAll` method was called from a Server Component.
+          // This can be ignored if you have middleware refreshing sessions.
+        }
+      },
     },
   });
-
-  // If we have a refresh token but the access token is expired,
-  // attempt to refresh the session
-  if (accessToken) {
-    const { data: userData, error } = await client.auth.getUser(accessToken);
-
-    if (error && refreshToken) {
-      // Access token expired — try to refresh
-      const { data: refreshData, error: refreshError } =
-        await client.auth.refreshSession({
-          refresh_token: refreshToken,
-        });
-
-      if (!refreshError && refreshData.session) {
-        // Return a new client with the refreshed access token
-        return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
-          },
-          global: {
-            headers: {
-              Authorization: `Bearer ${refreshData.session.access_token}`,
-            },
-          },
-        });
-      }
-    }
-
-    // If getUser succeeded, the client is already configured correctly
-    if (!error && userData.user) {
-      return client;
-    }
-  }
-
-  // No valid session — return client without auth context (public-only RLS)
-  return client;
 }
 
 // ─── Route Handler Client ───────────────────────────────────────
