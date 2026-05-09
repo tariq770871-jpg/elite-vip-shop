@@ -134,7 +134,7 @@ function StatCard({
 /*  Telegram Settings Component                                         */
 /* ------------------------------------------------------------------ */
 
-function TelegramSettings() {
+function TelegramSettings({ authHeaders }: { authHeaders: Record<string, string> }) {
   const [botToken, setBotToken] = useState("");
   const [chatId, setChatId] = useState("");
   const [botStatus, setBotStatus] = useState<{ configured: boolean; chatId?: string | null } | null>(null);
@@ -143,7 +143,7 @@ function TelegramSettings() {
 
   const checkStatus = async () => {
     try {
-      const res = await fetch("/api/telegram");
+      const res = await fetch("/api/telegram", { headers: authHeaders });
       if (res.ok) {
         const data = await res.json();
         setBotStatus({ configured: data.configured, chatId: data.chatId });
@@ -161,7 +161,7 @@ function TelegramSettings() {
     try {
       const res = await fetch("/api/telegram", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ botToken, chatId }),
       });
       const data = await res.json();
@@ -178,7 +178,7 @@ function TelegramSettings() {
   };
 
   const handleDisconnect = async () => {
-    await fetch("/api/telegram", { method: "DELETE" });
+    await fetch("/api/telegram", { method: "DELETE", headers: authHeaders });
     setBotStatus({ configured: false });
     toast.success("تم إلغاء الربط");
   };
@@ -321,6 +321,9 @@ interface AdminOrder {
 }
 
 function AdminDashboard() {
+  const { session } = useAuthStore();
+  const authToken = session?.access_token || "";
+  const authHeaders: Record<string, string> = authToken ? { Authorization: `Bearer ${authToken}` } : {};
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [stats, setStats] = useState({ products: 0, users: 0, orders: 0, revenue: 0 });
@@ -460,8 +463,8 @@ function AdminDashboard() {
     setLoading(true);
     try {
       const [ordersRes, usersRes] = await Promise.all([
-        fetch("/api/admin/orders?limit=100"),
-        fetch("/api/admin/users"),
+        fetch("/api/admin/orders?limit=100", { headers: authHeaders }),
+        fetch("/api/admin/users", { headers: authHeaders }),
       ]);
 
       if (ordersRes.ok) {
@@ -522,7 +525,7 @@ function AdminDashboard() {
     try {
       const res = await fetch("/api/admin/orders", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ orderId, status: newStatus }),
       });
       if (res.ok) {
@@ -550,7 +553,7 @@ function AdminDashboard() {
     try {
       const res = await fetch("/api/admin/users", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ userId: editUser.id, name: editName }),
       });
       if (res.ok) {
@@ -568,6 +571,7 @@ function AdminDashboard() {
     try {
       const res = await fetch(`/api/admin/users?userId=${encodeURIComponent(id)}`, {
         method: "DELETE",
+        headers: authHeaders,
       });
       if (res.ok) {
         setUsers((prev) => prev.filter((u) => u.id !== id));
@@ -996,7 +1000,7 @@ function AdminDashboard() {
           <Bot className="size-5" />
           إشعارات تيليجرام
         </h2>
-        <TelegramSettings />
+        <TelegramSettings authHeaders={authHeaders} />
       </section>
     </div>
   );
