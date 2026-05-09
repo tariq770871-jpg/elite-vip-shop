@@ -14,13 +14,14 @@ import {
 
 const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: typeof Clock }> = {
   pending: { label: "قيد الانتظار", color: "text-amber-700 dark:text-amber-400", bgColor: "bg-amber-100 dark:bg-amber-950/40", icon: Clock },
-  new: { label: "جديد", color: "text-emerald-700 dark:text-emerald-400", bgColor: "bg-emerald-100 dark:bg-emerald-950/40", icon: Clock },
-  reviewing: { label: "قيد المراجعة", color: "text-amber-700 dark:text-amber-400", bgColor: "bg-amber-100 dark:bg-amber-950/40", icon: Clock },
   confirmed: { label: "مؤكد", color: "text-sky-700 dark:text-sky-400", bgColor: "bg-sky-100 dark:bg-sky-950/40", icon: CheckCircle2 },
   processing: { label: "قيد المعالجة", color: "text-orange-700 dark:text-orange-400", bgColor: "bg-orange-100 dark:bg-orange-950/40", icon: Clock },
   shipped: { label: "مشحون", color: "text-purple-700 dark:text-purple-400", bgColor: "bg-purple-100 dark:bg-purple-950/40", icon: Truck },
   delivered: { label: "تم التوصيل", color: "text-green-700 dark:text-green-400", bgColor: "bg-green-100 dark:bg-green-950/40", icon: CheckCircle2 },
   cancelled: { label: "ملغى", color: "text-red-700 dark:text-red-400", bgColor: "bg-red-100 dark:bg-red-950/40", icon: XCircle },
+  // Legacy statuses for backward compatibility
+  new: { label: "جديد", color: "text-emerald-700 dark:text-emerald-400", bgColor: "bg-emerald-100 dark:bg-emerald-950/40", icon: Clock },
+  reviewing: { label: "قيد المراجعة", color: "text-amber-700 dark:text-amber-400", bgColor: "bg-amber-100 dark:bg-amber-950/40", icon: Clock },
 };
 
 const statusSteps = ["pending", "confirmed", "processing", "shipped", "delivered"] as const;

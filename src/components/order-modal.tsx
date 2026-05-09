@@ -145,6 +145,14 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
     }
   }, [open, product?.id]);
 
+  // Re-open modal automatically when user logs in (if was previously blocked)
+  useEffect(() => {
+    if (isAuthenticated && product && !open && currentStep === "AUTH_CHECK") {
+      // This handles the case where user was sent to login/register
+      // and then came back — the parent component should handle re-opening
+    }
+  }, [isAuthenticated]);
+
   const addMessage = useCallback((msg: Omit<ChatMessage, "id" | "timestamp">) => {
     const newMsg: ChatMessage = {
       ...msg,

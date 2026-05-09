@@ -62,12 +62,18 @@ import { toast } from "sonner";
 /* ------------------------------------------------------------------ */
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
-  new: "جديد",
-  reviewing: "قيد المراجعة",
+  pending: "قيد الانتظار",
   confirmed: "مؤكد",
+  processing: "قيد المعالجة",
   shipped: "مشحون",
   delivered: "تم التوصيل",
   cancelled: "ملغى",
+};
+
+// Legacy status labels (for orders with old statuses)
+const LEGACY_STATUS_LABELS: Record<string, string> = {
+  new: "جديد",
+  reviewing: "قيد المراجعة",
   refunded: "مسترجع",
 };
 
@@ -88,14 +94,17 @@ const roleBadgeClass: Record<string, string> = {
 };
 
 function statusBadge(status: string) {
-  const label = ORDER_STATUS_LABELS[status] || status;
+  const label = ORDER_STATUS_LABELS[status] || LEGACY_STATUS_LABELS[status] || status;
   const map: Record<string, string> = {
-    new: "bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30",
-    reviewing: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/30",
+    pending: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
     confirmed: "bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30",
+    processing: "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/30",
     shipped: "bg-purple-500/15 text-purple-700 dark:text-purple-400 border-purple-500/30",
     delivered: "bg-green-700/15 text-green-800 dark:text-green-300 border-green-700/30",
     cancelled: "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30",
+    // Legacy
+    new: "bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30",
+    reviewing: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/30",
     refunded: "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/30",
   };
   return (
@@ -317,6 +326,15 @@ interface AdminOrder {
   created_at: string;
   items: Array<{ name: string; quantity: number; price: number }>;
   items_count: number;
+  // Chat-based ordering fields
+  delivery_type?: string | null;
+  province?: string | null;
+  district?: string | null;
+  street?: string | null;
+  landmark?: string | null;
+  product_name_snapshot?: string | null;
+  quantity?: number | null;
+  total_price?: number | null;
 }
 
 function AdminDashboard() {
@@ -702,14 +720,15 @@ function AdminDashboard() {
             <p className="text-muted-foreground">لا توجد طلبات بعد</p>
           </div>
         ) : (
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-[500px] overflow-y-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>رقم الطلب</TableHead>
+                  <TableHead>المنتج</TableHead>
                   <TableHead>العميل</TableHead>
                   <TableHead>الهاتف</TableHead>
-                  <TableHead>التاريخ</TableHead>
+                  <TableHead>الاستلام</TableHead>
                   <TableHead>المبلغ</TableHead>
                   <TableHead>الحالة</TableHead>
                 </TableRow>
@@ -720,12 +739,28 @@ function AdminDashboard() {
                     <TableCell className="font-medium text-xs" dir="ltr">
                       #{(o.order_number || o.order_id).slice(-8).toUpperCase()}
                     </TableCell>
-                    <TableCell className="max-w-[120px] truncate">{o.customer_name}</TableCell>
-                    <TableCell className="text-muted-foreground text-xs" dir="ltr">{o.customer_phone || "—"}</TableCell>
-                    <TableCell className="text-muted-foreground text-xs">
-                      {new Date(o.created_at).toLocaleDateString("ar-YE", { month: "short", day: "numeric" })}
+                    <TableCell className="max-w-[140px] truncate text-xs">
+                      {o.product_name_snapshot || (o.items?.[0]?.name || "—")}
+                      {o.quantity && o.quantity > 1 && (
+                        <span className="text-muted-foreground mr-1">×{o.quantity}</span>
+                      )}
                     </TableCell>
-                    <TableCell className="font-semibold text-gold-gradient">
+                    <TableCell className="max-w-[100px] truncate text-xs">{o.customer_name}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs" dir="ltr">{o.customer_phone || "—"}</TableCell>
+                    <TableCell className="text-xs">
+                      {o.delivery_type === "delivery" ? (
+                        <Badge variant="outline" className="text-[10px] gap-0.5 border-amber-500/30 text-amber-600">
+                          🚚 توصيل
+                        </Badge>
+                      ) : o.delivery_type === "pickup" ? (
+                        <Badge variant="outline" className="text-[10px] gap-0.5 border-emerald-500/30 text-emerald-600">
+                          🏪 استلام
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-semibold text-gold-gradient text-xs">
                       {Number(o.total_amount).toLocaleString("ar-SA")} ر.ي
                     </TableCell>
                     <TableCell>
@@ -1082,7 +1117,8 @@ function SellerDashboard() {
 
   const fetchSellerOrders = async (signal?: AbortSignal) => {
     try {
-      const res = await fetch("/api/orders", { headers: authHeaders, signal });
+      // Fetch seller-specific orders (orders for products belonging to this seller)
+      const res = await fetch("/api/orders?role=seller", { headers: authHeaders, signal });
       if (res.ok) {
         const data = await res.json();
         const orderList = data.orders || [];

@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 
     let query = supabase
       .from("orders")
-      .select("order_id, order_number, user_id, status, total_amount, notes, created_at, updated_at")
+      .select("order_id, order_number, user_id, status, total_amount, notes, created_at, updated_at, delivery_type, customer_name, customer_phone, customer_address, province, district, street, landmark, seller_id, product_id, product_name_snapshot, unit_price, quantity, total_price")
       .order("created_at", { ascending: false })
       .limit(limit);
 
@@ -71,13 +71,17 @@ export async function GET(request: Request) {
 
     const enrichedOrders = orders.map((o) => {
       const user = usersMap[o.user_id];
-      // Try to parse customer name from notes if not in users table
-      let customerName = user?.name || "عميل";
-      let customerPhone = user?.phone || "";
-      if (o.notes) {
+      // Use dedicated columns first, fallback to notes parsing
+      let customerName = (o as any).customer_name || user?.name || "عميل";
+      let customerPhone = (o as any).customer_phone || user?.phone || "";
+
+      // If still no data, try parsing from notes
+      if ((!customerName || customerName === "عميل") && o.notes) {
         const nameMatch = o.notes.match(/العميل:\s*([^|]+)/);
-        const phoneMatch = o.notes.match(/الهاتف:\s*([^|]+)/);
         if (nameMatch) customerName = nameMatch[1].trim();
+      }
+      if (!customerPhone && o.notes) {
+        const phoneMatch = o.notes.match(/الهاتف:\s*([^|]+)/);
         if (phoneMatch) customerPhone = phoneMatch[1].trim();
       }
 
@@ -93,6 +97,18 @@ export async function GET(request: Request) {
         notes: o.notes,
         created_at: o.created_at,
         updated_at: o.updated_at,
+        // New fields from chat-based ordering
+        delivery_type: (o as any).delivery_type || null,
+        province: (o as any).province || null,
+        district: (o as any).district || null,
+        street: (o as any).street || null,
+        landmark: (o as any).landmark || null,
+        seller_id: (o as any).seller_id || null,
+        product_id: (o as any).product_id || null,
+        product_name_snapshot: (o as any).product_name_snapshot || null,
+        unit_price: (o as any).unit_price || null,
+        quantity: (o as any).quantity || null,
+        total_price: (o as any).total_price || null,
         items: itemsMap[o.order_id] || [],
         items_count: (itemsMap[o.order_id] || []).length,
       };
@@ -128,7 +144,8 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "معرف الطلب والحالة مطلوبان" }, { status: 400 });
     }
 
-    const validStatuses = ["new", "reviewing", "confirmed", "shipped", "delivered", "cancelled", "refunded"];
+    // Updated valid statuses for chat-based ordering system
+    const validStatuses = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
     if (!validStatuses.includes(status)) {
       return NextResponse.json({ error: "حالة غير صالحة" }, { status: 400 });
     }

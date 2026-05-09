@@ -9,6 +9,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { useNavigation } from "@/lib/navigation";
+import { useAuthStore } from "@/store/auth-store";
 import { useRecentlyViewedStore } from "@/store/recently-viewed-store";
 import { getProducts } from "@/lib/supabase-data";
 import { getWhatsAppOrderLink } from "@/lib/mock-data";
@@ -27,11 +28,13 @@ export function ProductDetailSection({ productId: productIdProp }: ProductDetail
   const { productId: navProductId, navigateTo } = useNavigation();
   const effectiveProductId = productIdProp || navProductId;
   const addRecentlyViewed = useRecentlyViewedStore((s) => s.addItem);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(!!effectiveProductId);
   const [productRating, setProductRating] = useState<{ avg: number; count: number }>({ avg: 0, count: 0 });
   const [orderModalOpen, setOrderModalOpen] = useState(false);
+  const [pendingOrderAfterLogin, setPendingOrderAfterLogin] = useState(false);
   const fetchedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -66,6 +69,22 @@ export function ProductDetailSection({ productId: productIdProp }: ProductDetail
 
   const handleGoBack = () => {
     navigateTo("products");
+  };
+
+  // Auto-open order modal after login if user was trying to order
+  useEffect(() => {
+    if (isAuthenticated && pendingOrderAfterLogin && product) {
+      setPendingOrderAfterLogin(false);
+      setOrderModalOpen(true);
+    }
+  }, [isAuthenticated, pendingOrderAfterLogin, product]);
+
+  const handleOrderClick = () => {
+    if (!isAuthenticated) {
+      // Save the intent and navigate to login
+      setPendingOrderAfterLogin(true);
+    }
+    setOrderModalOpen(true);
   };
 
   if (loading) {
@@ -166,7 +185,7 @@ export function ProductDetailSection({ productId: productIdProp }: ProductDetail
               <div className="flex items-center gap-3">
                 {/* Golden Order Button - PRIMARY */}
                 <button
-                  onClick={() => setOrderModalOpen(true)}
+                  onClick={handleOrderClick}
                   className="flex-1 flex items-center justify-center gap-3 text-base !py-4 rounded-xl
                     bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-bold
                     shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:from-amber-400 hover:to-yellow-500

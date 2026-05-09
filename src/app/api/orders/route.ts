@@ -20,7 +20,6 @@ export async function POST(request: Request) {
       items, notes, paymentMethod,
       customerName, customerPhone, customerAddress,
       discount, couponCode,
-      // NEW FIELDS for chat-based ordering:
       deliveryType,    // "delivery" or "pickup"
       province,        // المحافظة
       district,        // المديرية
@@ -39,14 +38,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, orderId: "local", orderNumber: "N/A" });
     }
 
-    // Generate order number using crypto.randomUUID() for uniqueness
+    // Generate order number
     const orderNumber = `ORD-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
 
     // ── Server-side price verification ──
-    // Extract only product IDs and quantities from client — ignore client-provided prices
     const productIds = items.map((item: { id: string }) => item.id);
 
-    // Validate quantities before proceeding
+    // Validate quantities
     for (const item of items) {
       const qty = Number(item.quantity);
       if (!Number.isInteger(qty) || qty < 1 || qty > 100) {
@@ -60,7 +58,7 @@ export async function POST(request: Request) {
     // Fetch real prices from the products table
     const { data: dbProducts, error: dbError } = await supabase
       .from("products")
-      .select("product_id, price, sale_price, name, availability")
+      .select("product_id, price, sale_price, name, availability, seller_id")
       .in("product_id", productIds);
 
     if (dbError) {
@@ -68,14 +66,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "فشل في التحقق من المنتجات" }, { status: 500 });
     }
 
-    // Build a lookup map for quick access
+    // Build a lookup map
     const productMap = new Map(
-      (dbProducts || []).map((p: { product_id: string; price: number; sale_price: number | null; name: string; availability: boolean }) => [p.product_id, p])
+      (dbProducts || []).map((p: { product_id: string; price: number; sale_price: number | null; name: string; availability: boolean; seller_id: string | null }) => [p.product_id, p])
     );
 
     // Validate all products exist and are available, then calculate total from DB prices
     let calculatedTotal = 0;
-    const validatedItems: Array<{ productId: string; productName: string; quantity: number; price: number }> = [];
+    const validatedItems: Array<{ productId: string; productName: string; quantity: number; price: number; sellerId: string | null }> = [];
 
     for (const item of items) {
       const dbProduct = productMap.get(item.id);
@@ -85,7 +83,6 @@ export async function POST(request: Request) {
       if (!dbProduct.availability) {
         return NextResponse.json({ error: `المنتج غير متوفر: ${dbProduct.name}` }, { status: 400 });
       }
-      // Use DB price — sale_price if valid, otherwise regular price
       const effectivePrice = dbProduct.sale_price != null && dbProduct.sale_price < dbProduct.price
         ? Number(dbProduct.sale_price)
         : Number(dbProduct.price);
@@ -96,6 +93,7 @@ export async function POST(request: Request) {
         productName: dbProduct.name,
         quantity: item.quantity,
         price: effectivePrice,
+        sellerId: dbProduct.seller_id || null,
       });
     }
 
@@ -108,17 +106,13 @@ export async function POST(request: Request) {
     const pmLabel = paymentNames[paymentMethod] || paymentMethod || "غير محدد";
 
     let notesContent = notes || "";
-    // Add payment method if no custom notes
     if (!notesContent) {
       notesContent = `طريقة الدفع: ${pmLabel}`;
     }
-
-    // Add customer info
     if (customerName) notesContent += ` | العميل: ${sanitize(customerName)}`;
     if (customerPhone) notesContent += ` | الهاتف: ${sanitize(customerPhone)}`;
     if (customerAddress) notesContent += ` | العنوان: ${sanitize(customerAddress)}`;
 
-    // Add delivery type info
     if (deliveryType === "delivery") {
       notesContent += ` | نوع الاستلام: توصيل`;
       if (province) notesContent += ` | المحافظة: ${sanitize(province)}`;
@@ -132,18 +126,19 @@ export async function POST(request: Request) {
     if (discount) notesContent += ` | خصم: ${discount} ر.ي`;
     if (couponCode) notesContent += ` | كود: ${sanitize(couponCode)}`;
 
-    // Insert order — try with new columns first, fallback to basic columns if migration not run yet
-    const orderInsertBase: Record<string, unknown> = {
+    // Get the first product's seller_id for the order (primary seller)
+    const primarySellerId = validatedItems.length > 0 ? validatedItems[0].sellerId : null;
+    // Get the first product info for the order snapshot
+    const primaryProduct = validatedItems.length > 0 ? validatedItems[0] : null;
+
+    // Insert order with ALL new columns
+    const orderInsert: Record<string, unknown> = {
       order_number: orderNumber,
       user_id: userId,
       status: "pending",
       total_amount: calculatedTotal,
       notes: notesContent,
-    };
-
-    // Add new delivery columns (may not exist if migration not yet run)
-    const orderInsertExtended: Record<string, unknown> = {
-      ...orderInsertBase,
+      // New chat-based ordering columns
       delivery_type: deliveryType || "pickup",
       customer_name: customerName || null,
       customer_phone: customerPhone || null,
@@ -152,24 +147,38 @@ export async function POST(request: Request) {
       district: district || null,
       street: street || null,
       landmark: landmark || null,
+      seller_id: primarySellerId,
+      // Product snapshot columns
+      product_id: primaryProduct?.productId || null,
+      product_name_snapshot: primaryProduct?.productName || null,
+      unit_price: primaryProduct?.price || null,
+      quantity: primaryProduct?.quantity || 1,
+      total_price: primaryProduct ? primaryProduct.price * primaryProduct.quantity : calculatedTotal,
     };
 
+    // Try extended insert first, fallback to basic if migration not run yet
     let order: any = null;
     let orderError: any = null;
 
-    // Try extended insert first (with new columns)
     const extendedResult = await supabase
       .from("orders")
-      .insert(orderInsertExtended)
+      .insert(orderInsert)
       .select()
       .single();
 
     if (extendedResult.error && extendedResult.error.message?.includes("column")) {
-      // Fallback: columns don't exist yet, insert without them
+      // Fallback: new columns don't exist yet, insert without them
       console.warn("New columns not yet migrated, using basic insert");
+      const basicInsert: Record<string, unknown> = {
+        order_number: orderNumber,
+        user_id: userId,
+        status: "pending",
+        total_amount: calculatedTotal,
+        notes: notesContent,
+      };
       const basicResult = await supabase
         .from("orders")
-        .insert(orderInsertBase)
+        .insert(basicInsert)
         .select()
         .single();
       order = basicResult.data;
@@ -202,7 +211,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "فشل في حفظ بنود الطلب" }, { status: 500 });
     }
 
-    // Increment coupon used_count if a coupon was applied (now that order is confirmed)
+    // Increment coupon used_count if a coupon was applied
     if (couponCode) {
       try {
         const serviceClient = getSupabaseServiceClient();
@@ -215,7 +224,6 @@ export async function POST(request: Request) {
 
           if (couponData) {
             const newCount = (couponData.used_count || 0) + 1;
-            // Only increment if below max_uses (or unlimited)
             if (!couponData.max_uses || newCount <= couponData.max_uses) {
               await serviceClient
                 .from("coupons")
@@ -225,11 +233,11 @@ export async function POST(request: Request) {
           }
         }
       } catch {
-        // Non-critical: coupon usage tracking should not block order creation
+        // Non-critical
       }
     }
 
-    // Send Telegram notification (non-blocking) — uses server-verified prices
+    // Send Telegram notification (non-blocking)
     sendOrderNotification({
       orderNumber: order.order_number,
       customerName: customerName || undefined,
@@ -262,7 +270,7 @@ export async function POST(request: Request) {
   }
 }
 
-// GET: Fetch orders for a user
+// GET: Fetch orders for a user (or seller's orders)
 export async function GET(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
@@ -273,18 +281,33 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "غير مصرح به" }, { status: 401 });
     }
 
-    // Use authenticated user's ID — users can only access their own orders
     const userId = user.id;
+    const { searchParams } = new URL(request.url);
+    const role = searchParams.get("role"); // "seller" to fetch seller orders
 
     if (!supabase) {
       return NextResponse.json({ orders: [] });
     }
 
-    const { data: orders, error } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false });
+    let query;
+
+    if (role === "seller") {
+      // Seller: fetch orders where seller_id = their user_id
+      query = supabase
+        .from("orders")
+        .select("*")
+        .eq("seller_id", userId)
+        .order("created_at", { ascending: false });
+    } else {
+      // Regular user: fetch their own orders
+      query = supabase
+        .from("orders")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+    }
+
+    const { data: orders, error } = await query;
 
     if (error) {
       console.error("Orders fetch error:", error);
@@ -308,7 +331,7 @@ export async function GET(request: Request) {
           itemsMap[item.order_id].push({
             name: item.product_name,
             quantity: item.quantity,
-            price: item.price,
+            price: Number(item.price),
           });
         }
         // Attach items to orders
