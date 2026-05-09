@@ -137,65 +137,148 @@ function StatCard({
 function TelegramSettings() {
   const [botToken, setBotToken] = useState("");
   const [chatId, setChatId] = useState("");
-  const [botStatus, setBotStatus] = useState<{ configured: boolean; queueSize: number } | null>(null);
-  const [testLoading, setTestLoading] = useState(false);
+  const [botStatus, setBotStatus] = useState<{ configured: boolean; chatId?: string | null } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   const checkStatus = async () => {
     try {
-      const res = await fetch("/health?XTransformPort=3005");
-      const data = await res.json();
-      setBotStatus({ configured: data.configured, queueSize: data.queueSize });
+      const res = await fetch("/api/telegram");
+      if (res.ok) {
+        const data = await res.json();
+        setBotStatus({ configured: data.configured, chatId: data.chatId });
+      }
     } catch {
-      setBotStatus({ configured: false, queueSize: 0 });
+      setBotStatus({ configured: false });
     }
   };
 
   useEffect(() => { checkStatus(); }, []);
 
-  const handleTest = async () => {
-    if (!botToken || !chatId) { toast.error("أدخل رمز البوت ومعرف المحادثة"); return; }
-    setTestLoading(true);
+  const handleSave = async () => {
+    if (!botToken || !chatId) { toast.error("أدخل رمز البوت ومعرف المحادثة أولاً"); return; }
+    setSaving(true);
     try {
-      const res = await fetch("/configure?XTransformPort=3005", {
+      const res = await fetch("/api/telegram", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ botToken, chatId }),
       });
       const data = await res.json();
       if (data.success) {
-        toast.success("تم حفظ الإعدادات!");
+        toast.success("✅ تم الحفظ! وصلتك رسالة تجريبية على تيليجرام");
+        setBotToken("");
+        setChatId("");
         checkStatus();
+      } else {
+        toast.error(data.error || "حدث خطأ");
       }
-    } catch { toast.error("خطأ"); }
-    finally { setTestLoading(false); }
+    } catch { toast.error("خطأ في الاتصال"); }
+    finally { setSaving(false); }
+  };
+
+  const handleDisconnect = async () => {
+    await fetch("/api/telegram", { method: "DELETE" });
+    setBotStatus({ configured: false });
+    toast.success("تم إلغاء الربط");
   };
 
   return (
     <div className="space-y-4">
+      {/* Status */}
       <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
         <div className="flex items-center gap-2">
           {botStatus?.configured ? (
-            <><Wifi className="size-4 text-green-500" /><span className="text-sm font-medium text-green-700 dark:text-green-400">البوت متصل</span></>
+            <>
+              <Wifi className="size-4 text-green-500" />
+              <span className="text-sm font-medium text-green-700 dark:text-green-400">البوت متصل ويعمل</span>
+            </>
           ) : (
-            <><WifiOff className="size-4 text-amber-500" /><span className="text-sm font-medium text-amber-700 dark:text-amber-400">غير متصل</span></>
+            <>
+              <WifiOff className="size-4 text-amber-500" />
+              <span className="text-sm font-medium text-amber-700 dark:text-amber-400">غير مفعّل بعد</span>
+            </>
           )}
         </div>
-        <Button variant="ghost" size="sm" onClick={checkStatus}><RefreshCw className="size-3" /></Button>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label className="text-sm">رمز البوت (Bot Token)</Label>
-          <Input value={botToken} onChange={(e) => setBotToken(e.target.value)} placeholder="123456:ABC-DEF..." dir="ltr" type="password" />
+        <div className="flex gap-2">
+          {botStatus?.configured && (
+            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive text-xs" onClick={handleDisconnect}>
+              قطع الاتصال
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" onClick={checkStatus}>
+            <RefreshCw className="size-3" />
+          </Button>
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-sm">معرف المحادثة (Chat ID)</Label>
-          <Input value={chatId} onChange={(e) => setChatId(e.target.value)} placeholder="123456789" dir="ltr" />
-        </div>
       </div>
-      <Button onClick={handleTest} disabled={testLoading} variant="outline" className="w-full gap-2">
-        {testLoading ? <RefreshCw className="size-4 animate-spin" /> : <Send className="size-4" />}
-        حفظ واختبار الإرسال
-      </Button>
+
+      {/* Setup Guide Toggle */}
+      <button
+        className="flex w-full items-center justify-between text-sm text-muted-foreground hover:text-foreground transition-colors"
+        onClick={() => setShowGuide(!showGuide)}
+      >
+        <span>كيف أنشئ بوت تيليجرام؟ (خطوات سريعة)</span>
+        <ChevronDown className={`size-4 transition-transform ${showGuide ? "rotate-180" : ""}`} />
+      </button>
+
+      {showGuide && (
+        <div className="rounded-lg border bg-muted/30 p-4 space-y-2 text-sm">
+          <p className="font-medium">خطوات إنشاء البوت:</p>
+          <ol className="space-y-1.5 list-decimal list-inside text-muted-foreground">
+            <li>افتح تيليجرام وابحث عن <span className="font-mono bg-muted px-1 rounded" dir="ltr">@BotFather</span></li>
+            <li>أرسل له <span className="font-mono bg-muted px-1 rounded" dir="ltr">/newbot</span></li>
+            <li>اختر اسماً للبوت — مثل: <span dir="ltr">EliteShopBot</span></li>
+            <li>انسخ رمز البوت الذي يرسله لك</li>
+            <li>افتح البوت الجديد واضغط <b>Start</b></li>
+            <li>افتح هذا الرابط في المتصفح:<br/>
+              <span className="font-mono text-xs bg-muted px-1 rounded break-all" dir="ltr">
+                https://api.telegram.org/bot<b>TOKEN</b>/getUpdates
+              </span><br/>
+              <span className="text-xs">استبدل TOKEN برمز البوت وستجد Chat ID في "id"</span>
+            </li>
+          </ol>
+        </div>
+      )}
+
+      {/* Input Fields */}
+      {!botStatus?.configured && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label className="text-sm">رمز البوت (Bot Token)</Label>
+            <Input
+              value={botToken}
+              onChange={(e) => setBotToken(e.target.value)}
+              placeholder="1234567890:ABC-DEF..."
+              dir="ltr"
+              type="password"
+              className="font-mono text-xs"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm">معرف المحادثة (Chat ID)</Label>
+            <Input
+              value={chatId}
+              onChange={(e) => setChatId(e.target.value)}
+              placeholder="123456789"
+              dir="ltr"
+              className="font-mono text-xs"
+            />
+          </div>
+        </div>
+      )}
+
+      {!botStatus?.configured && (
+        <Button onClick={handleSave} disabled={saving} className="btn-3d-sm w-full gap-2">
+          {saving ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+          حفظ وإرسال رسالة تجريبية
+        </Button>
+      )}
+
+      {botStatus?.configured && (
+        <p className="text-sm text-center text-muted-foreground">
+          ✅ سيصلك إشعار على تيليجرام فور وضع أي طلب جديد
+        </p>
+      )}
     </div>
   );
 }
