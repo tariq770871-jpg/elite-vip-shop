@@ -111,20 +111,17 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="VIP Shop" />
         <meta name="application-name" content="VIP Shop" />
         <meta name="msapplication-TileColor" content="#d4a843" />
-        <meta name="format-detection" content="telephone=no" />
-        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        <link rel="manifest" type="application/manifest+json" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <meta name="format-detection" content="telephone=yes" />
         <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
         {/* Google Search Console Verification */}
         <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GSC_VERIFICATION || ""} />
         {/* Google Analytics GA4 - Elite VIP Shop */}
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-GB8NMT2G45"
+          src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-GB8NMT2G45'}`}
           strategy="afterInteractive"
         />
         <Script id="google-analytics" strategy="afterInteractive">
-          {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-GB8NMT2G45');`}
+          {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-GB8NMT2G45'}');`}
         </Script>
         <script
           type="application/ld+json"

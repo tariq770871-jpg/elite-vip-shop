@@ -159,16 +159,26 @@ export function ProductDetailSection({ productId: productIdProp }: ProductDetail
               </span>
             </div>
 
-            <a
-              href={getWhatsAppOrderLink(product.name)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-3d-whatsapp flex items-center justify-center gap-3 text-base no-underline !py-4"
-              disabled={!product.availability}
-            >
-              <WhatsAppIcon size={24} className="size-6" />
-              اطلب عبر واتساب
-            </a>
+            {product.availability ? (
+              <a
+                href={getWhatsAppOrderLink(product.name)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-3d-whatsapp flex items-center justify-center gap-3 text-base no-underline !py-4"
+              >
+                <WhatsAppIcon size={24} className="size-6" />
+                اطلب عبر واتساب
+              </a>
+            ) : (
+              <button
+                disabled
+                className="btn-3d-whatsapp flex items-center justify-center gap-3 text-base !py-4 opacity-50 cursor-not-allowed"
+                aria-disabled="true"
+              >
+                <WhatsAppIcon size={24} className="size-6" />
+                اطلب عبر واتساب
+              </button>
+            )}
 
             <div className="rounded-xl border bg-muted/50 p-4">
               <p className="text-xs text-muted-foreground mb-1">البائع</p>

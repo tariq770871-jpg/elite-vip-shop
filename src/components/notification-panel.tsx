@@ -65,7 +65,7 @@ export function NotificationPanel({ open, onClose }: NotificationPanelProps) {
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="left" className="flex w-full flex-col sm:max-w-md">
+      <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
         <SheetHeader>
           <SheetTitle className="flex items-center justify-between text-right">
             <div className="flex items-center gap-2">

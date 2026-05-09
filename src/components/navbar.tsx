@@ -248,7 +248,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
               </Button>
             </SheetTrigger>
             <SheetContent
-              side="left"
+              side="right"
               className="w-[85vw] max-w-[320px] overflow-y-auto overflow-x-hidden border-border/50 bg-card p-0 [&>button]:hidden"
             >
               {/* ===== SIDEBAR HEADER ===== */}
@@ -325,7 +325,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
                     </div>
                     {/* Notifications & Logout row */}
                     <div className="flex items-center gap-2 mt-3">
-                      <button className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-card border border-border/50 min-h-[44px] py-2.5 text-sm text-muted-foreground hover:bg-accent transition-all">
+                      <button onClick={() => setMobileOpen(false)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-card border border-border/50 min-h-[44px] py-2.5 text-sm text-muted-foreground hover:bg-accent transition-all">
                         <Bell className="size-4" />
                         <span className="text-xs font-medium">الإشعارات</span>
                         <Badge className="flex size-4 items-center justify-center rounded-full bg-red-500 p-0 text-[9px] text-white hover:bg-red-500">{unreadCount}</Badge>
@@ -358,7 +358,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
                       تسجيل الدخول / إنشاء حساب
                     </button>
                     {/* Notifications for guest */}
-                    <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-card border border-border/50 min-h-[44px] py-2.5 text-sm text-muted-foreground hover:bg-accent transition-all mt-2">
+                    <button onClick={() => setMobileOpen(false)} className="flex w-full items-center justify-center gap-2 rounded-xl bg-card border border-border/50 min-h-[44px] py-2.5 text-sm text-muted-foreground hover:bg-accent transition-all mt-2">
                       <Bell className="size-4" />
                       <span className="text-xs font-medium">الإشعارات</span>
                     </button>

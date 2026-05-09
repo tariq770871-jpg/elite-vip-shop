@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { verifyAuthToken } from "@/lib/supabase-server";
 
 export async function POST(request: Request) {
   try {
@@ -25,7 +26,8 @@ export async function POST(request: Request) {
     }
 
     try {
-      await fetch("/notify?XTransformPort=3005", {
+      const baseUrl = new URL(request.url).origin;
+      await fetch(`${baseUrl}/api/notify?XTransformPort=3005`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -43,8 +45,14 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Auth check: only authenticated users can list contact messages
+    const { user, error: authError } = await verifyAuthToken(request);
+    if (authError || !user) {
+      return NextResponse.json({ error: "غير مصرح به" }, { status: 401 });
+    }
+
     if (!supabase) return NextResponse.json({ messages: [] });
     const { data, error } = await supabase
       .from("contact_messages")

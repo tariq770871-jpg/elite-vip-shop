@@ -1068,7 +1068,7 @@ function UserDashboard() {
     if (!user?.id) { setOrdersLoading(false); return; }
     async function fetchOrders() {
       try {
-        const res = await fetch(`/api/orders?userId=${user.id}&limit=20`);
+        const res = await fetch(`/api/orders?userId=${user!.id}&limit=20`);
         if (res.ok) {
           const data = await res.json();
           const raw = data.orders || data || [];

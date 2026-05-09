@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { verifyAuthToken } from "@/lib/supabase-server";
 
 // GET: Check if Telegram bot is configured
 export async function GET() {
@@ -25,9 +26,15 @@ export async function GET() {
   }
 }
 
-// POST: Save config and optionally send a test message
+// POST: Save config and optionally send a test message (admin only)
 export async function POST(request: Request) {
   try {
+    // Admin auth check
+    const { user, error: authError } = await verifyAuthToken(request);
+    if (authError || !user) {
+      return NextResponse.json({ error: "غير مصرح به" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { botToken, chatId, testOnly } = body;
 
@@ -80,9 +87,14 @@ export async function POST(request: Request) {
   }
 }
 
-// DELETE: Remove Telegram configuration
-export async function DELETE() {
+// DELETE: Remove Telegram configuration (admin only)
+export async function DELETE(request: Request) {
   try {
+    // Admin auth check
+    const { user, error: authError } = await verifyAuthToken(request);
+    if (authError || !user) {
+      return NextResponse.json({ error: "غير مصرح به" }, { status: 401 });
+    }
     if (supabase) {
       await supabase
         .from("site_settings")

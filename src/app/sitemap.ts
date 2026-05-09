@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { products } from "@/lib/mock-data";
+import { getAllPosts } from "@/lib/blog-data";
 
 const BASE_URL = "https://elite-vip-shop.vercel.app";
 
@@ -25,9 +26,13 @@ const staticPages: {
   { path: "/services", priority: 0.8, changeFrequency: "weekly", lastModified: "2025-01-05" },
   { path: "/trading", priority: 0.8, changeFrequency: "weekly", lastModified: "2025-01-14" },
   { path: "/earning", priority: 0.8, changeFrequency: "weekly", lastModified: "2025-01-11" },
+  { path: "/blog", priority: 0.8, changeFrequency: "weekly", lastModified: "2025-01-20" },
   { path: "/about", priority: 0.6, changeFrequency: "monthly", lastModified: "2024-12-20" },
   { path: "/contact", priority: 0.6, changeFrequency: "monthly", lastModified: "2024-12-20" },
   { path: "/faq", priority: 0.6, changeFrequency: "monthly", lastModified: "2025-01-18" },
+  { path: "/zero-protocols", priority: 0.5, changeFrequency: "monthly", lastModified: "2024-12-20" },
+  { path: "/values", priority: 0.5, changeFrequency: "monthly", lastModified: "2024-12-20" },
+  { path: "/criticism", priority: 0.5, changeFrequency: "monthly", lastModified: "2024-12-20" },
   { path: "/privacy", priority: 0.3, changeFrequency: "yearly", lastModified: "2024-11-01" },
   { path: "/terms", priority: 0.3, changeFrequency: "yearly", lastModified: "2024-11-01" },
   { path: "/return-policy", priority: 0.3, changeFrequency: "yearly", lastModified: "2024-11-01" },
@@ -63,5 +68,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
       },
     }));
 
-  return [...staticEntries, ...productEntries];
+  // Blog post pages
+  const blogPosts = getAllPosts();
+  const blogEntries: MetadataRoute.Sitemap = blogPosts.map((post) => ({
+    url: `${BASE_URL}/blog/${post.slug}`,
+    lastModified: new Date(post.date),
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+    alternates: {
+      languages: {
+        ar: `${BASE_URL}/blog/${post.slug}`,
+      },
+    },
+  }));
+
+  return [...staticEntries, ...productEntries, ...blogEntries];
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendTelegramNotification } from "@/lib/telegram";
+import { verifyAuthToken } from "@/lib/supabase-server";
 
 const EMOJIS: Record<string, string> = {
   visit: "👁️",
@@ -12,21 +13,35 @@ const EMOJIS: Record<string, string> = {
 
 export async function POST(request: Request) {
   try {
+    // Auth check: only authenticated users can send notifications
+    const { user, error: authError } = await verifyAuthToken(request);
+    if (authError || !user) {
+      return NextResponse.json({ ok: false, error: "غير مصرح به" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { event, data = {} } = body;
 
     if (!event) return NextResponse.json({ ok: false });
 
-    const emoji = EMOJIS[event] || "📌";
+    // Sanitize input: strip HTML tags from event and data values
+    const sanitize = (str: string) => str.replace(/<[^>]*>/g, "").trim();
+    const sanitizedEvent = sanitize(event);
+    const sanitizedData: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data)) {
+      sanitizedData[sanitize(key)] = typeof value === "string" ? sanitize(value) : value;
+    }
+
+    const emoji = EMOJIS[sanitizedEvent] || "📌";
     let message = "";
 
-    switch (event) {
+    switch (sanitizedEvent) {
       case "visit":
         message = [
           `${emoji} <b>زيارة جديدة للموقع</b>`,
-          data.page ? `📄 الصفحة: ${data.page}` : null,
-          data.referrer ? `🔗 المصدر: ${data.referrer}` : null,
-          data.device ? `📱 الجهاز: ${data.device}` : null,
+          sanitizedData.page ? `📄 الصفحة: ${sanitizedData.page}` : null,
+          sanitizedData.referrer ? `🔗 المصدر: ${sanitizedData.referrer}` : null,
+          sanitizedData.device ? `📱 الجهاز: ${sanitizedData.device}` : null,
           `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
         ].filter(Boolean).join("\n");
         break;
@@ -34,9 +49,9 @@ export async function POST(request: Request) {
       case "register":
         message = [
           `${emoji} <b>مستخدم جديد سجّل في المتجر!</b>`,
-          data.name ? `👤 الاسم: ${data.name}` : null,
-          data.email ? `📧 البريد: ${data.email}` : null,
-          data.phone ? `📞 الهاتف: ${data.phone}` : null,
+          sanitizedData.name ? `👤 الاسم: ${sanitizedData.name}` : null,
+          sanitizedData.email ? `📧 البريد: ${sanitizedData.email}` : null,
+          sanitizedData.phone ? `📞 الهاتف: ${sanitizedData.phone}` : null,
           `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
         ].filter(Boolean).join("\n");
         break;
@@ -44,8 +59,8 @@ export async function POST(request: Request) {
       case "login":
         message = [
           `${emoji} <b>تسجيل دخول</b>`,
-          data.name ? `👤 ${data.name}` : null,
-          data.email ? `📧 ${data.email}` : null,
+          sanitizedData.name ? `👤 ${sanitizedData.name}` : null,
+          sanitizedData.email ? `📧 ${sanitizedData.email}` : null,
           `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
         ].filter(Boolean).join("\n");
         break;
@@ -53,9 +68,9 @@ export async function POST(request: Request) {
       case "add_to_cart":
         message = [
           `${emoji} <b>إضافة منتج للسلة</b>`,
-          data.productName ? `📦 المنتج: ${data.productName}` : null,
-          data.price ? `💰 السعر: ${Number(data.price).toLocaleString("ar-SA")} ر.ي` : null,
-          data.userName ? `👤 العميل: ${data.userName}` : null,
+          sanitizedData.productName ? `📦 المنتج: ${sanitizedData.productName}` : null,
+          sanitizedData.price ? `💰 السعر: ${Number(sanitizedData.price).toLocaleString("ar-SA")} ر.ي` : null,
+          sanitizedData.userName ? `👤 العميل: ${sanitizedData.userName}` : null,
           `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
         ].filter(Boolean).join("\n");
         break;
@@ -63,14 +78,14 @@ export async function POST(request: Request) {
       case "whatsapp_click":
         message = [
           `${emoji} <b>عميل نقر على واتساب</b>`,
-          data.productName ? `📦 المنتج: ${data.productName}` : null,
-          data.userName ? `👤 العميل: ${data.userName}` : null,
+          sanitizedData.productName ? `📦 المنتج: ${sanitizedData.productName}` : null,
+          sanitizedData.userName ? `👤 العميل: ${sanitizedData.userName}` : null,
           `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
         ].filter(Boolean).join("\n");
         break;
 
       default:
-        message = `${emoji} <b>حدث جديد: ${event}</b>\n${JSON.stringify(data)}`;
+        message = `${emoji} <b>حدث جديد: ${sanitizedEvent}</b>\n${JSON.stringify(sanitizedData)}`;
     }
 
     await sendTelegramNotification(message);

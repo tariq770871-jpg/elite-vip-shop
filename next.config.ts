@@ -10,10 +10,6 @@ const securityHeaders = [
     value: "max-age=63072000; includeSubDomains; preload",
   },
   {
-    key: "X-XSS-Protection",
-    value: "1; mode=block",
-  },
-  {
     key: "X-Frame-Options",
     value: "SAMEORIGIN",
   },
@@ -37,13 +33,12 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      // Removed 'unsafe-eval' and 'unsafe-inline' — use nonce/hash-based CSP instead
-      // 'strict-dynamic' allows scripts loaded by trusted (nonce/hash) scripts to load their dependencies
-      "script-src 'self' 'strict-dynamic'",
-      // style-src still requires 'unsafe-inline' for Tailwind CSS and styled-jsx (Next.js limitation)
+      "script-src 'self' 'strict-dynamic' https://www.googletagmanager.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in",
+      "connect-src 'self' https://*.supabase.co https://*.supabase.in https://www.google-analytics.com https://www.googletagmanager.com",
+      "media-src 'self'",
       "worker-src 'self' blob:",
       "frame-ancestors 'none'",
       "base-uri 'self'",
@@ -54,6 +49,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
   output: 'standalone',
   images: {
     formats: ['image/avif', 'image/webp'],

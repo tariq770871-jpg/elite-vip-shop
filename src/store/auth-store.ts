@@ -288,7 +288,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       if (data.name) updates.full_name = data.name
       if (data.name) updates.name = data.name
       if (data.phone !== undefined) updates.phone = data.phone
-      const { error } = await supabase.auth.updateUser({ data: updates })
+      const { error } = await supabase!.auth.updateUser({ data: updates })
       if (error) throw error
       set({ user: { ...user, ...data } })
     } catch {
@@ -301,10 +301,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       // Verify current password by re-signing in
       const email = get().user?.email
       if (!email) return { success: false, error: 'البريد الإلكتروني غير متوفر' }
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password: currentPassword })
+      const { error: signInError } = await supabase!.auth.signInWithPassword({ email, password: currentPassword })
       if (signInError) return { success: false, error: 'كلمة المرور الحالية غير صحيحة' }
       // Update password
-      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
+      const { error: updateError } = await supabase!.auth.updateUser({ password: newPassword })
       if (updateError) return { success: false, error: 'فشل تحديث كلمة المرور' }
       return { success: true, error: null }
     } catch {

@@ -71,7 +71,7 @@ export function AcademySection() {
                 </div>
                 <h3 className="mb-2 text-lg font-bold">{course.title}</h3>
                 <p className="mb-5 flex-1 text-sm leading-relaxed text-muted-foreground">{course.description}</p>
-                <button className="btn-3d-sm w-full flex items-center justify-center gap-2">
+                <button className="btn-3d-sm w-full flex items-center justify-center gap-2" onClick={() => window.location.href = '/academy'}>
                   ابدأ التعلم
                   <ArrowLeft className="size-4" />
                 </button>

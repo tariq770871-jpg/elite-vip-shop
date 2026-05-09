@@ -71,7 +71,7 @@ export function EarningSection() {
                 </div>
                 <h3 className="mb-2 text-lg font-bold">{item.title}</h3>
                 <p className="mb-5 flex-1 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
-                <button className="btn-3d-sm w-full flex items-center justify-center gap-2">
+                <button className="btn-3d-sm w-full flex items-center justify-center gap-2" onClick={() => window.location.href = '/earning'}>
                   تعلم المزيد
                   <ArrowLeft className="size-4" />
                 </button>

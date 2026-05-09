@@ -7,6 +7,10 @@ interface BreadcrumbSchemaProps {
   items: BreadcrumbItem[];
 }
 
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+}
+
 const SITE_URL = "https://elite-vip-shop.vercel.app";
 
 export function BreadcrumbSchema({ items }: BreadcrumbSchemaProps) {
@@ -16,7 +20,7 @@ export function BreadcrumbSchema({ items }: BreadcrumbSchemaProps) {
     itemListElement: items.map((item, index) => ({
       "@type": "ListItem",
       position: index + 1,
-      name: item.name,
+      name: escapeHtml(item.name),
       item: item.url.startsWith("http") ? item.url : `${SITE_URL}${item.url}`,
     })),
   };

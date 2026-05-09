@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { ShieldCheck, X, Cookie } from "lucide-react";
 
 export function CookieConsent() {
@@ -48,9 +49,7 @@ export function CookieConsent() {
               لك. بالموافقة، ساعدنا على تقديم خدمة أفضل. يمكنك قراءة{" "}
               <button
                 onClick={() => {
-                  document.querySelector('[data-page="privacy"]')?.dispatchEvent(
-                    new CustomEvent("click")
-                  );
+                  window.location.href = "/privacy";
                 }}
                 className="text-primary underline underline-offset-2 hover:text-primary/80"
               >

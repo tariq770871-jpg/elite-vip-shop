@@ -1,14 +1,24 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { sendOrderNotification } from "@/lib/telegram";
+import { verifyAuthToken } from "@/lib/supabase-server";
 
 // POST: Save a new order to Supabase
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { userId, items, total, notes, paymentMethod, customerName, customerPhone, customerAddress, discount, couponCode } = body;
+    // Auth check: verify user is authenticated
+    const { user, error: authError } = await verifyAuthToken(request);
+    if (authError || !user) {
+      return NextResponse.json({ error: "غير مصرح به" }, { status: 401 });
+    }
 
-    if (!userId || !items || items.length === 0) {
+    const body = await request.json();
+    const { items, notes, paymentMethod, customerName, customerPhone, customerAddress, discount, couponCode } = body;
+
+    // Use authenticated user's ID instead of client-sent userId
+    const userId = user.id;
+
+    if (!items || items.length === 0) {
       return NextResponse.json({ error: "بيانات غير مكتملة" }, { status: 400 });
     }
 
@@ -16,8 +26,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, orderId: "local", orderNumber: "N/A" });
     }
 
-    // Generate order number
-    const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    // Generate order number using crypto.randomUUID() for uniqueness
+    const orderNumber = `ORD-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
+
+    // Calculate total server-side from items instead of trusting client-sent total
+    // TODO: Server-side price calculation should be implemented when product prices are available from DB
+    const calculatedTotal = items.reduce((sum: number, item: { id: string; name: string; quantity: number; price: number; salePrice?: number }) => {
+      const effectivePrice = item.salePrice && item.salePrice < item.price ? item.salePrice : item.price;
+      return sum + effectivePrice * item.quantity;
+    }, 0);
 
     // Insert order
     const { data: order, error: orderError } = await supabase
@@ -26,7 +43,7 @@ export async function POST(request: Request) {
         order_number: orderNumber,
         user_id: userId,
         status: "new",
-        total_amount: total,
+        total_amount: calculatedTotal,
         notes: notes || `طريقة الدفع: ${paymentMethod === "whatsapp" ? "واتساب" : "رسالة نصية"}${customerName ? ` | العميل: ${customerName}` : ""}${customerPhone ? ` | الهاتف: ${customerPhone}` : ""}${customerAddress ? ` | العنوان: ${customerAddress}` : ""}${discount ? ` | خصم: ${discount} ر.ي` : ""}${couponCode ? ` | كود: ${couponCode}` : ""}`,
       })
       .select()
@@ -64,7 +81,7 @@ export async function POST(request: Request) {
       customerName: customerName || undefined,
       customerPhone: customerPhone || undefined,
       customerAddress: customerAddress || undefined,
-      total,
+      total: calculatedTotal,
       items: orderItems.map((i: { product_name: string; quantity: number; price: number }) => ({
         name: i.product_name,
         quantity: i.quantity,
@@ -89,12 +106,14 @@ export async function POST(request: Request) {
 // GET: Fetch orders for a user
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json({ error: "معرف المستخدم مطلوب" }, { status: 400 });
+    // Auth check: verify user is authenticated
+    const { user, error: authError } = await verifyAuthToken(request);
+    if (authError || !user) {
+      return NextResponse.json({ error: "غير مصرح به" }, { status: 401 });
     }
+
+    // Use authenticated user's ID — users can only access their own orders
+    const userId = user.id;
 
     if (!supabase) {
       return NextResponse.json({ orders: [] });

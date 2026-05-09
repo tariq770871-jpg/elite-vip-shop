@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Trust,
   Award,
   Headphones,
   Lightbulb,
@@ -13,7 +12,6 @@ import {
   Clock,
   Scale,
   Sparkles,
-  Globe,
   Target,
   CheckCircle2,
 } from "lucide-react";
