@@ -71,10 +71,12 @@ export function FloatingWhatsApp() {
   const handleSend = () => {
     if (message.trim()) {
       const encoded = encodeURIComponent(message);
-      window.open(`https://wa.me/967782138587?text=${encoded}`, "_blank");
+      const w = window.open(`https://wa.me/967782138587?text=${encoded}`, "_blank");
+      if (w) w.opener = null;
       setMessage("");
     } else {
-      window.open("https://wa.me/967782138587", "_blank");
+      const w = window.open("https://wa.me/967782138587", "_blank");
+      if (w) w.opener = null;
     }
   };
 

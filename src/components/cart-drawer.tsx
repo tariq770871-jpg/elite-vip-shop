@@ -88,7 +88,8 @@ export function CartDrawer() {
   const handleCheckoutWhatsApp = () => {
     if (items.length === 0) return;
     const message = buildOrderMessage();
-    window.open(`https://wa.me/967782138587?text=${encodeURIComponent(message)}`, "_blank");
+    const w = window.open(`https://wa.me/967782138587?text=${encodeURIComponent(message)}`, "_blank");
+    if (w) w.opener = null;
     toast.success("تم فتح واتساب مع تفاصيل الطلب!");
     saveOrderToSupabase("whatsapp");
   };
@@ -96,7 +97,8 @@ export function CartDrawer() {
   const handleCheckoutSMS = () => {
     if (items.length === 0) return;
     const message = buildOrderMessage();
-    window.open(`sms:967782138587?body=${encodeURIComponent(message)}`, "_blank");
+    const w = window.open(`sms:967782138587?body=${encodeURIComponent(message)}`, "_blank");
+    if (w) w.opener = null;
     toast.success("تم فتح الرسائل مع تفاصيل الطلب!");
     saveOrderToSupabase("sms");
   };

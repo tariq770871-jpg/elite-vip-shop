@@ -76,7 +76,7 @@ export function AiToolsSection() {
                 <button
                   className="btn-3d-sm w-full flex items-center justify-center gap-2"
                   onClick={() => {
-                    if (tool.link) window.open(tool.link, "_blank");
+                    if (tool.link) { const w = window.open(tool.link, "_blank"); if (w) w.opener = null; }
                   }}
                   disabled={!tool.link}
                   style={!tool.link ? { opacity: 0.5, cursor: "not-allowed" } : undefined}

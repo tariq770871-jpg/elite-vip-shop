@@ -76,7 +76,7 @@ export function AppsSection() {
                 <button
                   className="btn-3d-sm w-full flex items-center justify-center gap-2"
                   onClick={() => {
-                    if (app.link && app.link !== "#") window.open(app.link, "_blank");
+                    if (app.link && app.link !== "#") { const w = window.open(app.link, "_blank"); if (w) w.opener = null; }
                   }}
                   disabled={!app.link || app.link === "#"}
                   style={(!app.link || app.link === "#") ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
