@@ -3,85 +3,54 @@
 import { useState, useEffect, useRef } from "react";
 import { Star, ChevronRight, ChevronLeft, Quote, BadgeCheck, ExternalLink } from "lucide-react";
 
-// TODO: Replace static testimonials data with database-driven data
-// When a backend/database is available, testimonials should be fetched from an API endpoint
-// and stored in a testimonials table with fields: id, name, location, rating, text, product, avatar, date, isVerified
-// Example API: GET /api/testimonials
-// For now, we use static mock data
-
-const testimonials = [
-  {
-    id: 1,
-    name: "أحمد محمد",
-    location: "صنعاء، اليمن",
-    rating: 5,
-    text: "تجربة رائعة مع متجر النخبة! المنتجات أصلية والشحن سريع جداً. أنصح الجميع بالتسوق من هنا.",
-    product: "سماعة بلوتوث فاخرة Elite Pro",
-    avatar: "أ",
-    date: "منذ أسبوع",
-    isVerified: true,
-  },
-  {
-    id: 2,
-    name: "سارة علي",
-    location: "عدن، اليمن",
-    rating: 5,
-    text: "أفضل متجر إلكتروني تعاملت معه. خدمة العملاء ممتازة والأسعار منافسة جداً. شكراً لكم!",
-    product: "ساعة ذكية VIP Series X",
-    avatar: "س",
-    date: "منذ 3 أيام",
-    isVerified: true,
-  },
-  {
-    id: 3,
-    name: "خالد حسن",
-    location: "تعز، اليمن",
-    rating: 4,
-    text: "الدورة التدريبية ممتازة ومفيدة جداً. المحتوى شامل والمقدم واضح. استفدت كثيراً.",
-    product: "كورس التداول الاحترافي",
-    avatar: "خ",
-    date: "منذ 5 أيام",
-    isVerified: true,
-  },
-  {
-    id: 4,
-    name: "نورة عبدالله",
-    location: "الضالع، اليمن",
-    rating: 5,
-    text: "طلبتم منتجات عدة وكانت كلها بجودة عالية. التغليف ممتاز والتوصيل سريع. متجر محترف!",
-    product: "باور بانك 20000mAh",
-    avatar: "ن",
-    date: "منذ يومين",
-    isVerified: true,
-  },
-  {
-    id: 5,
-    name: "عمر يحيى",
-    location: "الحديدة، اليمن",
-    rating: 5,
-    text: "ماوس الجيمرز رائع جداً، الجودة عالية والأداء ممتاز. أفضل ماوس استخدمته!",
-    product: "ماوس لاسلكي ميكانيكي للجيمرز",
-    avatar: "ع",
-    date: "منذ يوم",
-    isVerified: false,
-  },
-  {
-    id: 6,
-    name: "لمياء صالح",
-    location: "إب، اليمن",
-    rating: 5,
-    text: "اشتركت في كورس التداول وكانت التجربة أكثر من رائعة. المحتوى عملي ومفيد جداً.",
-    product: "كتاب أسرار الربح من الإنترنت",
-    avatar: "ل",
-    date: "منذ 4 أيام",
-    isVerified: true,
-  },
-];
+interface Testimonial {
+  id: number;
+  name: string;
+  location: string;
+  rating: number;
+  text: string;
+  product: string;
+  avatar: string;
+  date: string;
+  isVerified: boolean;
+}
 
 export function TestimonialsSection() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/reviews?limit=10")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.reviews && data.reviews.length > 0) {
+          const mapped: Testimonial[] = data.reviews.map((r: any, i: number) => ({
+            id: r.review_id || i,
+            name: r.customer_name || r.user_name || "عميل",
+            location: r.location || "",
+            rating: Math.min(5, Math.max(1, Number(r.rating) || 5)),
+            text: r.comment || r.review_text || "",
+            product: r.product_name || "",
+            avatar: (r.customer_name || r.user_name || "ع").charAt(0),
+            date: r.created_at
+              ? new Date(r.created_at).toLocaleDateString("ar-YE", { month: "short", day: "numeric" })
+              : "",
+            isVerified: !!r.is_verified,
+          }));
+          setTestimonials(mapped);
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const checkScroll = () => {
     if (!scrollRef.current) return;
@@ -132,6 +101,30 @@ export function TestimonialsSection() {
         </div>
 
         {/* Testimonials Carousel */}
+        {loading ? (
+          <div className="flex gap-4 overflow-hidden pb-2">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="card-3d min-w-[300px] max-w-[340px] shrink-0 p-5 animate-pulse">
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="size-12 rounded-full bg-muted" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 bg-muted rounded w-1/2" />
+                    <div className="h-2 bg-muted rounded w-1/3" />
+                  </div>
+                </div>
+                <div className="space-y-2 mb-3">
+                  <div className="h-3 bg-muted rounded w-full" />
+                  <div className="h-3 bg-muted rounded w-3/4" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : testimonials.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            <Quote className="size-10 text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground">لا توجد تقييمات بعد — كن أول من يقيّم!</p>
+          </div>
+        ) : (
         <div className="relative">
           {/* Left arrow */}
           {canScrollLeft && (
@@ -179,7 +172,9 @@ export function TestimonialsSection() {
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-muted-foreground">{review.location}</p>
+                    {review.location && (
+                      <p className="text-[11px] text-muted-foreground">{review.location}</p>
+                    )}
                   </div>
                 </div>
 
@@ -198,17 +193,25 @@ export function TestimonialsSection() {
 
                 {/* Product badge + Date */}
                 <div className="flex items-center justify-between border-t border-border/50 pt-3">
-                  <span className="line-clamp-1 max-w-[70%] rounded-lg bg-primary/5 px-2 py-1 text-[10px] font-medium text-primary">
-                    {review.product}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">{review.date}</span>
+                  {review.product ? (
+                    <span className="line-clamp-1 max-w-[70%] rounded-lg bg-primary/5 px-2 py-1 text-[10px] font-medium text-primary">
+                      {review.product}
+                    </span>
+                  ) : (
+                    <span />
+                  )}
+                  {review.date && (
+                    <span className="text-[10px] text-muted-foreground">{review.date}</span>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </div>
+        )}
 
         {/* See More Link */}
+        {testimonials.length > 0 && (
         <div className="mt-6 text-center">
           <button
             className="inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-5 py-2.5 text-sm font-semibold text-primary transition-all hover:bg-primary/10 hover:border-primary/30 hover:shadow-md"
@@ -218,6 +221,7 @@ export function TestimonialsSection() {
             شاهد المزيد من التقييمات
           </button>
         </div>
+        )}
       </div>
     </section>
   );
