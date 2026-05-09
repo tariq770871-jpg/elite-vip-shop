@@ -76,17 +76,13 @@ export function AppsSection() {
                 <button
                   className="btn-3d-sm w-full flex items-center justify-center gap-2"
                   onClick={() => {
-                    if (app.link && app.link !== "#") {
-                      const w = window.open(app.link, "_blank");
-                      if (w) w.opener = null;
-                    } else {
-                      const w = window.open(`https://wa.me/967782138587?text=${encodeURIComponent("أرغب في الاستفسار عن: " + app.title)}`, "_blank");
-                      if (w) w.opener = null;
-                    }
+                    const url = app.link && app.link !== "#" ? app.link : `https://wa.me/967782138587?text=${encodeURIComponent("أرغب في الحصول على: " + app.title)}`;
+                    const w = window.open(url, "_blank");
+                    if (w) w.opener = null;
                   }}
                 >
-                  {app.link && app.link !== "#" ? "عرض التفاصيل" : "استفسار"}
-                  {app.link && app.link !== "#" ? <ExternalLink className="size-4" /> : null}
+                  <svg className="size-4" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.04L13.62 12.6 3.18 2.16c-.12.12-.18.28-.18.46v19.96c0 .18.06.34.18.46zm1.46.96l11.44-6.62-2.52-2.52-8.92 9.14zm0-23.96l8.92 9.14 2.52-2.52L4.64.04zM17.36 9.18l-2.72 1.58 2.72 1.58 3.18-1.58-3.18-1.58zm-2.72 2.8l-2.52 2.52 2.52 2.52 3.18-1.58-3.18-3.46z"/></svg>
+                  تنزيل من متجر بلاي
                 </button>
               </div>
             );
