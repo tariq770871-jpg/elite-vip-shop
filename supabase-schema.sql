@@ -42,6 +42,12 @@ CREATE TABLE IF NOT EXISTS users (
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     whatsapp_number VARCHAR(30),
     telegram_username VARCHAR(100),
+    gender VARCHAR(10) DEFAULT 'male',
+    address TEXT,
+    show_phone BOOLEAN NOT NULL DEFAULT TRUE,
+    show_email BOOLEAN NOT NULL DEFAULT TRUE,
+    show_address BOOLEAN NOT NULL DEFAULT TRUE,
+    show_gender BOOLEAN NOT NULL DEFAULT TRUE,
     last_login TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -436,6 +442,33 @@ CREATE INDEX idx_contact_read ON contact_messages(is_read) WHERE is_read = FALSE
 CREATE INDEX idx_contact_created ON contact_messages(created_at DESC);
 
 -- =====================================================
+-- TABLE 19: profile_change_requests (طلبات تعديل الملف الشخصي)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS profile_change_requests (
+    request_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    field VARCHAR(50) NOT NULL,
+    old_value TEXT,
+    new_value TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    reviewed_by UUID,
+    reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    
+    CONSTRAINT fk_pcr_user FOREIGN KEY (user_id) 
+        REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_pcr_reviewer FOREIGN KEY (reviewed_by) 
+        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT chk_pcr_field CHECK (field IN ('name', 'email', 'phone', 'address', 'gender')),
+    CONSTRAINT chk_pcr_status CHECK (status IN ('pending', 'approved', 'rejected'))
+);
+
+CREATE INDEX idx_pcr_user ON profile_change_requests(user_id);
+CREATE INDEX idx_pcr_status ON profile_change_requests(status) WHERE status = 'pending';
+CREATE INDEX idx_pcr_created ON profile_change_requests(created_at DESC);
+
+-- =====================================================
 -- HELPER FUNCTION: Generate order number
 -- =====================================================
 CREATE OR REPLACE FUNCTION generate_order_number()
@@ -544,114 +577,170 @@ ALTER TABLE favorites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE coupons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profile_change_requests ENABLE ROW LEVEL SECURITY;
 
 -- =====================================================
--- RLS POLICIES: Public read access (anon + authenticated)
+-- RLS POLICIES: Proper access control with auth.uid()
 -- =====================================================
 
+-- Helper: get user role from users table
 -- Roles: readable by all
-CREATE POLICY "Roles are readable by all" ON roles
+CREATE POLICY "Roles readable by all" ON roles
     FOR SELECT USING (true);
 
--- Users: users can read all profiles, update own profile
+-- Users: anyone can see names, users can only update own profile
 CREATE POLICY "Users readable by all" ON users
     FOR SELECT USING (true);
 CREATE POLICY "Users can insert own profile" ON users
-    FOR INSERT WITH CHECK (true);
+    FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 CREATE POLICY "Users can update own profile" ON users
-    FOR UPDATE USING (auth.uid() IS NOT NULL);
+    FOR UPDATE USING (auth.uid() IS NOT NULL AND user_id = auth.uid());
 
 -- Categories: readable by all
 CREATE POLICY "Categories readable by all" ON categories
     FOR SELECT USING (true);
 
--- Products: readable by all, sellers/admins can manage
+-- Products: readable by all, only sellers/admins can create/update
 CREATE POLICY "Products readable by all" ON products
     FOR SELECT USING (true);
 CREATE POLICY "Authenticated can insert products" ON products
-    FOR INSERT WITH CHECK (true);
-CREATE POLICY "Authenticated can update products" ON products
-    FOR UPDATE USING (true);
+    FOR INSERT WITH CHECK (
+        auth.uid() IS NOT NULL AND 
+        EXISTS (SELECT 1 FROM users WHERE user_id = auth.uid() AND role_id = (SELECT role_id FROM roles WHERE role_name IN ('seller', 'admin')))
+    );
+CREATE POLICY "Sellers can update own products" ON products
+    FOR UPDATE USING (
+        auth.uid() IS NOT NULL AND (
+            seller_id = auth.uid() OR 
+            EXISTS (SELECT 1 FROM users WHERE user_id = auth.uid() AND role_id = (SELECT role_id FROM roles WHERE role_name = 'admin'))
+        )
+    );
 CREATE POLICY "Admins can delete products" ON products
-    FOR DELETE USING (true);
+    FOR DELETE USING (
+        EXISTS (SELECT 1 FROM users WHERE user_id = auth.uid() AND role_id = (SELECT role_id FROM roles WHERE role_name = 'admin'))
+    );
 
--- Apps: readable by all
+-- Apps: readable by all, admins only manage
 CREATE POLICY "Apps readable by all" ON apps
     FOR SELECT USING (true);
 CREATE POLICY "Admins can manage apps" ON apps
-    FOR ALL USING (true);
+    FOR ALL USING (
+        auth.uid() IS NOT NULL AND
+        EXISTS (SELECT 1 FROM users WHERE user_id = auth.uid() AND role_id = (SELECT role_id FROM roles WHERE role_name = 'admin'))
+    );
 
--- AI Tools: readable by all
+-- AI Tools: readable by all, admins only manage
 CREATE POLICY "AI Tools readable by all" ON ai_tools
     FOR SELECT USING (true);
 CREATE POLICY "Admins can manage AI tools" ON ai_tools
-    FOR ALL USING (true);
+    FOR ALL USING (
+        auth.uid() IS NOT NULL AND
+        EXISTS (SELECT 1 FROM users WHERE user_id = auth.uid() AND role_id = (SELECT role_id FROM roles WHERE role_name = 'admin'))
+    );
 
--- Academy Courses: readable by all
+-- Academy Courses: readable by all, admins only manage
 CREATE POLICY "Courses readable by all" ON academy_courses
     FOR SELECT USING (true);
 CREATE POLICY "Admins can manage courses" ON academy_courses
-    FOR ALL USING (true);
+    FOR ALL USING (
+        auth.uid() IS NOT NULL AND
+        EXISTS (SELECT 1 FROM users WHERE user_id = auth.uid() AND role_id = (SELECT role_id FROM roles WHERE role_name = 'admin'))
+    );
 
--- Earning Methods: readable by all
+-- Earning Methods: readable by all, admins only manage
 CREATE POLICY "Earning methods readable by all" ON earning_methods
     FOR SELECT USING (true);
 CREATE POLICY "Admins can manage earning methods" ON earning_methods
-    FOR ALL USING (true);
+    FOR ALL USING (
+        auth.uid() IS NOT NULL AND
+        EXISTS (SELECT 1 FROM users WHERE user_id = auth.uid() AND role_id = (SELECT role_id FROM roles WHERE role_name = 'admin'))
+    );
 
--- Cart: users manage own cart
+-- Cart: users manage only their OWN cart
 CREATE POLICY "Users manage own cart" ON cart
-    FOR ALL USING (true);
+    FOR ALL USING (auth.uid() IS NOT NULL AND user_id = auth.uid());
 
--- Cart Items: users manage own cart items
+-- Cart Items: users manage only their OWN cart items (via cart ownership)
 CREATE POLICY "Users manage own cart items" ON cart_items
-    FOR ALL USING (true);
+    FOR ALL USING (
+        auth.uid() IS NOT NULL AND
+        EXISTS (SELECT 1 FROM cart WHERE cart_id = cart_items.cart_id AND user_id = auth.uid())
+    );
 
--- Orders: users manage own orders
+-- Orders: users read/manage only their OWN orders
 CREATE POLICY "Users manage own orders" ON orders
-    FOR ALL USING (true);
+    FOR ALL USING (auth.uid() IS NOT NULL AND user_id = auth.uid());
 
--- Order Items: users read own order items
+-- Order Items: users read own order items (via order ownership)
 CREATE POLICY "Users read own order items" ON order_items
-    FOR SELECT USING (true);
+    FOR SELECT USING (
+        auth.uid() IS NOT NULL AND
+        EXISTS (SELECT 1 FROM orders WHERE order_id = order_items.order_id AND user_id = auth.uid())
+    );
 CREATE POLICY "Users insert own order items" ON order_items
-    FOR INSERT WITH CHECK (true);
+    FOR INSERT WITH CHECK (
+        auth.uid() IS NOT NULL AND
+        EXISTS (SELECT 1 FROM orders WHERE order_id = order_items.order_id AND user_id = auth.uid())
+    );
 
--- Reviews: readable by all, users create own reviews
+-- Reviews: readable by all, users create/update only own reviews
 CREATE POLICY "Reviews readable by all" ON reviews
     FOR SELECT USING (true);
 CREATE POLICY "Users can create reviews" ON reviews
-    FOR INSERT WITH CHECK (true);
+    FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
 CREATE POLICY "Users update own reviews" ON reviews
-    FOR UPDATE USING (true);
+    FOR UPDATE USING (auth.uid() IS NOT NULL AND user_id = auth.uid());
 
--- Notifications: users manage own notifications
+-- Notifications: users manage only their OWN notifications
 CREATE POLICY "Users manage own notifications" ON notifications
-    FOR ALL USING (true);
+    FOR ALL USING (auth.uid() IS NOT NULL AND user_id = auth.uid());
 
--- Favorites: users manage own favorites
+-- Favorites: users manage only their OWN favorites
 CREATE POLICY "Users manage own favorites" ON favorites
-    FOR ALL USING (true);
+    FOR ALL USING (auth.uid() IS NOT NULL AND user_id = auth.uid());
 
--- Coupons: users can read active coupons
+-- Coupons: users can read active coupons only, admins manage all
 CREATE POLICY "Active coupons readable by all" ON coupons
     FOR SELECT USING (is_active = TRUE);
 CREATE POLICY "Admins manage coupons" ON coupons
-    FOR ALL USING (true);
+    FOR ALL USING (
+        auth.uid() IS NOT NULL AND
+        EXISTS (SELECT 1 FROM users WHERE user_id = auth.uid() AND role_id = (SELECT role_id FROM roles WHERE role_name = 'admin'))
+    );
 
--- Site Settings: readable by all, admins manage
+-- Site Settings: readable by all, admins only manage
 CREATE POLICY "Settings readable by all" ON site_settings
     FOR SELECT USING (true);
 CREATE POLICY "Admins manage settings" ON site_settings
-    FOR ALL USING (true);
+    FOR ALL USING (
+        auth.uid() IS NOT NULL AND
+        EXISTS (SELECT 1 FROM users WHERE user_id = auth.uid() AND role_id = (SELECT role_id FROM roles WHERE role_name = 'admin'))
+    );
 
--- Contact Messages: anyone can submit, admins read
+-- Contact Messages: anyone can submit, admins read/update
 CREATE POLICY "Anyone can submit contact messages" ON contact_messages
     FOR INSERT WITH CHECK (true);
 CREATE POLICY "Admins read contact messages" ON contact_messages
-    FOR SELECT USING (true);
+    FOR SELECT USING (
+        auth.uid() IS NOT NULL AND
+        EXISTS (SELECT 1 FROM users WHERE user_id = auth.uid() AND role_id = (SELECT role_id FROM roles WHERE role_name = 'admin'))
+    );
 CREATE POLICY "Admins update contact messages" ON contact_messages
-    FOR UPDATE USING (true);
+    FOR UPDATE USING (
+        auth.uid() IS NOT NULL AND
+        EXISTS (SELECT 1 FROM users WHERE user_id = auth.uid() AND role_id = (SELECT role_id FROM roles WHERE role_name = 'admin'))
+    );
+
+-- Profile Change Requests: users create own requests, admins review
+CREATE POLICY "Users create own change requests" ON profile_change_requests
+    FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
+CREATE POLICY "Users read own change requests" ON profile_change_requests
+    FOR SELECT USING (auth.uid() IS NOT NULL AND user_id = auth.uid());
+CREATE POLICY "Admins review change requests" ON profile_change_requests
+    FOR UPDATE USING (
+        auth.uid() IS NOT NULL AND
+        EXISTS (SELECT 1 FROM users WHERE user_id = auth.uid() AND role_id = (SELECT role_id FROM roles WHERE role_name = 'admin'))
+    );
 
 -- =====================================================
 -- SEED DATA: Insert mock products from the shop
@@ -798,13 +887,20 @@ FROM categories c
 WHERE p.category_name = c.name_ar;
 
 -- =====================================================
--- GRANT permissions to anon and authenticated roles
+-- GRANT permissions - LEAST PRIVILEGE principle
 -- =====================================================
+-- Anon (public/visitors): read-only access
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon, authenticated;
-GRANT INSERT ON ALL TABLES IN SCHEMA public TO authenticated;
-GRANT UPDATE ON ALL TABLES IN SCHEMA public TO authenticated;
-GRANT DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+
+-- Authenticated users: SELECT + limited INSERT/UPDATE
+GRANT INSERT ON cart, cart_items, order_items, reviews, favorites, contact_messages, notifications, profile_change_requests IN SCHEMA public TO authenticated;
+GRANT UPDATE ON users, cart, cart_items, reviews, notifications, profile_change_requests IN SCHEMA public TO authenticated;
+GRANT DELETE ON cart_items, favorites, notifications IN SCHEMA public TO authenticated;
+
+-- NOTE: DELETE on orders, products, users, coupons, site_settings, etc. 
+-- is restricted to admins only via Supabase Dashboard or service role key.
+-- Authenticated users CANNOT delete important data.
 
 -- =====================================================
 -- VERIFICATION QUERY

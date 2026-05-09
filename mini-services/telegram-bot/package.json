@@ -1,0 +1,6 @@
+{
+  "name": "telegram-bot",
+  "scripts": {
+    "dev": "bun --hot index.ts"
+  }
+}

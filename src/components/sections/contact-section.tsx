@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Send } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import {
   WhatsAppBrandIcon,
   TelegramBrandIcon,
@@ -55,16 +56,45 @@ const contactCards = [
 export function ContactSection() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSent, setIsSent] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSent(true);
-    setName("");
-    setEmail("");
-    setMessage("");
-    setTimeout(() => setIsSent(false), 3000);
+
+    if (!name.trim() || !message.trim()) {
+      toast.error("يرجى ملء الاسم والرسالة");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, phone, subject: subject || "رسالة عامة", message }),
+      });
+
+      if (res.ok) {
+        setIsSent(true);
+        setName("");
+        setEmail("");
+        setPhone("");
+        setSubject("");
+        setMessage("");
+        toast.success("تم إرسال رسالتك بنجاح!");
+        setTimeout(() => setIsSent(false), 5000);
+      } else {
+        toast.error("حدث خطأ في إرسال الرسالة");
+      }
+    } catch {
+      toast.error("خطأ في الاتصال");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -126,7 +156,7 @@ export function ContactSection() {
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="contact-name">الاسم</Label>
+                    <Label htmlFor="contact-name">الاسم <span className="text-destructive">*</span></Label>
                     <Input
                       id="contact-name"
                       type="text"
@@ -146,12 +176,35 @@ export function ContactSection() {
                       onChange={(e) => setEmail(e.target.value)}
                       dir="ltr"
                       className="text-right"
-                      required
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="contact-phone">رقم الهاتف</Label>
+                    <Input
+                      id="contact-phone"
+                      type="tel"
+                      placeholder="+967 XXX XXX XXX"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      dir="ltr"
+                      className="text-right"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contact-subject">الموضوع</Label>
+                    <Input
+                      id="contact-subject"
+                      type="text"
+                      placeholder="موضوع الرسالة"
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="contact-message">الرسالة</Label>
+                  <Label htmlFor="contact-message">الرسالة <span className="text-destructive">*</span></Label>
                   <Textarea
                     id="contact-message"
                     placeholder="اكتب رسالتك هنا..."
@@ -161,9 +214,9 @@ export function ContactSection() {
                     required
                   />
                 </div>
-                <button type="submit" className="btn-3d w-full flex items-center justify-center gap-2">
-                  إرسال الرسالة
-                  <Send className="size-4" />
+                <button type="submit" disabled={isSubmitting} className="btn-3d w-full flex items-center justify-center gap-2 disabled:opacity-50">
+                  {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+                  {isSubmitting ? "جاري الإرسال..." : "إرسال الرسالة"}
                 </button>
               </form>
             )}

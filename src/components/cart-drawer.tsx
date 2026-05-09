@@ -1,8 +1,11 @@
 "use client";
 
-import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { ShoppingCart, Plus, Minus, Trash2, MessageSquare, Tag, Gift, Loader2, X } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -11,7 +14,9 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import { useCartStore } from "@/store/cart-store";
-import { WhatsAppBrandIcon } from "@/components/icons";
+import { useNavStore } from "@/store/nav-store";
+import { WhatsAppBrandIcon, SmsBrandIcon } from "@/components/icons";
+import { toast } from "sonner";
 
 export function CartDrawer() {
   const {
@@ -23,32 +28,81 @@ export function CartDrawer() {
     clearCart,
     totalPrice,
     totalItems,
+    appliedCoupon,
+    applyCoupon,
+    removeCoupon,
   } = useCartStore();
 
+  const { setCurrentPage } = useNavStore();
+
+  const [couponCode, setCouponCode] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+
   const itemCount = totalItems();
-  const total = totalPrice();
+  const subtotal = totalPrice();
+  const discount = appliedCoupon?.discountAmount || 0;
+  const total = appliedCoupon ? appliedCoupon.finalTotal : subtotal;
 
-  const handleCheckoutWhatsApp = () => {
-    if (items.length === 0) return;
-
+  const buildOrderMessage = () => {
     const orderLines = items
       .map(
-        (item) =>
-          `• ${item.name} × ${item.quantity} - ${
-            item.salePrice && item.salePrice < item.price
-              ? item.salePrice
-              : item.price
-          } ر.ي`
+        (item) => {
+          const p = item.salePrice && item.salePrice < item.price ? item.salePrice : item.price;
+          return `• ${item.name} × ${item.quantity} = ${(p * item.quantity).toLocaleString("ar-SA")} ر.ي`;
+        }
       )
       .join("\n");
 
-    const message = `مرحباً، أود طلب المنتجات التالية:\n\n${orderLines}\n\nالمجموع: ${total} ر.ي\n\nشكراً لكم!`;
+    let msg = `🛒 *طلب جديد من متجر النخبة*\n━━━━━━━━━━━━━━\n\n📋 *المنتجات:*\n${orderLines}\n\n`;
+    if (discount > 0) {
+      msg += `━━━━━━━━━━━━━━\n🎁 الخصم (${appliedCoupon.discount}%): -${discount.toLocaleString("ar-SA")} ر.ي\n`;
+    }
+    msg += `━━━━━━━━━━━━━━\n💰 *المجموع الكلي:* ${total.toLocaleString("ar-SA")} ر.ي\n\n`;
+    msg += `🕐 ${new Date().toLocaleDateString("ar-YE", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}\n`;
+    msg += `\n✅ في انتظار تأكيد الطلب`;
+    return msg;
+  };
 
-    const encodedMessage = encodeURIComponent(message);
-    window.open(
-      `https://wa.me/967782138587?text=${encodedMessage}`,
-      "_blank"
-    );
+  const handleCheckoutWhatsApp = () => {
+    if (items.length === 0) return;
+    const message = buildOrderMessage();
+    window.open(`https://wa.me/967782138587?text=${encodeURIComponent(message)}`, "_blank");
+    toast.success("تم فتح واتساب مع تفاصيل الطلب!");
+  };
+
+  const handleCheckoutSMS = () => {
+    if (items.length === 0) return;
+    const message = buildOrderMessage();
+    window.open(`sms:967782138587?body=${encodeURIComponent(message)}`, "_blank");
+    toast.success("تم فتح الرسائل مع تفاصيل الطلب!");
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    try {
+      const res = await fetch("/api/coupons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponCode.toUpperCase(), orderTotal: subtotal }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        applyCoupon({
+          code: data.code,
+          discount: data.discount,
+          discountAmount: data.discountAmount,
+          finalTotal: data.finalTotal,
+        });
+        toast.success(`تم تطبيق كود الخصم! خصم ${data.discount}% 🎉`);
+      } else {
+        toast.error(data.error || "كود الخصم غير صالح");
+      }
+    } catch {
+      toast.error("خطأ في التحقق من كود الخصم");
+    } finally {
+      setCouponLoading(false);
+    }
   };
 
   return (
@@ -92,12 +146,10 @@ export function CartDrawer() {
                       key={item.id}
                       className="card-3d group flex items-start gap-3 p-3"
                     >
-                      {/* Product image placeholder */}
                       <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-muted">
                         <ShoppingCart className="size-5 text-muted-foreground" />
                       </div>
 
-                      {/* Product info */}
                       <div className="min-w-0 flex-1">
                         <h4 className="mb-1 line-clamp-1 text-sm font-semibold">
                           {item.name}
@@ -106,26 +158,23 @@ export function CartDrawer() {
                           {item.salePrice && item.salePrice < item.price ? (
                             <>
                               <span className="text-sm font-bold text-gold-gradient">
-                                {effectivePrice} ر.ي
+                                {effectivePrice.toLocaleString("ar-SA")} ر.ي
                               </span>
                               <span className="text-xs text-muted-foreground line-through">
-                                {item.price} ر.ي
+                                {item.price.toLocaleString("ar-SA")} ر.ي
                               </span>
                             </>
                           ) : (
                             <span className="text-sm font-bold">
-                              {effectivePrice} ر.ي
+                              {effectivePrice.toLocaleString("ar-SA")} ر.ي
                             </span>
                           )}
                         </div>
 
-                        {/* Quantity controls */}
                         <div className="mt-2 flex items-center gap-2">
                           <div className="flex items-center rounded-lg border">
                             <button
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity - 1)
-                              }
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
                               className="flex size-7 items-center justify-center transition-colors hover:bg-accent"
                               aria-label="تقليل الكمية"
                             >
@@ -135,9 +184,7 @@ export function CartDrawer() {
                               {item.quantity}
                             </span>
                             <button
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity + 1)
-                              }
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
                               className="flex size-7 items-center justify-center transition-colors hover:bg-accent"
                               aria-label="زيادة الكمية"
                             >
@@ -145,12 +192,11 @@ export function CartDrawer() {
                             </button>
                           </div>
                           <span className="text-xs text-muted-foreground">
-                            {(effectivePrice * item.quantity).toFixed(0)} ر.ي
+                            {(effectivePrice * item.quantity).toLocaleString("ar-SA")} ر.ي
                           </span>
                         </div>
                       </div>
 
-                      {/* Remove button */}
                       <button
                         onClick={() => removeItem(item.id)}
                         className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
@@ -168,26 +214,101 @@ export function CartDrawer() {
 
             {/* Footer */}
             <SheetFooter className="flex-col gap-3">
-              <div className="flex w-full items-center justify-between">
-                <span className="text-sm text-muted-foreground">المجموع:</span>
-                <span className="text-xl font-bold text-gold-gradient">
-                  {total.toFixed(0)} ر.ي
-                </span>
+              {/* Coupon */}
+              <div className="w-full space-y-2">
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between rounded-lg bg-green-500/10 p-2.5">
+                    <div className="flex items-center gap-2">
+                      <Gift className="size-4 text-green-600" />
+                      <div>
+                        <span className="text-xs font-bold text-green-700 dark:text-green-400">
+                          {appliedCoupon.code}
+                        </span>
+                        <p className="text-[10px] text-green-600 dark:text-green-500">
+                          خصم {appliedCoupon.discount}% - وفّرت {discount.toLocaleString("ar-SA")} ر.ي
+                        </p>
+                      </div>
+                    </div>
+                    <button onClick={removeCoupon} className="text-red-500 hover:text-red-600">
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      placeholder="كود الخصم..."
+                      className="h-9 text-sm"
+                      dir="ltr"
+                      onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleApplyCoupon}
+                      disabled={couponLoading || !couponCode.trim()}
+                      className="h-9 gap-1 shrink-0"
+                    >
+                      {couponLoading ? <Loader2 className="size-3.5 animate-spin" /> : <Tag className="size-3.5" />}
+                    </Button>
+                  </div>
+                )}
               </div>
-              <button
-                className="btn-3d-whatsapp flex w-full items-center justify-center gap-2"
-                onClick={handleCheckoutWhatsApp}
-              >
-                <WhatsAppBrandIcon className="size-5" />
-                إتمام الطلب عبر واتساب
-              </button>
-              <button
-                className="w-full flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium transition-all hover:bg-accent"
-                onClick={clearCart}
-              >
-                <Trash2 className="size-4" />
-                تفريغ السلة
-              </button>
+
+              {/* Totals */}
+              <div className="w-full space-y-1">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">المجموع الفرعي:</span>
+                  <span className="font-medium">{subtotal.toLocaleString("ar-SA")} ر.ي</span>
+                </div>
+                {discount > 0 && (
+                  <div className="flex items-center justify-between text-sm text-green-600 dark:text-green-400">
+                    <span className="flex items-center gap-1"><Gift className="size-3" /> الخصم:</span>
+                    <span>-{discount.toLocaleString("ar-SA")} ر.ي</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold">المجموع:</span>
+                  <span className="text-xl font-bold text-gold-gradient">
+                    {total.toLocaleString("ar-SA")} ر.ي
+                  </span>
+                </div>
+              </div>
+
+              {/* Checkout Buttons */}
+              <div className="grid w-full grid-cols-2 gap-2">
+                <button
+                  className="btn-3d-whatsapp flex items-center justify-center gap-2 !py-3 text-sm"
+                  onClick={handleCheckoutWhatsApp}
+                >
+                  <WhatsAppBrandIcon className="size-4" />
+                  واتساب
+                </button>
+                <button
+                  className="flex items-center justify-center gap-2 rounded-xl border-2 border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm font-bold text-blue-700 transition-all hover:bg-blue-500/20 dark:text-blue-400"
+                  onClick={handleCheckoutSMS}
+                >
+                  <SmsBrandIcon className="size-4" />
+                  رسالة نصية
+                </button>
+              </div>
+
+              <div className="grid w-full grid-cols-2 gap-2">
+                <button
+                  className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-medium transition-all hover:bg-accent"
+                  onClick={() => { closeCart(); setCurrentPage("cart"); }}
+                >
+                  تفاصيل الطلب
+                </button>
+                <button
+                  className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-medium text-destructive transition-all hover:bg-red-500/5"
+                  onClick={clearCart}
+                >
+                  <Trash2 className="size-3.5" />
+                  تفريغ السلة
+                </button>
+              </div>
             </SheetFooter>
           </>
         )}

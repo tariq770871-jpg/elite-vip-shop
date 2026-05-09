@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/auth-store";
 import { useNavStore } from "@/store/nav-store";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,16 @@ import {
   LogIn,
   TrendingUp,
   ClipboardList,
+  Tag,
+  CheckCircle2,
+  XCircle,
+  Wifi,
+  WifiOff,
+  RefreshCw,
+  Send,
+  Bot,
 } from "lucide-react";
+import { toast } from "sonner";
 
 /* ------------------------------------------------------------------ */
 /*  Mock data                                                          */
@@ -121,6 +130,76 @@ function StatCard({
           <p className="text-sm text-muted-foreground">{label}</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Telegram Settings Component                                         */
+/* ------------------------------------------------------------------ */
+
+function TelegramSettings() {
+  const [botToken, setBotToken] = useState("");
+  const [chatId, setChatId] = useState("");
+  const [botStatus, setBotStatus] = useState<{ configured: boolean; queueSize: number } | null>(null);
+  const [testLoading, setTestLoading] = useState(false);
+
+  const checkStatus = async () => {
+    try {
+      const res = await fetch("/health?XTransformPort=3005");
+      const data = await res.json();
+      setBotStatus({ configured: data.configured, queueSize: data.queueSize });
+    } catch {
+      setBotStatus({ configured: false, queueSize: 0 });
+    }
+  };
+
+  useEffect(() => { checkStatus(); }, []);
+
+  const handleTest = async () => {
+    if (!botToken || !chatId) { toast.error("أدخل رمز البوت ومعرف المحادثة"); return; }
+    setTestLoading(true);
+    try {
+      const res = await fetch("/configure?XTransformPort=3005", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ botToken, chatId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("تم حفظ الإعدادات!");
+        checkStatus();
+      }
+    } catch { toast.error("خطأ"); }
+    finally { setTestLoading(false); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+        <div className="flex items-center gap-2">
+          {botStatus?.configured ? (
+            <><Wifi className="size-4 text-green-500" /><span className="text-sm font-medium text-green-700 dark:text-green-400">البوت متصل</span></>
+          ) : (
+            <><WifiOff className="size-4 text-amber-500" /><span className="text-sm font-medium text-amber-700 dark:text-amber-400">غير متصل</span></>
+          )}
+        </div>
+        <Button variant="ghost" size="sm" onClick={checkStatus}><RefreshCw className="size-3" /></Button>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label className="text-sm">رمز البوت (Bot Token)</Label>
+          <Input value={botToken} onChange={(e) => setBotToken(e.target.value)} placeholder="123456:ABC-DEF..." dir="ltr" type="password" />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-sm">معرف المحادثة (Chat ID)</Label>
+          <Input value={chatId} onChange={(e) => setChatId(e.target.value)} placeholder="123456789" dir="ltr" />
+        </div>
+      </div>
+      <Button onClick={handleTest} disabled={testLoading} variant="outline" className="w-full gap-2">
+        {testLoading ? <RefreshCw className="size-4 animate-spin" /> : <Send className="size-4" />}
+        حفظ واختبار الإرسال
+      </Button>
     </div>
   );
 }
@@ -269,6 +348,39 @@ function AdminDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Coupon Management */}
+      <section className="card-3d p-6">
+        <h2 className="mb-4 text-lg font-bold flex items-center gap-2">
+          <Tag className="size-5" />
+          إدارة كوبونات الخصم
+        </h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { code: "WELCOME10", discount: "10%", min: "0 ر.ي", status: "نشط" },
+            { code: "VIP20", discount: "20%", min: "5,000 ر.ي", status: "نشط" },
+            { code: "SUMMER15", discount: "15%", min: "3,000 ر.ي", status: "نشط" },
+            { code: "ELITE25", discount: "25%", min: "10,000 ر.ي", status: "نشط" },
+          ].map((c) => (
+            <div key={c.code} className="rounded-lg border p-3 text-center">
+              <p className="font-bold text-gold-gradient text-lg">{c.discount}</p>
+              <p className="text-xs font-mono bg-muted rounded px-2 py-0.5 mt-1 inline-block" dir="ltr">{c.code}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">الحد الأدنى: {c.min}</p>
+              <Badge variant="outline" className="mt-2 text-[10px] border-green-500/30 text-green-700 dark:text-green-400">{c.status}</Badge>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground mt-3">💡 شارك هذه الأكواد مع العملاء لتحفيزهم على الشراء</p>
+      </section>
+
+      {/* Telegram Bot Settings */}
+      <section className="card-3d p-6">
+        <h2 className="mb-4 text-lg font-bold flex items-center gap-2">
+          <Bot className="size-5" />
+          إشعارات تيليجرام
+        </h2>
+        <TelegramSettings />
+      </section>
     </div>
   );
 }
