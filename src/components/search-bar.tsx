@@ -20,7 +20,7 @@ export function SearchBar({ isOpen, onClose }: SearchBarProps) {
   const router = useRouter();
 
   useEffect(() => {
-    getProducts().then(d => setAllProducts(d));
+    getProducts().then(d => setAllProducts(d)).catch(() => {});
   }, []);
 
   const filteredProducts = useMemo(() => {

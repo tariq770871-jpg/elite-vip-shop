@@ -110,38 +110,42 @@ export function CartPageSection() {
 
     // Save order to Supabase
     const { user } = useAuthStore.getState();
-    if (user?.id) {
-      fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user.id,
-          items,
-          total: grandTotal,
-          notes,
-          paymentMethod: paymentMethod,
-          customerName,
-          customerPhone,
-          customerAddress,
-          discount,
-          couponCode: appliedCoupon?.code,
-        }),
-      }).catch(() => {
-        // Silent fail
-      });
-    }
+    const saveOrder = user?.id
+      ? fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.id,
+            items,
+            total: grandTotal,
+            notes,
+            paymentMethod: paymentMethod,
+            customerName,
+            customerPhone,
+            customerAddress,
+            discount,
+            couponCode: appliedCoupon?.code,
+          }),
+        }).then((res) => {
+          if (!res.ok) toast.error("تعذّر حفظ الطلب في النظام، لكن يمكنك إرساله عبر واتساب");
+        }).catch(() => {
+          toast.error("تعذّر حفظ الطلب في النظام، لكن يمكنك إرساله عبر واتساب");
+        })
+      : Promise.resolve();
 
-    setTimeout(() => {
+    saveOrder.finally(() => {
       if (paymentMethod === "whatsapp") {
-        window.open(`https://wa.me/967782138587?text=${encodeURIComponent(msg)}`, "_blank");
+        const w = window.open(`https://wa.me/967782138587?text=${encodeURIComponent(msg)}`, "_blank");
+        if (w) w.opener = null;
       } else {
-        window.open(`sms:967782138587?body=${encodeURIComponent(msg)}`, "_blank");
+        const w = window.open(`sms:967782138587?body=${encodeURIComponent(msg)}`, "_blank");
+        if (w) w.opener = null;
       }
       clearCart();
       setOrderPlaced(true);
       setIsSubmitting(false);
       toast.success("تم إرسال طلبك بنجاح! 🎉");
-    }, 500);
+    });
   };
 
   if (orderPlaced) {
