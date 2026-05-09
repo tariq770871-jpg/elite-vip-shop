@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
 import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
 
@@ -31,9 +30,10 @@ export async function GET(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
   try {
-    if (!supabase) return NextResponse.json({ configured: false });
+    const serviceClient = getSupabaseServiceClient();
+    if (!serviceClient) return NextResponse.json({ configured: false });
 
-    const { data } = await supabase
+    const { data } = await serviceClient
       .from("site_settings")
       .select("key, value")
       .in("key", ["telegram_bot_token", "telegram_chat_id"]);
@@ -95,9 +95,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: "تم إرسال رسالة الاختبار" });
     }
 
-    // Save to Supabase site_settings
-    if (supabase) {
-      await supabase.from("site_settings").upsert(
+    // Save to Supabase site_settings (service client bypasses RLS)
+    const serviceClient = getSupabaseServiceClient();
+    if (serviceClient) {
+      await serviceClient.from("site_settings").upsert(
         [
           { key: "telegram_bot_token", value: botToken, type: "secret" },
           { key: "telegram_chat_id", value: chatId, type: "string" },
@@ -121,8 +122,9 @@ export async function DELETE(request: Request) {
     // Admin authorization check — only admins can delete Telegram config
     const { errorResponse } = await verifyAdmin(request);
     if (errorResponse) return errorResponse;
-    if (supabase) {
-      await supabase
+    const serviceClient = getSupabaseServiceClient();
+    if (serviceClient) {
+      await serviceClient
         .from("site_settings")
         .delete()
         .in("key", ["telegram_bot_token", "telegram_chat_id"]);

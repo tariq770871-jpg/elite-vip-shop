@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
 import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
 
@@ -18,14 +17,16 @@ export async function GET(request: Request) {
       );
     }
 
-    if (!supabase) {
+    const serviceClient = getSupabaseServiceClient();
+    if (!serviceClient) {
       return NextResponse.json({ reviews: [], averageRating: 0, totalCount: 0 });
     }
 
-    const { data: reviews, error } = await supabase
+    const { data: reviews, error } = await serviceClient
       .from("reviews")
-      .select("*, profiles:user_id(name)")
+      .select("*, users:user_id(name)")
       .eq("product_id", productId)
+      .eq("is_approved", true)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -84,7 +85,8 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!supabase) {
+    const sc = getSupabaseServiceClient();
+    if (!sc) {
       return NextResponse.json({ error: "النظام غير متاح حالياً" }, { status: 503 });
     }
 
@@ -98,10 +100,7 @@ export async function POST(request: Request) {
     }
 
     // Use service role client to bypass RLS for the insert
-    const serviceClient = getSupabaseServiceClient();
-    if (!serviceClient) {
-      return NextResponse.json({ error: "النظام غير متاح حالياً" }, { status: 503 });
-    }
+    const serviceClient = sc;
 
     // Check for existing review by this user for this product (prevent duplicates)
     const { data: existingReview } = await serviceClient

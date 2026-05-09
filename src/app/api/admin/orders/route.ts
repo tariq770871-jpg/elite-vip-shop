@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
 
 // GET: Fetch all orders for admin (with user info and items)
@@ -8,14 +8,15 @@ export async function GET(request: Request) {
   if (blocked) return blocked;
   try {
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get("limit") || "100");
+    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "100"), 1), 200);
     const status = searchParams.get("status");
 
-    if (!supabase) {
+    const serviceClient = getSupabaseServiceClient();
+    if (!serviceClient) {
       return NextResponse.json({ orders: [], total: 0 });
     }
 
-    let query = supabase
+    let query = serviceClient
       .from("orders")
       .select("order_id, order_number, user_id, status, total_amount, notes, created_at, updated_at, delivery_type, customer_name, customer_phone, customer_address, province, district, street, landmark, seller_id, product_id, product_name_snapshot, unit_price, quantity, total_price")
       .order("created_at", { ascending: false })
@@ -38,7 +39,7 @@ export async function GET(request: Request) {
 
     // Fetch order items for all orders at once
     const orderIds = orders.map((o) => o.order_id);
-    const { data: allItems } = await supabase
+    const { data: allItems } = await serviceClient
       .from("order_items")
       .select("order_id, product_name, quantity, price")
       .in("order_id", orderIds);
@@ -57,7 +58,7 @@ export async function GET(request: Request) {
 
     // Fetch users info
     const userIds = [...new Set(orders.map((o) => o.user_id))];
-    const { data: usersData } = await supabase
+    const { data: usersData } = await serviceClient
       .from("users")
       .select("user_id, name, email, phone")
       .in("user_id", userIds);
@@ -115,7 +116,7 @@ export async function GET(request: Request) {
     });
 
     // Get total count for stats
-    const { count: totalCount } = await supabase
+    const { count: totalCount } = await serviceClient
       .from("orders")
       .select("*", { count: "exact", head: true });
 
@@ -150,11 +151,25 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "حالة غير صالحة" }, { status: 400 });
     }
 
-    if (!supabase) {
+    // Admin auth check
+    const { errorResponse: adminErr } = await (async () => {
+      const { user, error: authError } = await verifyAuthToken(request);
+      if (authError || !user) return { errorResponse: NextResponse.json({ error: "غير مصرح به" }, { status: 401 }) };
+      const sc = getSupabaseServiceClient();
+      if (!sc) return { errorResponse: NextResponse.json({ error: "خدمة المصادقة غير متاحة" }, { status: 503 }) };
+      const { data: profile } = await sc.from("users").select("role_id, roles(role_name)").eq("email", user.email).single();
+      const rn = (profile?.roles as { role_name?: string } | null)?.role_name;
+      if (rn !== "admin") return { errorResponse: NextResponse.json({ error: "ممنوع" }, { status: 403 }) };
+      return { errorResponse: null };
+    })();
+    if (adminErr) return adminErr;
+
+    const serviceClient = getSupabaseServiceClient();
+    if (!serviceClient) {
       return NextResponse.json({ success: true });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await serviceClient
       .from("orders")
       .update({ status, updated_at: new Date().toISOString() })
       .eq("order_id", orderId)

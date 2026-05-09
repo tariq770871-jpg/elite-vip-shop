@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   name VARCHAR(255) NOT NULL,
   description TEXT DEFAULT '',
   price DECIMAL(12, 2) NOT NULL CHECK (price >= 0),
-  sale_price DECIMAL(12, 2) CHECK (sale_price IS NULL OR sale_price >= 0 OR sale_price < price),
+  sale_price DECIMAL(12, 2) CHECK (sale_price IS NULL OR (sale_price >= 0 AND sale_price < price)),
   category_id UUID,
   images TEXT[] DEFAULT '{}',
   availability BOOLEAN DEFAULT TRUE,
@@ -223,13 +223,30 @@ CREATE TABLE IF NOT EXISTS public.orders (
   order_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   order_number VARCHAR(50) NOT NULL UNIQUE,
   user_id UUID NOT NULL,
+  seller_id UUID,
   status VARCHAR(30) NOT NULL DEFAULT 'new',
   total_amount DECIMAL(12, 2) DEFAULT 0 CHECK (total_amount >= 0),
   notes TEXT,
+  -- Delivery & customer info columns
+  delivery_type VARCHAR(20) DEFAULT 'pickup',
+  customer_name VARCHAR(100),
+  customer_phone VARCHAR(30),
+  customer_address TEXT,
+  province VARCHAR(100),
+  district VARCHAR(100),
+  street VARCHAR(255),
+  landmark VARCHAR(255),
+  -- Product snapshot columns
+  product_id UUID,
+  product_name_snapshot VARCHAR(255),
+  unit_price DECIMAL(12, 2),
+  quantity INTEGER DEFAULT 1,
+  total_price DECIMAL(12, 2),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   
-  CONSTRAINT chk_order_status CHECK (status IN ('new', 'reviewing', 'confirmed', 'shipped', 'delivered', 'cancelled', 'refunded')),
+  CONSTRAINT chk_order_status CHECK (status IN ('new', 'pending', 'reviewing', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded')),
+  CONSTRAINT chk_delivery_type CHECK (delivery_type IN ('delivery', 'pickup')),
   CONSTRAINT fk_order_user FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -309,6 +326,42 @@ CREATE TABLE IF NOT EXISTS public.site_settings (
 );
 
 CREATE INDEX IF NOT EXISTS idx_settings_key ON public.site_settings(key);
+
+-- ============================================================
+-- 16. TABLE: contact_messages (رسائل التواصل)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.contact_messages (
+  message_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(255),
+  phone VARCHAR(30),
+  subject VARCHAR(255) DEFAULT 'رسالة عامة',
+  message TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_contact_created ON public.contact_messages(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_contact_read ON public.contact_messages(is_read);
+
+-- ============================================================
+-- 17. TABLE: coupons (أكواد الخصم)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.coupons (
+  coupon_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  code VARCHAR(50) NOT NULL UNIQUE,
+  discount_value DECIMAL(5, 2) NOT NULL CHECK (discount_value > 0 AND discount_value <= 100),
+  min_order_amount DECIMAL(12, 2) DEFAULT 0 CHECK (min_order_amount >= 0),
+  max_uses INTEGER,
+  used_count INTEGER DEFAULT 0 CHECK (used_count >= 0),
+  is_active BOOLEAN DEFAULT TRUE,
+  valid_from TIMESTAMPTZ,
+  valid_until TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_coupons_code ON public.coupons(code);
+CREATE INDEX IF NOT EXISTS idx_coupons_active ON public.coupons(is_active);
 
 -- ============================================================
 -- FUNCTION: Auto-update updated_at timestamp
@@ -681,6 +734,28 @@ CREATE POLICY "site_settings_public_read" ON public.site_settings
 
 -- Only admins can modify settings
 CREATE POLICY "site_settings_admin_write" ON public.site_settings
+  FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+-- ══════════════════════════════════════════════════════════════
+-- 16. RLS: contact_messages
+-- ══════════════════════════════════════════════════════════════
+ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can insert contact messages (public contact form)
+CREATE POLICY "contact_messages_insert_public" ON public.contact_messages
+  FOR INSERT WITH CHECK (true);
+
+-- Only admins can read contact messages (contains PII)
+CREATE POLICY "contact_messages_admin_read" ON public.contact_messages
+  FOR SELECT USING (public.is_admin());
+
+-- ══════════════════════════════════════════════════════════════
+-- 17. RLS: coupons
+-- ══════════════════════════════════════════════════════════════
+ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
+
+-- Only admins can read/write coupons (sensitive business data)
+CREATE POLICY "coupons_admin_all" ON public.coupons
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 -- ============================================================

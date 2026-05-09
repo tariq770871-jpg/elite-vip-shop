@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
-import { rateLimitResponse } from "@/lib/rate-limit";
 import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
+import { rateLimitResponse } from "@/lib/rate-limit";
 
 /** Verify the authenticated user has admin role */
 async function verifyAdmin(request: Request) {
@@ -35,11 +34,12 @@ export async function GET(request: Request) {
     const { errorResponse: getErr } = await verifyAdmin(request);
     if (getErr) return getErr;
 
-    if (!supabase) {
+    const serviceClient = getSupabaseServiceClient();
+    if (!serviceClient) {
       return NextResponse.json({ users: [], total: 0 });
     }
 
-    const { data: users, error, count } = await supabase
+    const { data: users, error, count } = await serviceClient
       .from("users")
       .select("user_id, name, email, phone, is_active, created_at, role_id, roles(role_name)", { count: "exact" })
       .order("created_at", { ascending: false })
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
 
     if (error) {
       // Fallback without join if roles table doesn't exist as expected
-      const { data: usersSimple, error: e2, count: c2 } = await supabase
+      const { data: usersSimple, error: e2, count: c2 } = await serviceClient
         .from("users")
         .select("user_id, name, email, phone, is_active, created_at", { count: "exact" })
         .order("created_at", { ascending: false })
@@ -108,11 +108,12 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "معرف المستخدم والاسم مطلوبان" }, { status: 400 });
     }
 
-    if (!supabase) {
+    const sc = getSupabaseServiceClient();
+    if (!sc) {
       return NextResponse.json({ success: true });
     }
 
-    const { error } = await supabase
+    const { error } = await sc
       .from("users")
       .update({ name })
       .eq("user_id", userId);
@@ -145,12 +146,13 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "معرف المستخدم مطلوب" }, { status: 400 });
     }
 
-    if (!supabase) {
+    const sc = getSupabaseServiceClient();
+    if (!sc) {
       return NextResponse.json({ success: true });
     }
 
     // Soft delete: deactivate instead of removing to preserve data integrity
-    const { error } = await supabase
+    const { error } = await sc
       .from("users")
       .update({ is_active: false })
       .eq("user_id", userId);

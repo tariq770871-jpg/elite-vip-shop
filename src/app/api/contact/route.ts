@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
 import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
 import { sendTelegramNotification } from "@/lib/telegram";
@@ -38,8 +37,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "يرجى ملء الاسم والرسالة" }, { status: 400 });
     }
 
-    if (supabase) {
-      const { error } = await supabase.from("contact_messages").insert({
+    const serviceClient = getSupabaseServiceClient();
+    if (serviceClient) {
+      const { error } = await serviceClient.from("contact_messages").insert({
         name,
         email: email || null,
         phone: phone || null,
@@ -83,8 +83,9 @@ export async function GET(request: Request) {
     const { errorResponse } = await verifyAdmin(request);
     if (errorResponse) return errorResponse;
 
-    if (!supabase) return NextResponse.json({ messages: [] });
-    const { data, error } = await supabase
+    const serviceClient = getSupabaseServiceClient();
+    if (!serviceClient) return NextResponse.json({ messages: [] });
+    const { data, error } = await serviceClient
       .from("contact_messages")
       .select("*")
       .order("created_at", { ascending: false })

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
 import { sendOrderNotification } from "@/lib/telegram";
-import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
+import { verifyAuthToken, getSupabaseServiceClient, createRouteHandlerClient } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
 
 // POST: Save a new order to Supabase
@@ -34,7 +33,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "بيانات غير مكتملة" }, { status: 400 });
     }
 
-    if (!supabase) {
+    // Use route handler client with user's auth token for RLS-respecting operations
+    const routeClient = createRouteHandlerClient(request);
+    // Use service client for operations that bypass RLS (after auth verification)
+    const serviceClient = getSupabaseServiceClient();
+
+    if (!serviceClient) {
       return NextResponse.json({ success: true, orderId: "local", orderNumber: "N/A" });
     }
 
@@ -55,8 +59,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // Fetch real prices from the products table
-    const { data: dbProducts, error: dbError } = await supabase
+    // Fetch real prices from the products table (service client bypasses RLS)
+    const { data: dbProducts, error: dbError } = await serviceClient
       .from("products")
       .select("product_id, price, sale_price, name, availability, seller_id")
       .in("product_id", productIds);
@@ -160,7 +164,7 @@ export async function POST(request: Request) {
     let order: any = null;
     let orderError: any = null;
 
-    const extendedResult = await supabase
+    const extendedResult = await serviceClient
       .from("orders")
       .insert(orderInsert)
       .select()
@@ -176,7 +180,7 @@ export async function POST(request: Request) {
         total_amount: calculatedTotal,
         notes: notesContent,
       };
-      const basicResult = await supabase
+      const basicResult = await serviceClient
         .from("orders")
         .insert(basicInsert)
         .select()
@@ -202,7 +206,7 @@ export async function POST(request: Request) {
       price: vi.price,
     }));
 
-    const { error: itemsError } = await supabase
+    const { error: itemsError } = await serviceClient
       .from("order_items")
       .insert(orderItems);
 
@@ -285,7 +289,9 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const role = searchParams.get("role"); // "seller" to fetch seller orders
 
-    if (!supabase) {
+    // Use service client to fetch orders (after auth verification, bypasses RLS)
+    const serviceClient = getSupabaseServiceClient();
+    if (!serviceClient) {
       return NextResponse.json({ orders: [] });
     }
 
@@ -293,14 +299,14 @@ export async function GET(request: Request) {
 
     if (role === "seller") {
       // Seller: fetch orders where seller_id = their user_id
-      query = supabase
+      query = serviceClient
         .from("orders")
         .select("*")
         .eq("seller_id", userId)
         .order("created_at", { ascending: false });
     } else {
       // Regular user: fetch their own orders
-      query = supabase
+      query = serviceClient
         .from("orders")
         .select("*")
         .eq("user_id", userId)
@@ -317,7 +323,7 @@ export async function GET(request: Request) {
     // Fetch order items for each order
     if (orders && orders.length > 0) {
       const orderIds = orders.map((o) => o.order_id);
-      const { data: allItems, error: itemsError } = await supabase
+      const { data: allItems, error: itemsError } = await serviceClient
         .from("order_items")
         .select("*")
         .in("order_id", orderIds);
