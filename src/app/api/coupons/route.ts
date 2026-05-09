@@ -1,6 +1,27 @@
 import { NextResponse } from "next/server";
-import { verifyAuthToken } from "@/lib/supabase-server";
+import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
+
+/** Verify the authenticated user has admin role */
+async function verifyAdmin(request: Request) {
+  const { user, error: authError } = await verifyAuthToken(request);
+  if (authError || !user) {
+    return { user: null, errorResponse: NextResponse.json({ error: "غير مصرح به" }, { status: 401 }) };
+  }
+  const serviceClient = getSupabaseServiceClient();
+  if (serviceClient) {
+    const { data: profile } = await serviceClient
+      .from("users")
+      .select("role_id, roles(role_name)")
+      .eq("email", user.email)
+      .single();
+    const roleName = (profile?.roles as { role_name?: string } | null)?.role_name;
+    if (roleName !== "admin") {
+      return { user: null, errorResponse: NextResponse.json({ error: "ممنوع — يتطلب صلاحية المدير" }, { status: 403 }) };
+    }
+  }
+  return { user, errorResponse: null };
+}
 
 const COUPONS: Record<string, { discount: number; minOrder: number; maxUses: number; usedCount: number; isActive: boolean; expiresAt: string | null }> = {
   WELCOME10: { discount: 10, minOrder: 0, maxUses: 1000, usedCount: 0, isActive: true, expiresAt: null },
@@ -83,10 +104,8 @@ export async function PUT(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
   try {
-    const { user, error: authError } = await verifyAuthToken(request);
-    if (authError || !user) {
-      return NextResponse.json({ error: "غير مصرح به" }, { status: 401 });
-    }
+    const { user, errorResponse } = await verifyAdmin(request);
+    if (errorResponse) return errorResponse;
 
     const body = await request.json();
     const { code, discount, minOrder, maxUses, isActive, expiresAt } = body;
@@ -120,10 +139,8 @@ export async function DELETE(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
   try {
-    const { user, error: authError } = await verifyAuthToken(request);
-    if (authError || !user) {
-      return NextResponse.json({ error: "غير مصرح به" }, { status: 401 });
-    }
+    const { user, errorResponse } = await verifyAdmin(request);
+    if (errorResponse) return errorResponse;
 
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
