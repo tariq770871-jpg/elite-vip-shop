@@ -12,6 +12,9 @@ export type PageName =
   | "ai-tools"
   | "academy"
   | "earning"
+  | "services"
+  | "trading"
+  | "faq"
   | "cart"
   | "orders"
   | "profile"
@@ -40,6 +43,9 @@ export const PAGE_PATHS: Record<PageName, string> = {
   "ai-tools": "/ai-tools",
   academy: "/academy",
   earning: "/earning",
+  services: "/services",
+  trading: "/trading",
+  faq: "/faq",
   cart: "/cart",
   orders: "/orders",
   profile: "/profile",
@@ -68,6 +74,9 @@ const PATH_PREFIX_TO_PAGE: [string, PageName][] = [
   ["/ai-tools", "ai-tools"],
   ["/academy", "academy"],
   ["/earning", "earning"],
+  ["/services", "services"],
+  ["/trading", "trading"],
+  ["/faq", "faq"],
   ["/cart", "cart"],
   ["/orders", "orders"],
   ["/profile", "profile"],

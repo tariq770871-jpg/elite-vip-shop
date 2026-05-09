@@ -7,7 +7,6 @@ import {
   Search,
   Moon,
   Sun,
-  ShoppingCart,
   Bell,
   User,
   Menu,
@@ -18,7 +17,6 @@ import {
   ShoppingBag,
   Smartphone,
   Bot,
-  GraduationCap,
   DollarSign,
   Info,
   Phone,
@@ -31,6 +29,9 @@ import {
   Heart,
   MessageSquareWarning,
   ShieldX,
+  Palette,
+  TrendingUp,
+  HelpCircle,
 } from "lucide-react";
 import { NotificationButton } from "@/components/notification-panel";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/components/theme-provider";
 import { useNavigation, type PageName, PAGE_PATHS } from "@/lib/navigation";
-import { useCartStore } from "@/store/cart-store";
 import { useAuthStore } from "@/store/auth-store";
 import { useNotificationStore } from "@/store/notification-store";
 import { Logo } from "@/components/logo";
@@ -67,16 +67,17 @@ interface NavbarProps {
 
 const navLinks: { label: string; page: PageName; icon: React.ReactNode }[] = [
   { label: "الرئيسية", page: "home", icon: <Home className="size-4" /> },
-  { label: "المنتجات", page: "products", icon: <ShoppingBag className="size-4" /> },
-  { label: "التطبيقات", page: "apps", icon: <Smartphone className="size-4" /> },
-  { label: "أدوات AI", page: "ai-tools", icon: <Bot className="size-4" /> },
-  { label: "أكاديمية", page: "academy", icon: <GraduationCap className="size-4" /> },
-  { label: "ربح من الإنترنت", page: "earning", icon: <DollarSign className="size-4" /> },
+  { label: "المتجر", page: "products", icon: <ShoppingBag className="size-4" /> },
+  { label: "التطبيقات والأدوات", page: "apps", icon: <Smartphone className="size-4" /> },
+  { label: "الخدمات", page: "services", icon: <Palette className="size-4" /> },
+  { label: "التداول", page: "trading", icon: <TrendingUp className="size-4" /> },
+  { label: "الربح من الإنترنت", page: "earning", icon: <DollarSign className="size-4" /> },
 ];
 
 const infoLinks: { label: string; page: PageName; icon: React.ReactNode }[] = [
   { label: "من نحن", page: "about", icon: <Info className="size-4" /> },
   { label: "اتصل بنا", page: "contact", icon: <Phone className="size-4" /> },
+  { label: "الأسئلة الشائعة", page: "faq", icon: <HelpCircle className="size-4" /> },
   { label: "سياسة الخصوصية", page: "privacy", icon: <ShieldCheck className="size-4" /> },
   { label: "الشروط والأحكام", page: "terms", icon: <FileText className="size-4" /> },
   { label: "سياسة الاسترجاع", page: "return-policy", icon: <RotateCcw className="size-4" /> },
@@ -118,8 +119,6 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
   const { currentPage, isActive, navigateTo, goBack, getPath } = useNavigation();
   const pathname = usePathname();
   const router = useRouter();
-  const totalItems = useCartStore((s) => s.totalItems());
-  const openCart = useCartStore((s) => s.openCart);
   const { isAuthenticated, user, logout } = useAuthStore();
   const unreadCount = useNotificationStore((s) => s.unreadCount());
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -178,22 +177,6 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
               <Sun className="size-[18px]" />
             ) : (
               <Moon className="size-[18px]" />
-            )}
-          </Button>
-
-          {/* Cart */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative size-8 md:size-9"
-            onClick={openCart}
-            aria-label="السلة"
-          >
-            <ShoppingCart className="size-4 md:size-[18px]" />
-            {totalItems > 0 && (
-              <Badge className="absolute -top-0.5 -left-0.5 flex size-4 items-center justify-center rounded-full p-0 text-[9px] md:size-5 md:text-[10px]">
-                {totalItems}
-              </Badge>
             )}
           </Button>
 

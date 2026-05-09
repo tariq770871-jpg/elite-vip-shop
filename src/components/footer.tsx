@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Heart, MessageSquareWarning, Shield, Truck, RotateCcw, Headphones } from "lucide-react";
+import { Heart, MessageSquareWarning, Shield, Truck, RotateCcw, Headphones, Palette, TrendingUp, HelpCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useNavigation, type PageName, PAGE_PATHS } from "@/lib/navigation";
 import { Logo } from "@/components/logo";
@@ -20,13 +20,16 @@ const quickLinks: { label: string; page: PageName }[] = [
 ];
 
 const sectionLinks: { label: string; page: PageName }[] = [
-  { label: "التطبيقات", page: "apps" },
-  { label: "أدوات AI", page: "ai-tools" },
-  { label: "أكاديمية", page: "academy" },
+  { label: "المتجر", page: "products" },
+  { label: "التطبيقات والأدوات", page: "apps" },
+  { label: "الخدمات", page: "services" },
+  { label: "التداول", page: "trading" },
   { label: "ربح من الإنترنت", page: "earning" },
+  { label: "أدوات AI", page: "ai-tools" },
 ];
 
 const quickSectionPages: { label: string; page: PageName; icon: React.ReactNode }[] = [
+  { label: "الأسئلة الشائعة", page: "faq", icon: <HelpCircle className="size-4" /> },
   { label: "قيم الموقع", page: "values", icon: <Heart className="size-4" /> },
   { label: "بروتوكول النقد الصريح", page: "criticism", icon: <MessageSquareWarning className="size-4" /> },
 ];

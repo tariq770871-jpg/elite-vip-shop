@@ -392,6 +392,39 @@
   background: radial-gradient(ellipse at 10% 0%, rgba(245, 158, 11, 0.08) 0%, transparent 60%);
   pointer-events: none;
 }
+.section-gradient-services {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(249, 115, 22, 0.02) 50%, rgba(249, 115, 22, 0.08) 100%);
+  position: relative;
+}
+.section-gradient-services::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 10% 0%, rgba(249, 115, 22, 0.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+.section-gradient-trading {
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.08) 0%, rgba(20, 184, 166, 0.02) 50%, rgba(20, 184, 166, 0.08) 100%);
+  position: relative;
+}
+.section-gradient-trading::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 10% 0%, rgba(20, 184, 166, 0.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+.section-gradient-faq {
+  background: linear-gradient(135deg, rgba(212, 168, 67, 0.06) 0%, rgba(212, 168, 67, 0.02) 50%, rgba(212, 168, 67, 0.06) 100%);
+  position: relative;
+}
+.section-gradient-faq::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 10% 0%, rgba(212, 168, 67, 0.04) 0%, transparent 60%);
+  pointer-events: none;
+}
 
 /* === PRODUCT IMAGE PLACEHOLDER === */
 .product-img-placeholder {
