@@ -500,7 +500,7 @@ function AdminDashboard() {
 
       // Fetch coupons from API
       try {
-        const couponsRes = await fetch("/api/coupons");
+        const couponsRes = await fetch("/api/coupons", { headers: authHeaders });
         if (couponsRes.ok) {
           const couponsData = await couponsRes.json();
           if (couponsData.coupons) {
@@ -1011,7 +1011,9 @@ function AdminDashboard() {
 /* ------------------------------------------------------------------ */
 
 function SellerDashboard() {
-  const { user } = useAuthStore();
+  const { user, session } = useAuthStore();
+  const authToken = session?.access_token || "";
+  const authHeaders: Record<string, string> = authToken ? { Authorization: `Bearer ${authToken}` } : {};
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [stats, setStats] = useState({ products: 0, orders: 0, revenue: 0 });
@@ -1052,7 +1054,7 @@ function SellerDashboard() {
 
   const fetchSellerOrders = async () => {
     try {
-      const res = await fetch("/api/orders");
+      const res = await fetch("/api/orders", { headers: authHeaders });
       if (res.ok) {
         const data = await res.json();
         const orderList = data.orders || [];
@@ -1385,7 +1387,9 @@ interface UserOrder {
 }
 
 function UserDashboard() {
-  const user = useAuthStore((s) => s.user);
+  const { user, session } = useAuthStore();
+  const authToken = session?.access_token || "";
+  const authHeaders: Record<string, string> = authToken ? { Authorization: `Bearer ${authToken}` } : {};
   const [orders, setOrders] = useState<UserOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
 
@@ -1393,7 +1397,7 @@ function UserDashboard() {
     if (!user?.id) { setOrdersLoading(false); return; }
     async function fetchOrders() {
       try {
-        const res = await fetch(`/api/orders?userId=${user!.id}&limit=20`);
+        const res = await fetch(`/api/orders?userId=${user!.id}&limit=20`, { headers: authHeaders });
         if (res.ok) {
           const data = await res.json();
           const raw = data.orders || data || [];
