@@ -28,7 +28,7 @@ export function BreadcrumbSchema({ items }: BreadcrumbSchemaProps) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbList) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbList).replace(/</g, '\\u003c').replace(/>/g, '\\u003e') }}
     />
   );
 }
