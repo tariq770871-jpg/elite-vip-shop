@@ -44,6 +44,28 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
     useAuthStore.getState().checkSession();
   }, []);
 
+  // Visitor tracker — once per session only
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const key = "elite_visited";
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+
+    const device = /Mobi|Android/i.test(navigator.userAgent) ? "جوال" : "كمبيوتر";
+    const referrer = document.referrer
+      ? new URL(document.referrer).hostname
+      : "مباشر";
+
+    fetch("/api/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event: "visit",
+        data: { device, referrer },
+      }),
+    }).catch(() => {});
+  }, []);
+
   // Register Service Worker
   useEffect(() => {
     if ("serviceWorker" in navigator) {
