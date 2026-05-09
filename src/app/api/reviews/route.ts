@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
 
 // GET: Fetch reviews for a product (query param: product_id)
@@ -87,38 +88,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "النظام غير متاح حالياً" }, { status: 503 });
     }
 
-    // Get user from Authorization header
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
+    // Get user from Authorization header using server-side verification
+    const { user, error: authError } = await verifyAuthToken(request);
+    if (authError || !user) {
       return NextResponse.json(
         { error: "يجب تسجيل الدخول لإضافة تقييم" },
         { status: 401 }
       );
     }
 
-    const token = authHeader.replace("Bearer ", "");
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "جلسة غير صالحة. يرجى تسجيل الدخول" },
-        { status: 401 }
-      );
+    // Use service role client to bypass RLS for the insert
+    const serviceClient = getSupabaseServiceClient();
+    if (!serviceClient) {
+      return NextResponse.json({ error: "النظام غير متاح حالياً" }, { status: 503 });
     }
 
-    // Insert the review
-    const { data: review, error: insertError } = await supabase
+    // Insert the review using service role client
+    const { data: review, error: insertError } = await serviceClient
       .from("reviews")
       .insert({
         product_id,
         user_id: user.id,
         rating,
         comment: comment || "",
+        is_approved: true, // Auto-approve reviews from authenticated users
       })
-      .select("*, profiles:user_id(name)")
+      .select()
       .single();
 
     if (insertError) {

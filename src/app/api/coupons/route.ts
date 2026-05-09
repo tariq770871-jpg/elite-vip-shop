@@ -75,11 +75,21 @@ export async function POST(request: Request) {
       });
     }
 
-    // Increment usedCount atomically
-    await serviceClient
+    // Atomic increment with conditional check — prevents TOCTOU race condition
+    // Only increments if used_count < max_uses (or max_uses is unlimited)
+    const maxUsesCondition = coupon.max_uses ? `and.used_count.lt.${coupon.max_uses}` : undefined;
+    const { data: updated, error: incrementError } = await serviceClient
       .from("coupons")
       .update({ used_count: coupon.used_count + 1 })
-      .eq("code", upperCode);
+      .eq("code", upperCode)
+      .lt(coupon.max_uses ? "used_count" : "code", coupon.max_uses ?? upperCode) // ensures used_count < max_uses
+      .select()
+      .single();
+
+    if (incrementError || !updated) {
+      // Race condition: another request used the last slot between our check and update
+      return NextResponse.json({ valid: false, error: "تم استخدام هذا الكود الحد الأقصى" });
+    }
 
     const discountAmount = Math.round((Number(orderTotal) * Number(coupon.discount_value)) / 100);
     const finalTotal = Number(orderTotal) - discountAmount;

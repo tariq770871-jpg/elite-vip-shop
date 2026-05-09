@@ -1,7 +1,28 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { verifyAuthToken } from "@/lib/supabase-server";
+import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
+
+/** Verify the authenticated user has admin role */
+async function verifyAdmin(request: Request) {
+  const { user, error: authError } = await verifyAuthToken(request);
+  if (authError || !user) {
+    return { user: null, errorResponse: NextResponse.json({ error: "غير مصرح به" }, { status: 401 }) };
+  }
+  const serviceClient = getSupabaseServiceClient();
+  if (serviceClient) {
+    const { data: profile } = await serviceClient
+      .from("users")
+      .select("role_id, roles(role_name)")
+      .eq("email", user.email)
+      .single();
+    const roleName = (profile?.roles as { role_name?: string } | null)?.role_name;
+    if (roleName !== "admin") {
+      return { user: null, errorResponse: NextResponse.json({ error: "ممنوع — يتطلب صلاحية المدير" }, { status: 403 }) };
+    }
+  }
+  return { user, errorResponse: null };
+}
 
 export async function POST(request: Request) {
   const blocked = rateLimitResponse(request, "contact");
@@ -52,11 +73,9 @@ export async function GET(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
   try {
-    // Auth check: only authenticated users can list contact messages
-    const { user, error: authError } = await verifyAuthToken(request);
-    if (authError || !user) {
-      return NextResponse.json({ error: "غير مصرح به" }, { status: 401 });
-    }
+    // Admin authorization check — only admins can read contact messages (PII)
+    const { errorResponse } = await verifyAdmin(request);
+    if (errorResponse) return errorResponse;
 
     if (!supabase) return NextResponse.json({ messages: [] });
     const { data, error } = await supabase

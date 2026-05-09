@@ -55,7 +55,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getAllProducts, addProduct, updateProduct, deleteProduct } from "@/lib/supabase-data";
 import { toast } from "sonner";
 
 /* ------------------------------------------------------------------ */
@@ -420,10 +419,22 @@ function AdminDashboard() {
         availability: productForm.availability,
       };
       if (editingProduct) {
-        await updateProduct(editingProduct.id, payload);
+        const res = await fetch("/api/admin/products", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({ id: editingProduct.id, ...payload }),
+        });
+        const data = await res.json();
+        if (!res.ok) { toast.error(data.error || "فشل في تحديث المنتج"); return; }
         toast.success("تم تحديث المنتج بنجاح ✅");
       } else {
-        await addProduct(payload as any);
+        const res = await fetch("/api/admin/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) { toast.error(data.error || "فشل في إضافة المنتج"); return; }
         toast.success("تمت إضافة المنتج بنجاح ✅");
       }
       setProductDialogOpen(false);
@@ -437,9 +448,17 @@ function AdminDashboard() {
 
   const handleDeleteProduct = async (id: string) => {
     try {
-      await deleteProduct(id);
-      toast.success("تم حذف المنتج ✅");
-      setProducts((prev) => prev.filter((p) => p.id !== id));
+      const res = await fetch(`/api/admin/products?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        headers: authHeaders,
+      });
+      if (res.ok) {
+        toast.success("تم حذف المنتج ✅");
+        setProducts((prev) => prev.filter((p) => p.id !== id));
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "فشل في حذف المنتج");
+      }
     } catch {
       toast.error("فشل في حذف المنتج");
     }
@@ -447,7 +466,12 @@ function AdminDashboard() {
 
   const handleToggleAvailability = async (p: ProductRow) => {
     try {
-      await updateProduct(p.id, { availability: !p.availability });
+      const res = await fetch("/api/admin/products", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({ id: p.id, availability: !p.availability }),
+      });
+      if (!res.ok) { toast.error("فشل في تحديث حالة المنتج"); return; }
       setProducts((prev) =>
         prev.map((item) =>
           item.id === p.id ? { ...item, availability: !item.availability } : item
@@ -1109,10 +1133,22 @@ function SellerDashboard() {
         availability: productForm.availability,
       };
       if (editingProduct) {
-        await updateProduct(editingProduct.id, payload);
+        const res = await fetch("/api/admin/products", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({ id: editingProduct.id, ...payload }),
+        });
+        const data = await res.json();
+        if (!res.ok) { toast.error(data.error || "فشل في تحديث المنتج"); return; }
         toast.success("تم تحديث المنتج بنجاح ✅");
       } else {
-        await addProduct(payload as any);
+        const res = await fetch("/api/admin/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) { toast.error(data.error || "فشل في إضافة المنتج"); return; }
         toast.success("تمت إضافة المنتج بنجاح ✅");
       }
       setProductDialogOpen(false);
@@ -1126,10 +1162,17 @@ function SellerDashboard() {
 
   const handleDeleteProduct = async (id: string) => {
     try {
-      await deleteProduct(id);
-      toast.success("تم حذف المنتج ✅");
-      setProducts((prev) => prev.filter((p) => p.id !== id));
-      setStats((prev) => ({ ...prev, products: prev.products - 1 }));
+      const res = await fetch(`/api/admin/products?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        headers: authHeaders,
+      });
+      if (res.ok) {
+        toast.success("تم حذف المنتج ✅");
+        setProducts((prev) => prev.filter((p) => p.id !== id));
+        setStats((prev) => ({ ...prev, products: prev.products - 1 }));
+      } else {
+        toast.error("فشل في حذف المنتج");
+      }
     } catch {
       toast.error("فشل في حذف المنتج");
     }

@@ -31,7 +31,7 @@ interface AuthStore {
   _initAuthListener: () => void
 }
 
-function extractUser(user: User, fallbackEmail?: string): AuthUser {
+function extractUser(user: User, fallbackEmail?: string, serverRole?: string): AuthUser {
   const meta = user.user_metadata || {}
   return {
     id: user.id,
@@ -39,7 +39,9 @@ function extractUser(user: User, fallbackEmail?: string): AuthUser {
     email: user.email || fallbackEmail || '',
     phone: meta.phone || '',
     avatar: meta.avatar_url || meta.picture || '',
-    role: meta.role || 'user',
+    // Never trust user_metadata.role — use server-verified role from users table
+    // Fallback to 'user' only if server role is not yet fetched
+    role: serverRole || 'user',
   }
 }
 
@@ -58,8 +60,25 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     if (!supabase) { set({ isLoading: false }); return }
     authListenerInitialized = true
 
+    // Fetch user role from server (users table) instead of trusting user_metadata
+    const fetchServerRole = async (email: string): Promise<string | undefined> => {
+      try {
+        const res = await fetch('/api/auth/role', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          return data.role
+        }
+      } catch { /* fallback to default role */ }
+      return undefined
+    }
+
     supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
+        // Set user immediately with default role, then update with server role
         set({
           user: extractUser(session.user),
           isAuthenticated: true,
@@ -67,6 +86,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           session,
           needsEmailConfirmation: false,
           error: null,
+        })
+        // Fetch real role from server asynchronously
+        fetchServerRole(session.user.email || '').then((role) => {
+          if (role) {
+            const currentUser = get().user
+            if (currentUser?.id === session.user.id) {
+              set({ user: { ...currentUser, role } })
+            }
+          }
         })
       } else if (event === 'SIGNED_OUT') {
         set({
@@ -78,13 +106,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           error: null,
         })
       } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        const currentUser = get().user
         set({
-          user: extractUser(session.user),
+          user: extractUser(session.user, undefined, currentUser?.role),
           session,
         })
       } else if (event === 'USER_UPDATED' && session?.user) {
+        const currentUser = get().user
         set({
-          user: extractUser(session.user),
+          user: extractUser(session.user, undefined, currentUser?.role),
           session,
         })
       }

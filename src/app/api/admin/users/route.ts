@@ -1,7 +1,28 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { rateLimitResponse } from "@/lib/rate-limit";
-import { verifyAuthToken } from "@/lib/supabase-server";
+import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
+
+/** Verify the authenticated user has admin role */
+async function verifyAdmin(request: Request) {
+  const { user, error: authError } = await verifyAuthToken(request);
+  if (authError || !user) {
+    return { user: null, errorResponse: NextResponse.json({ error: "غير مصرح به" }, { status: 401 }) };
+  }
+  const serviceClient = getSupabaseServiceClient();
+  if (serviceClient) {
+    const { data: profile } = await serviceClient
+      .from("users")
+      .select("role_id, roles(role_name)")
+      .eq("email", user.email)
+      .single();
+    const roleName = (profile?.roles as { role_name?: string } | null)?.role_name;
+    if (roleName !== "admin") {
+      return { user: null, errorResponse: NextResponse.json({ error: "ممنوع — يتطلب صلاحية المدير" }, { status: 403 }) };
+    }
+  }
+  return { user, errorResponse: null };
+}
 
 // GET: Fetch all users with their roles
 export async function GET(request: Request) {
@@ -70,11 +91,9 @@ export async function PATCH(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
   try {
-    // Admin auth check
-    const { user: admin, error: authError } = await verifyAuthToken(request);
-    if (authError || !admin) {
-      return NextResponse.json({ error: "غير مصرح به" }, { status: 401 });
-    }
+    // Admin authorization check — verify admin role
+    const { errorResponse: patchErr } = await verifyAdmin(request);
+    if (patchErr) return patchErr;
 
     const body = await request.json();
     const { userId, name } = body;
@@ -109,11 +128,9 @@ export async function DELETE(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
   try {
-    // Admin auth check
-    const { user: admin, error: authError } = await verifyAuthToken(request);
-    if (authError || !admin) {
-      return NextResponse.json({ error: "غير مصرح به" }, { status: 401 });
-    }
+    // Admin authorization check — verify admin role
+    const { errorResponse: deleteErr } = await verifyAdmin(request);
+    if (deleteErr) return deleteErr;
 
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
