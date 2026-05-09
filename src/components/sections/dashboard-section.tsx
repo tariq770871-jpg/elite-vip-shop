@@ -47,7 +47,14 @@ import {
   Loader2,
   Power,
   PowerOff,
+  ChevronDown,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { getAllProducts, addProduct, updateProduct, deleteProduct } from "@/lib/supabase-data";
 import { toast } from "sonner";
 
@@ -55,16 +62,15 @@ import { toast } from "sonner";
 /*  Mock data (fallback)                                                */
 /* ------------------------------------------------------------------ */
 
-const mockUsers = [
-  { id: "u1", name: "أحمد محمد", email: "ahmed@example.com", role: "admin" as const, status: "نشط" },
-  { id: "u2", name: "سارة علي", email: "sara@example.com", role: "seller" as const, status: "نشط" },
-  { id: "u3", name: "خالد عبدالله", email: "khaled@example.com", role: "user" as const, status: "معلق" },
-];
-
-const mockDashboardOrders = [
-  { id: "ORD-1024", customer: "أحمد محمد", date: "2025-01-15", total: 1899, status: "جديد" },
-  { id: "ORD-1025", customer: "سارة علي", date: "2025-01-14", total: 3939, status: "قيد المراجعة" },
-];
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  new: "جديد",
+  reviewing: "قيد المراجعة",
+  confirmed: "مؤكد",
+  shipped: "مشحون",
+  delivered: "تم التوصيل",
+  cancelled: "ملغى",
+  refunded: "مسترجع",
+};
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -83,16 +89,19 @@ const roleBadgeClass: Record<string, string> = {
 };
 
 function statusBadge(status: string) {
+  const label = ORDER_STATUS_LABELS[status] || status;
   const map: Record<string, string> = {
-    جديد: "bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30",
-    "قيد المراجعة": "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/30",
-    مؤكد: "bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30",
-    مشحون: "bg-purple-500/15 text-purple-700 dark:text-purple-400 border-purple-500/30",
-    ملغى: "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30",
+    new: "bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30",
+    reviewing: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/30",
+    confirmed: "bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30",
+    shipped: "bg-purple-500/15 text-purple-700 dark:text-purple-400 border-purple-500/30",
+    delivered: "bg-green-700/15 text-green-800 dark:text-green-300 border-green-700/30",
+    cancelled: "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30",
+    refunded: "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/30",
   };
   return (
     <Badge variant="outline" className={map[status] ?? ""}>
-      {status}
+      {label}
     </Badge>
   );
 }
@@ -206,13 +215,36 @@ interface ProductRow {
   raw?: any;
 }
 
+interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+}
+
+interface AdminOrder {
+  order_id: string;
+  order_number: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string;
+  status: string;
+  total_amount: number;
+  notes: string;
+  created_at: string;
+  items: Array<{ name: string; quantity: number; price: number }>;
+  items_count: number;
+}
+
 function AdminDashboard() {
-  const [users, setUsers] = useState(mockUsers);
-  const [orders, setOrders] = useState(mockDashboardOrders);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [stats, setStats] = useState({ products: 0, users: 0, orders: 0, revenue: 0 });
-  const [editUser, setEditUser] = useState<(typeof mockUsers)[0] | null>(null);
+  const [editUser, setEditUser] = useState<AdminUser | null>(null);
   const [editName, setEditName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
   /* ---- Product CRUD State ---- */
   const [products, setProducts] = useState<ProductRow[]>([]);
@@ -337,53 +369,79 @@ function AdminDashboard() {
     }
   };
 
-  useEffect(() => {
-    async function fetchData() {
+  const fetchAdminData = async () => {
+    setLoading(true);
+    try {
+      const [ordersRes, usersRes] = await Promise.all([
+        fetch("/api/admin/orders?limit=100"),
+        fetch("/api/admin/users"),
+      ]);
+
+      if (ordersRes.ok) {
+        const ordersData = await ordersRes.json();
+        if (ordersData.orders) {
+          setOrders(ordersData.orders);
+          setStats((prev) => ({
+            ...prev,
+            orders: ordersData.total || ordersData.orders.length,
+            revenue: ordersData.revenue || 0,
+          }));
+        }
+      }
+
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        if (usersData.users) {
+          setUsers(usersData.users);
+          setStats((prev) => ({ ...prev, users: usersData.total || usersData.users.length }));
+        }
+      }
+
+      // Fetch products count from supabase directly
       try {
         const { supabase } = await import("@/lib/supabase");
-        if (!supabase) return;
-        // Fetch real stats
-        const [productsRes, usersRes, ordersRes] = await Promise.all([
-          supabase.from("products").select("product_id", { count: "exact", head: true }),
-          supabase.from("users").select("user_id", { count: "exact", head: true }),
-          supabase.from("orders").select("order_id, total_amount, customer_name, status, created_at, order_number").order("created_at", { ascending: false }).limit(50),
-        ]);
-        setStats({
-          products: productsRes.count || 0,
-          users: usersRes.count || 0,
-          orders: ordersRes.data?.length || 0,
-          revenue: ordersRes.data?.reduce((sum: number, o: any) => sum + (Number(o.total_amount) || 0), 0) || 0,
-        });
-        if (ordersRes.data && ordersRes.data.length > 0) {
-          setOrders(ordersRes.data.map((o: any) => ({
-            id: o.order_number || o.order_id?.slice(0, 8),
-            customer: o.customer_name || "عميل",
-            date: o.created_at?.split("T")[0] || "",
-            total: Number(o.total_amount) || 0,
-            status: o.status || "جديد",
-          })));
+        if (supabase) {
+          const { count } = await supabase
+            .from("products")
+            .select("*", { count: "exact", head: true });
+          setStats((prev) => ({ ...prev, products: count || 0 }));
         }
-        // Fetch users list
-        const { data: usersData } = await supabase.from("users").select("user_id, name, email, role, status").limit(50);
-        if (usersData && usersData.length > 0) {
-          setUsers(usersData.map((u: any) => ({
-            id: u.user_id,
-            name: u.name || "مستخدم",
-            email: u.email || "",
-            role: u.role || "user",
-            status: u.status === "active" ? "نشط" : "معلق",
-          })));
-        }
-      } catch {
-        // Keep mock data as fallback
-      } finally {
-        setLoading(false);
-      }
+      } catch { /* ignore */ }
+    } catch {
+      toast.error("تعذّر تحميل بيانات لوحة التحكم");
+    } finally {
+      setLoading(false);
     }
-    fetchData();
+  };
+
+  useEffect(() => {
+    fetchAdminData();
   }, []);
 
-  const openEdit = (u: (typeof mockUsers)[0]) => {
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
+    setUpdatingOrderId(orderId);
+    try {
+      const res = await fetch("/api/admin/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, status: newStatus }),
+      });
+      if (res.ok) {
+        setOrders((prev) =>
+          prev.map((o) => (o.order_id === orderId ? { ...o, status: newStatus } : o))
+        );
+        toast.success(`تم تحديث الحالة إلى: ${ORDER_STATUS_LABELS[newStatus]}`);
+      } else {
+        toast.error("فشل تحديث حالة الطلب");
+      }
+    } catch {
+      toast.error("خطأ في الاتصال");
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
+
+  const openEdit = (u: AdminUser) => {
     setEditUser(u);
     setEditName(u.name);
   };
@@ -469,34 +527,90 @@ function AdminDashboard() {
 
       {/* Orders Review */}
       <section className="card-3d p-4 sm:p-6">
-        <h2 className="mb-4 text-lg font-bold flex items-center gap-2">
-          <ClipboardList className="size-5" />
-          مراجعة الطلبات
-        </h2>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>رقم الطلب</TableHead>
-                <TableHead>العميل</TableHead>
-                <TableHead>التاريخ</TableHead>
-                <TableHead>المبلغ</TableHead>
-                <TableHead>الحالة</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orders.map((o) => (
-                <TableRow key={o.id}>
-                  <TableCell className="font-medium">{o.id}</TableCell>
-                  <TableCell>{o.customer}</TableCell>
-                  <TableCell className="text-muted-foreground">{o.date}</TableCell>
-                  <TableCell className="font-semibold text-gold-gradient">{o.total.toLocaleString("ar-SA")} ريال يمني</TableCell>
-                  <TableCell>{statusBadge(o.status)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <ClipboardList className="size-5" />
+            مراجعة الطلبات
+            {orders.length > 0 && (
+              <Badge variant="outline" className="text-xs">{orders.length}</Badge>
+            )}
+          </h2>
+          <Button variant="outline" size="sm" onClick={fetchAdminData} disabled={loading} className="gap-1">
+            <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+            تحديث
+          </Button>
         </div>
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 py-12">
+            <Loader2 className="size-5 animate-spin text-gold-gradient" />
+            <span className="text-sm text-muted-foreground">جارٍ تحميل الطلبات...</span>
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-12 text-center">
+            <ClipboardList className="size-10 text-muted-foreground/40" />
+            <p className="text-muted-foreground">لا توجد طلبات بعد</p>
+          </div>
+        ) : (
+          <div className="max-h-96 overflow-y-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>رقم الطلب</TableHead>
+                  <TableHead>العميل</TableHead>
+                  <TableHead>الهاتف</TableHead>
+                  <TableHead>التاريخ</TableHead>
+                  <TableHead>المبلغ</TableHead>
+                  <TableHead>الحالة</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {orders.map((o) => (
+                  <TableRow key={o.order_id}>
+                    <TableCell className="font-medium text-xs" dir="ltr">
+                      #{(o.order_number || o.order_id).slice(-8).toUpperCase()}
+                    </TableCell>
+                    <TableCell className="max-w-[120px] truncate">{o.customer_name}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs" dir="ltr">{o.customer_phone || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs">
+                      {new Date(o.created_at).toLocaleDateString("ar-YE", { month: "short", day: "numeric" })}
+                    </TableCell>
+                    <TableCell className="font-semibold text-gold-gradient">
+                      {Number(o.total_amount).toLocaleString("ar-SA")} ر.ي
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs hover:bg-muted transition-colors"
+                            disabled={updatingOrderId === o.order_id}
+                          >
+                            {updatingOrderId === o.order_id ? (
+                              <Loader2 className="size-3 animate-spin" />
+                            ) : (
+                              statusBadge(o.status)
+                            )}
+                            <ChevronDown className="size-3 text-muted-foreground" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                          {Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => (
+                            <DropdownMenuItem
+                              key={value}
+                              onClick={() => handleUpdateOrderStatus(o.order_id, value)}
+                              className={o.status === value ? "font-bold" : ""}
+                            >
+                              {label}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </section>
 
       {/* Edit User Dialog */}
@@ -853,13 +967,36 @@ function SellerDashboard() {
 /*  User Dashboard                                                     */
 /* ------------------------------------------------------------------ */
 
+interface UserOrder {
+  order_id: string;
+  order_number: string;
+  status: string;
+  total_amount: number;
+  created_at: string;
+  items?: Array<{ name: string; quantity: number; price: number }>;
+}
+
 function UserDashboard() {
   const user = useAuthStore((s) => s.user);
+  const [orders, setOrders] = useState<UserOrder[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
 
-  const userOrders = [
-    { id: "ORD-1024", date: "2025-01-15", total: 1899, status: "جديد" },
-    { id: "ORD-1026", date: "2025-01-13", total: 799, status: "مؤكد" },
-  ];
+  useEffect(() => {
+    if (!user?.id) { setOrdersLoading(false); return; }
+    async function fetchOrders() {
+      try {
+        const res = await fetch(`/api/orders?userId=${user.id}&limit=20`);
+        if (res.ok) {
+          const data = await res.json();
+          const raw = data.orders || data || [];
+          setOrders(Array.isArray(raw) ? raw : []);
+        }
+      } catch { /* ignore */ } finally {
+        setOrdersLoading(false);
+      }
+    }
+    fetchOrders();
+  }, [user?.id]);
 
   return (
     <div className="space-y-8">
@@ -869,35 +1006,72 @@ function UserDashboard() {
         </span>
         لوحة التحكم
       </div>
-      <p className="text-muted-foreground">مرحباً {user?.name}</p>
+      <p className="text-muted-foreground">مرحباً {user?.name} 👋</p>
+
+      {/* User Stats */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <StatCard icon={ShoppingCart} value={ordersLoading ? "..." : String(orders.length)} label="طلباتي" />
+        <StatCard
+          icon={DollarSign}
+          value={ordersLoading ? "..." : `${orders.reduce((s, o) => s + Number(o.total_amount), 0).toLocaleString("ar-SA")} ر.ي`}
+          label="إجمالي مشترياتي"
+        />
+        <StatCard
+          icon={CheckCircle2}
+          value={ordersLoading ? "..." : String(orders.filter((o) => o.status === "delivered").length)}
+          label="طلبات مكتملة"
+        />
+      </div>
 
       <section className="card-3d p-4 sm:p-6">
         <h2 className="mb-4 text-lg font-bold flex items-center gap-2">
           <ClipboardList className="size-5" />
-          آخر الطلبات
+          طلباتي
+          {orders.length > 0 && (
+            <Badge variant="outline" className="text-xs">{orders.length}</Badge>
+          )}
         </h2>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>رقم الطلب</TableHead>
-                <TableHead>التاريخ</TableHead>
-                <TableHead>المبلغ</TableHead>
-                <TableHead>الحالة</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {userOrders.map((o) => (
-                <TableRow key={o.id}>
-                  <TableCell className="font-medium">{o.id}</TableCell>
-                  <TableCell className="text-muted-foreground">{o.date}</TableCell>
-                  <TableCell className="font-semibold text-gold-gradient">{o.total.toLocaleString("ar-SA")} ريال يمني</TableCell>
-                  <TableCell>{statusBadge(o.status)}</TableCell>
+        {ordersLoading ? (
+          <div className="flex items-center justify-center gap-2 py-12">
+            <Loader2 className="size-5 animate-spin text-gold-gradient" />
+            <span className="text-sm text-muted-foreground">جارٍ تحميل طلباتك...</span>
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-12 text-center">
+            <ShoppingCart className="size-10 text-muted-foreground/40" />
+            <p className="text-muted-foreground">لا توجد طلبات بعد</p>
+            <p className="text-xs text-muted-foreground">تسوّق الآن واستمتع بأفضل العروض</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>رقم الطلب</TableHead>
+                  <TableHead>التاريخ</TableHead>
+                  <TableHead>المبلغ</TableHead>
+                  <TableHead>الحالة</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {orders.map((o) => (
+                  <TableRow key={o.order_id}>
+                    <TableCell className="font-medium text-xs" dir="ltr">
+                      #{(o.order_number || o.order_id).slice(-8).toUpperCase()}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs">
+                      {new Date(o.created_at).toLocaleDateString("ar-YE", { year: "numeric", month: "short", day: "numeric" })}
+                    </TableCell>
+                    <TableCell className="font-semibold text-gold-gradient">
+                      {Number(o.total_amount).toLocaleString("ar-SA")} ر.ي
+                    </TableCell>
+                    <TableCell>{statusBadge(o.status)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </section>
     </div>
   );
