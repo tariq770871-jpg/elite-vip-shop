@@ -63,3 +63,15 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Development files
+worklog.md
+audit-report.html
+.zscripts/
+upload/
+download/
+examples/
+elite-vip-shop/
+
+# Lock files (keep bun.lock only)
+package-lock.json

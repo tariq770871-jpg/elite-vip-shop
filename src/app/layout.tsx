@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 
 const geistSans = Geist({
@@ -9,7 +9,7 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-const SITE_URL = "https://my-project-vipmarket.vercel.app";
+const SITE_URL = "https://elite-vip-shop.vercel.app";
 const SITE_NAME = "Elite VIP Shop - متجر النخبة";
 const SITE_DESCRIPTION =
   "متجركم الإلكتروني المتكامل - تطبيقات، أدوات ذكاء اصطناعي، أكاديمية، وربح من الإنترنت. أفضل المنتجات الرقمية بأسعار تنافسية مع ضمان الجودة.";

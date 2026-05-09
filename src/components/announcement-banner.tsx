@@ -27,7 +27,12 @@ const announcements = [
 
 export function AnnouncementBanner() {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return !sessionStorage.getItem("announcement-dismissed");
+    }
+    return true;
+  });
   const { setCurrentPage } = useNavStore();
 
   const goNext = useCallback(() => {
@@ -38,12 +43,6 @@ export function AnnouncementBanner() {
     const interval = setInterval(goNext, 4000);
     return () => clearInterval(interval);
   }, [goNext]);
-
-  // Persist dismissal in sessionStorage
-  useEffect(() => {
-    const dismissed = sessionStorage.getItem("announcement-dismissed");
-    if (dismissed) setIsVisible(false);
-  }, []);
 
   const handleDismiss = () => {
     setIsVisible(false);

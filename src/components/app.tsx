@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { ChevronUp, Lock, ArrowRight } from "lucide-react";
 import { useNavStore } from "@/store/nav-store";
 import { useCartStore } from "@/store/cart-store";
@@ -111,7 +111,7 @@ export function App() {
   const { currentPage } = useNavStore();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchKey, setSearchKey] = useState(0);
-  const [pageKey, setPageKey] = useState(0);
+  const pageKey = useMemo(() => currentPage, [currentPage]);
 
   const renderPage = () => {
     switch (currentPage) {
@@ -163,10 +163,6 @@ export function App() {
         return null;
     }
   };
-
-  useEffect(() => {
-    setPageKey((k) => k + 1);
-  }, [currentPage]);
 
   // Check auth session on mount
   useEffect(() => {
