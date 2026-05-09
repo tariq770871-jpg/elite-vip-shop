@@ -1,7 +1,28 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { verifyAuthToken } from "@/lib/supabase-server";
+import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
+
+/** Verify the authenticated user has admin role */
+async function verifyAdmin(request: Request) {
+  const { user, error: authError } = await verifyAuthToken(request);
+  if (authError || !user) {
+    return { user: null, errorResponse: NextResponse.json({ error: "غير مصرح به" }, { status: 401 }) };
+  }
+  const serviceClient = getSupabaseServiceClient();
+  if (serviceClient) {
+    const { data: profile } = await serviceClient
+      .from("users")
+      .select("role_id, roles(role_name)")
+      .eq("email", user.email)
+      .single();
+    const roleName = (profile?.roles as { role_name?: string } | null)?.role_name;
+    if (roleName !== "admin") {
+      return { user: null, errorResponse: NextResponse.json({ error: "ممنوع — يتطلب صلاحية المدير" }, { status: 403 }) };
+    }
+  }
+  return { user, errorResponse: null };
+}
 
 // GET: Check if Telegram bot is configured
 export async function GET(request: Request) {
@@ -34,11 +55,9 @@ export async function POST(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
   try {
-    // Admin auth check
-    const { user, error: authError } = await verifyAuthToken(request);
-    if (authError || !user) {
-      return NextResponse.json({ error: "غير مصرح به" }, { status: 401 });
-    }
+    // Admin authorization check — only admins can configure Telegram bot
+    const { user, errorResponse } = await verifyAdmin(request);
+    if (errorResponse) return errorResponse;
 
     const body = await request.json();
     const { botToken, chatId, testOnly } = body;
@@ -97,11 +116,9 @@ export async function DELETE(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
   try {
-    // Admin auth check
-    const { user, error: authError } = await verifyAuthToken(request);
-    if (authError || !user) {
-      return NextResponse.json({ error: "غير مصرح به" }, { status: 401 });
-    }
+    // Admin authorization check — only admins can delete Telegram config
+    const { errorResponse } = await verifyAdmin(request);
+    if (errorResponse) return errorResponse;
     if (supabase) {
       await supabase
         .from("site_settings")
