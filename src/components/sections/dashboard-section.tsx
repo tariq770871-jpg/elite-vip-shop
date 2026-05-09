@@ -33,7 +33,6 @@ import {
   Pencil,
   Trash2,
   LogIn,
-  TrendingUp,
   ClipboardList,
   Tag,
   CheckCircle2,
@@ -47,36 +46,18 @@ import {
 import { toast } from "sonner";
 
 /* ------------------------------------------------------------------ */
-/*  Mock data                                                          */
+/*  Mock data (fallback)                                                */
 /* ------------------------------------------------------------------ */
 
 const mockUsers = [
   { id: "u1", name: "أحمد محمد", email: "ahmed@example.com", role: "admin" as const, status: "نشط" },
   { id: "u2", name: "سارة علي", email: "sara@example.com", role: "seller" as const, status: "نشط" },
   { id: "u3", name: "خالد عبدالله", email: "khaled@example.com", role: "user" as const, status: "معلق" },
-  { id: "u4", name: "نورة سعد", email: "noura@example.com", role: "user" as const, status: "نشط" },
-  { id: "u5", name: "فهد العتيبي", email: "fahad@example.com", role: "seller" as const, status: "نشط" },
 ];
 
-const mockOrders = [
+const mockDashboardOrders = [
   { id: "ORD-1024", customer: "أحمد محمد", date: "2025-01-15", total: 1899, status: "جديد" },
   { id: "ORD-1025", customer: "سارة علي", date: "2025-01-14", total: 3939, status: "قيد المراجعة" },
-  { id: "ORD-1026", customer: "خالد عبدالله", date: "2025-01-13", total: 799, status: "مؤكد" },
-  { id: "ORD-1027", customer: "نورة سعد", date: "2025-01-12", total: 299, status: "مشحون" },
-  { id: "ORD-1028", customer: "فهد العتيبي", date: "2025-01-11", total: 1149, status: "ملغى" },
-];
-
-const sellerProducts = [
-  { id: "p1", name: "سماعة بلوتوث فاخرة", price: 1899, category: "إلكترونيات" },
-  { id: "p2", name: "كورس التداول الاحترافي", price: 299, category: "كتب ودورات" },
-  { id: "p3", name: "اشتراك VPN Premium", price: 799, category: "برامج وتطبيقات" },
-  { id: "p4", name: "طقم أدوات متعددة", price: 650, category: "أدوات ومعدات" },
-];
-
-const sellerOrders = [
-  { id: "ORD-1024", customer: "أحمد محمد", date: "2025-01-15", total: 1899, status: "جديد" },
-  { id: "ORD-1026", customer: "خالد عبدالله", date: "2025-01-13", total: 799, status: "مؤكد" },
-  { id: "ORD-1027", customer: "نورة سعد", date: "2025-01-12", total: 299, status: "مشحون" },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -210,9 +191,56 @@ function TelegramSettings() {
 
 function AdminDashboard() {
   const [users, setUsers] = useState(mockUsers);
-  const [orders] = useState(mockOrders);
+  const [orders, setOrders] = useState(mockDashboardOrders);
+  const [stats, setStats] = useState({ products: 0, users: 0, orders: 0, revenue: 0 });
   const [editUser, setEditUser] = useState<(typeof mockUsers)[0] | null>(null);
   const [editName, setEditName] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const { supabase } = await import("@/lib/supabase");
+        // Fetch real stats
+        const [productsRes, usersRes, ordersRes] = await Promise.all([
+          supabase.from("products").select("product_id", { count: "exact", head: true }),
+          supabase.from("users").select("user_id", { count: "exact", head: true }),
+          supabase.from("orders").select("order_id, total_amount, customer_name, status, created_at, order_number").order("created_at", { ascending: false }).limit(50),
+        ]);
+        setStats({
+          products: productsRes.count || 0,
+          users: usersRes.count || 0,
+          orders: ordersRes.data?.length || 0,
+          revenue: ordersRes.data?.reduce((sum: number, o: any) => sum + (Number(o.total_amount) || 0), 0) || 0,
+        });
+        if (ordersRes.data && ordersRes.data.length > 0) {
+          setOrders(ordersRes.data.map((o: any) => ({
+            id: o.order_number || o.order_id?.slice(0, 8),
+            customer: o.customer_name || "عميل",
+            date: o.created_at?.split("T")[0] || "",
+            total: Number(o.total_amount) || 0,
+            status: o.status || "جديد",
+          })));
+        }
+        // Fetch users list
+        const { data: usersData } = await supabase.from("users").select("user_id, name, email, role, status").limit(50);
+        if (usersData && usersData.length > 0) {
+          setUsers(usersData.map((u: any) => ({
+            id: u.user_id,
+            name: u.name || "مستخدم",
+            email: u.email || "",
+            role: u.role || "user",
+            status: u.status === "active" ? "نشط" : "معلق",
+          })));
+        }
+      } catch {
+        // Keep mock data as fallback
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   const openEdit = (u: (typeof mockUsers)[0]) => {
     setEditUser(u);
@@ -243,10 +271,10 @@ function AdminDashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard icon={Package} value="150" label="إجمالي المنتجات" />
-        <StatCard icon={Users} value="350" label="المستخدمين" />
-        <StatCard icon={ShoppingCart} value="200" label="الطلبات" />
-        <StatCard icon={DollarSign} value="45,000 ريال يمني" label="الإيرادات" />
+        <StatCard icon={Package} value={loading ? "..." : String(stats.products)} label="إجمالي المنتجات" />
+        <StatCard icon={Users} value={loading ? "..." : String(stats.users)} label="المستخدمين" />
+        <StatCard icon={ShoppingCart} value={loading ? "..." : String(stats.orders)} label="الطلبات" />
+        <StatCard icon={DollarSign} value={loading ? "..." : `${stats.revenue.toLocaleString("ar-SA")} ر.ي`} label="الإيرادات" />
       </div>
 
       {/* Users Management */}

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sheet";
 import { useCartStore } from "@/store/cart-store";
 import { useNavStore } from "@/store/nav-store";
+import { useAuthStore } from "@/store/auth-store";
 import { WhatsAppBrandIcon, SmsBrandIcon } from "@/components/icons";
 import { toast } from "sonner";
 
@@ -63,11 +64,33 @@ export function CartDrawer() {
     return msg;
   };
 
+  const saveOrderToSupabase = async (paymentMethod: string) => {
+    try {
+      const { user } = useAuthStore.getState();
+      if (!user?.id) return;
+      await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          items,
+          total,
+          paymentMethod,
+          couponCode: appliedCoupon?.code,
+          discount: discount,
+        }),
+      });
+    } catch {
+      // Silent fail - order already sent via WhatsApp/SMS
+    }
+  };
+
   const handleCheckoutWhatsApp = () => {
     if (items.length === 0) return;
     const message = buildOrderMessage();
     window.open(`https://wa.me/967782138587?text=${encodeURIComponent(message)}`, "_blank");
     toast.success("تم فتح واتساب مع تفاصيل الطلب!");
+    saveOrderToSupabase("whatsapp");
   };
 
   const handleCheckoutSMS = () => {
@@ -75,6 +98,7 @@ export function CartDrawer() {
     const message = buildOrderMessage();
     window.open(`sms:967782138587?body=${encodeURIComponent(message)}`, "_blank");
     toast.success("تم فتح الرسائل مع تفاصيل الطلب!");
+    saveOrderToSupabase("sms");
   };
 
   const handleApplyCoupon = async () => {

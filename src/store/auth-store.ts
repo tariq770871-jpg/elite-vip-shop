@@ -24,7 +24,8 @@ interface AuthStore {
   loginWithFacebook: () => Promise<void>
   logout: () => Promise<void>
   resetPassword: (email: string) => Promise<boolean>
-  updateProfile: (data: Partial<AuthUser>) => void
+  updateProfile: (data: Partial<AuthUser>) => Promise<void>
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error: string | null }>
   checkSession: () => Promise<void>
   clearError: () => void
   _initAuthListener: () => void
@@ -272,10 +273,35 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
-  updateProfile: (data) => {
+  updateProfile: async (data: Partial<AuthUser>) => {
     const user = get().user
-    if (user) {
+    if (!user) return
+    try {
+      const updates: Record<string, string> = {}
+      if (data.name) updates.full_name = data.name
+      if (data.name) updates.name = data.name
+      if (data.phone !== undefined) updates.phone = data.phone
+      const { error } = await supabase.auth.updateUser({ data: updates })
+      if (error) throw error
       set({ user: { ...user, ...data } })
+    } catch {
+      // Keep local state even if Supabase fails
+      set({ user: { ...user, ...data } })
+    }
+  },
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    try {
+      // Verify current password by re-signing in
+      const email = get().user?.email
+      if (!email) return { success: false, error: 'البريد الإلكتروني غير متوفر' }
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password: currentPassword })
+      if (signInError) return { success: false, error: 'كلمة المرور الحالية غير صحيحة' }
+      // Update password
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
+      if (updateError) return { success: false, error: 'فشل تحديث كلمة المرور' }
+      return { success: true, error: null }
+    } catch {
+      return { success: false, error: 'حدث خطأ غير متوقع' }
     }
   },
 

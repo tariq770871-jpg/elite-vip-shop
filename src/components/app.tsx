@@ -39,6 +39,9 @@ import { FlashDealsSection } from "@/components/sections/flash-deals-section";
 import { TestimonialsSection } from "@/components/sections/testimonials-section";
 import { RecentlyViewedSection } from "@/components/sections/recently-viewed-section";
 import { ZeroProtocolsSection } from "@/components/sections/zero-protocols-section";
+import { WishlistSection } from "@/components/sections/wishlist-section";
+import { ProductDetailSection } from "@/components/sections/product-detail-section";
+import { NotFoundSection } from "@/components/sections/not-found-section";
 
 function ScrollToTopButton() {
   const [visible, setVisible] = useState(false);
@@ -108,7 +111,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 export function App() {
-  const { currentPage } = useNavStore();
+  const { currentPage, selectedProductId } = useNavStore();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchKey, setSearchKey] = useState(0);
   const pageKey = useMemo(() => currentPage, [currentPage]);
@@ -159,8 +162,12 @@ export function App() {
         return <CriticismSection />;
       case "zero-protocols":
         return <ZeroProtocolsSection />;
+      case "wishlist":
+        return <WishlistSection />;
+      case "product-detail":
+        return <ProductDetailSection />;
       default:
-        return null;
+        return <NotFoundSection />;
     }
   };
 

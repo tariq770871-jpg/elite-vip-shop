@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/auth-store";
 import { useNavStore } from "@/store/nav-store";
 import { Button } from "@/components/ui/button";
@@ -97,7 +97,7 @@ function OrderCard({ order }: { order: Order }) {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-bold text-sm flex items-center gap-1.5">
               <Package className="size-4 text-muted-foreground" />
-              #{order.id.slice(-6).toUpperCase()}
+              #{(order.order_number || order.id).slice(-6).toUpperCase()}
             </span>
             <Badge variant="outline" className={`${config.bgColor} ${config.color} border-0 text-xs`}>
               <StatusIcon className="size-3 ml-1" /> {config.label}
@@ -196,18 +196,54 @@ function OrderCard({ order }: { order: Order }) {
 
 export function OrdersSection() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
   const { setCurrentPage } = useNavStore();
   const [activeFilter, setActiveFilter] = useState("all");
-  const [isLoading, setIsLoading] = useState(true);
-
-  const filteredOrders = activeFilter === "all"
-    ? mockOrders
-    : mockOrders.filter((o) => o.status === activeFilter);
+  const [isLoading, setIsLoading] = useState(isAuthenticated && !!user?.id);
+  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const userId = user?.id;
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!isAuthenticated || !userId) {
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/orders?userId=${userId}`)
+      .then((res) => {
+        if (cancelled) return;
+        if (res.ok) return res.json();
+        return null;
+      })
+      .then((data) => {
+        if (cancelled || !data || !data.orders || data.orders.length === 0) {
+          setIsLoading(false);
+          return;
+        }
+        const mappedOrders: Order[] = data.orders.map((o: { order_id: string; order_number: string; status: string; total_amount: number; created_at: string; notes: string; items: Array<{ product_name: string; quantity: number; price: number }> }) => ({
+          id: o.order_id,
+          order_number: o.order_number,
+          date: o.created_at,
+          status: o.status,
+          total: Number(o.total_amount),
+          items: o.items?.map((item) => ({
+            name: item.product_name,
+            quantity: item.quantity,
+            price: Number(item.price),
+          })) || [],
+          notes: o.notes,
+        }));
+        setOrders(mappedOrders);
+        setIsLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [isAuthenticated, userId]);
+
+  const filteredOrders = activeFilter === "all"
+    ? orders
+    : orders.filter((o) => o.status === activeFilter);
 
   if (!isAuthenticated) {
     return (
@@ -235,7 +271,7 @@ export function OrdersSection() {
             <span className="title-icon"><Package className="size-6" /></span>
             طلباتي
           </div>
-          <Button variant="outline" size="sm" onClick={() => { setIsLoading(true); setTimeout(() => setIsLoading(false), 500); }} className="gap-2">
+          <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="gap-2">
             <RefreshCw className="size-4" /> تحديث
           </Button>
         </div>

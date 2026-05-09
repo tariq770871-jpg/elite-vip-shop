@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useCartStore } from "@/store/cart-store";
 import { useNavStore } from "@/store/nav-store";
+import { useAuthStore } from "@/store/auth-store";
 import {
   ShoppingCart, Package, Minus, Plus, Trash2, ArrowRight,
   MessageSquare, Tag, Gift, Loader2, X, User, Phone, MapPin,
@@ -106,6 +107,29 @@ export function CartPageSection() {
 
     setIsSubmitting(true);
     const msg = buildOrderMessage(items, subtotal, customerName, customerPhone, customerAddress, notes, appliedCoupon || undefined);
+
+    // Save order to Supabase
+    const { user } = useAuthStore.getState();
+    if (user?.id) {
+      fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          items,
+          total: grandTotal,
+          notes,
+          paymentMethod: paymentMethod,
+          customerName,
+          customerPhone,
+          customerAddress,
+          discount,
+          couponCode: appliedCoupon?.code,
+        }),
+      }).catch(() => {
+        // Silent fail
+      });
+    }
 
     setTimeout(() => {
       if (paymentMethod === "whatsapp") {

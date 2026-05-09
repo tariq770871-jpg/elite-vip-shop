@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageCircle, X, Send } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export function FloatingWhatsApp() {
   const [isOpen, setIsOpen] = useState(false);
@@ -9,10 +9,10 @@ export function FloatingWhatsApp() {
   const [showTooltip, setShowTooltip] = useState(false);
 
   // Show tooltip after 3 seconds
-  useState(() => {
+  useEffect(() => {
     const timer = setTimeout(() => setShowTooltip(true), 3000);
     return () => clearTimeout(timer);
-  });
+  }, []);
 
   const handleSend = () => {
     if (message.trim()) {

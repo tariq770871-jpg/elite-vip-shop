@@ -23,21 +23,27 @@ export type PageName =
   | 'values'
   | 'criticism'
   | 'zero-protocols'
+  | 'wishlist'
+  | 'product-detail'
+  | 'not-found'
 
 interface NavStore {
   currentPage: PageName
   previousPage: PageName | null
   scrollToSection: string | null
+  selectedProductId: string | null
   setCurrentPage: (page: PageName) => void
   goBack: () => void
   navigateToSection: (page: PageName, sectionId: string) => void
   clearScrollToSection: () => void
+  setSelectedProductId: (id: string | null) => void
 }
 
 export const useNavStore = create<NavStore>((set, get) => ({
   currentPage: 'home' as PageName,
   previousPage: null,
   scrollToSection: null,
+  selectedProductId: null,
 
   setCurrentPage: (page) =>
     set({ currentPage: page, previousPage: get().currentPage }),
@@ -54,4 +60,7 @@ export const useNavStore = create<NavStore>((set, get) => ({
 
   clearScrollToSection: () =>
     set({ scrollToSection: null }),
+
+  setSelectedProductId: (id) =>
+    set({ selectedProductId: id }),
 }))

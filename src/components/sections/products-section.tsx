@@ -6,12 +6,15 @@ import {
   ShoppingBag,
   ShoppingCart,
   Loader2,
+  Heart,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { getProducts, getCategories } from "@/lib/supabase-data";
 import type { Product } from "@/lib/mock-data";
 import { useCartStore } from "@/store/cart-store";
+import { useWishlistStore } from "@/store/wishlist-store";
+import { useNavStore } from "@/store/nav-store";
 import { getCategoryIcon, ShoppingBagIcon } from "@/components/icons";
 
 export function ProductsSection() {
@@ -22,6 +25,8 @@ export function ProductsSection() {
   const [loading, setLoading] = useState(true);
   const addItem = useCartStore((s) => s.addItem);
   const openCart = useCartStore((s) => s.openCart);
+  const { toggleItem, isInWishlist } = useWishlistStore();
+  const { setCurrentPage, setSelectedProductId } = useNavStore();
 
   useEffect(() => {
     Promise.all([getProducts(), getCategories()]).then(([prods, cats]) => {
@@ -54,6 +59,23 @@ export function ProductsSection() {
       category: product.category,
     });
     openCart();
+  };
+
+  const handleToggleWishlist = (product: Product) => {
+    toggleItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      salePrice: product.salePrice,
+      image: product.images[0],
+      category: product.category,
+    });
+  };
+
+  const handleProductClick = (product: Product) => {
+    setSelectedProductId(product.id);
+    setCurrentPage("product-detail");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   if (loading) {
@@ -142,7 +164,7 @@ export function ProductsSection() {
                 className="card-3d group overflow-hidden"
               >
                 {/* Image placeholder */}
-                <div className="product-img-placeholder relative bg-muted">
+                <div className="product-img-placeholder relative bg-muted cursor-pointer" onClick={() => handleProductClick(product)}>
                   {getCategoryIcon(product.category, "size-14 text-muted-foreground/40")}
                   {product.salePrice && (
                     <Badge className="absolute top-3 right-3 z-10 bg-red-500 text-white hover:bg-red-500 shadow-lg">
@@ -155,8 +177,25 @@ export function ProductsSection() {
                     </Badge>
                   )}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100 bg-black/10 active:bg-black/20">
-                    <span className="rounded-full bg-black/60 px-4 py-1.5 text-xs font-bold text-white backdrop-blur-sm">{product.name}</span>
+                    <span className="rounded-full bg-black/60 px-4 py-1.5 text-xs font-bold text-white backdrop-blur-sm">عرض التفاصيل</span>
                   </div>
+                  {/* Wishlist button on image */}
+                  <button
+                    className="absolute top-3 left-3 z-10 flex size-8 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm transition-all hover:scale-110 dark:bg-black/60"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleWishlist(product);
+                    }}
+                    aria-label={isInWishlist(product.id) ? "إزالة من المفضلة" : "إضافة للمفضلة"}
+                  >
+                    <Heart
+                      className={`size-4 ${
+                        isInWishlist(product.id)
+                          ? "fill-red-500 text-red-500"
+                          : "text-muted-foreground"
+                      }`}
+                    />
+                  </button>
                 </div>
                 {/* Content */}
                 <div className="p-5">

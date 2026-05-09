@@ -50,6 +50,7 @@ import { useTheme } from "@/components/theme-provider";
 import { useNavStore } from "@/store/nav-store";
 import { useCartStore } from "@/store/cart-store";
 import { useAuthStore } from "@/store/auth-store";
+import { useNotificationStore } from "@/store/notification-store";
 import { Logo } from "@/components/logo";
 import {
   WhatsAppBrandIcon,
@@ -117,6 +118,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
   const totalItems = useCartStore((s) => s.totalItems());
   const openCart = useCartStore((s) => s.openCart);
   const { isAuthenticated, user, logout } = useAuthStore();
+  const unreadCount = useNotificationStore((s) => s.unreadCount());
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleNav = (page: PageName) => {
@@ -340,7 +342,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
                       <button className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-card border border-border/50 py-2.5 text-sm text-muted-foreground hover:bg-accent transition-all">
                         <Bell className="size-4" />
                         <span className="text-xs font-medium">الإشعارات</span>
-                        <Badge className="flex size-4 items-center justify-center rounded-full bg-red-500 p-0 text-[9px] text-white hover:bg-red-500">3</Badge>
+                        <Badge className="flex size-4 items-center justify-center rounded-full bg-red-500 p-0 text-[9px] text-white hover:bg-red-500">{unreadCount}</Badge>
                       </button>
                       <button
                         onClick={() => { handleLogout(); setMobileOpen(false); }}
