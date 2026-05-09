@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useCartStore } from "@/store/cart-store";
 import { useNavigation } from "@/lib/navigation";
 import { useAuthStore } from "@/store/auth-store";
+import { getAuthHeaders } from "@/lib/api-auth";
 import {
   ShoppingCart, Package, Minus, Plus, Trash2, ArrowRight,
   Tag, Gift, Loader2, X, User, Phone, MapPin,
@@ -55,7 +56,7 @@ export function CartPageSection() {
     try {
       const res = await fetch("/api/coupons", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ code: couponCode, orderTotal: subtotal }),
       });
       const data = await res.json();
@@ -87,9 +88,8 @@ export function CartPageSection() {
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({
-          userId: user.id,
           items,
           total: grandTotal,
           paymentMethod,

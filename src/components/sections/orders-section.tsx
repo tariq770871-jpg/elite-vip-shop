@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/auth-store";
+import { getAuthHeaders } from "@/lib/api-auth";
 import { useNavigation } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -358,7 +359,10 @@ export function OrdersSection() {
       return;
     }
     setIsLoading(true);
-    fetch(`/api/orders?userId=${userId}`, { signal })
+    fetch(`/api/orders`, {
+      signal,
+      headers: { ...getAuthHeaders() },
+    })
       .then((res) => {
         if (res.ok) return res.json();
         return null;

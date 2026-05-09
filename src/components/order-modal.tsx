@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/auth-store";
+import { getAuthHeaders } from "@/lib/api-auth";
 import { useNavigation } from "@/lib/navigation";
 import { getWhatsAppOrderLink } from "@/lib/mock-data";
 import { toast } from "sonner";
@@ -362,9 +363,8 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
       try {
         const res = await fetch("/api/orders", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
           body: JSON.stringify({
-            userId: user.id,
             items: [{ id: product.id, name: product.name, quantity, price: effectivePrice }],
             total: totalPrice,
             paymentMethod: "in_app",

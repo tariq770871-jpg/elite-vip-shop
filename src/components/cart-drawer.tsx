@@ -16,6 +16,7 @@ import {
 import { useCartStore } from "@/store/cart-store";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
+import { getAuthHeaders } from "@/lib/api-auth";
 import { toast } from "sonner";
 
 export function CartDrawer() {
@@ -57,9 +58,8 @@ export function CartDrawer() {
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({
-          userId: user.id,
           items,
           total,
           paymentMethod: "in_app",
@@ -89,7 +89,7 @@ export function CartDrawer() {
     try {
       const res = await fetch("/api/coupons", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ code: couponCode.toUpperCase(), orderTotal: subtotal }),
       });
       const data = await res.json();

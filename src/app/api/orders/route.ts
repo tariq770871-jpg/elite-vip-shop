@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendOrderNotification } from "@/lib/telegram";
-import { verifyAuthToken, getSupabaseServiceClient, createRouteHandlerClient } from "@/lib/supabase-server";
+import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
 
 // POST: Save a new order to Supabase
@@ -33,8 +33,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "بيانات غير مكتملة" }, { status: 400 });
     }
 
-    // Use route handler client with user's auth token for RLS-respecting operations
-    const routeClient = createRouteHandlerClient(request);
     // Use service client for operations that bypass RLS (after auth verification)
     const serviceClient = getSupabaseServiceClient();
 
