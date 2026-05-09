@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Cairo } from "next/font/google";
+import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -114,6 +116,20 @@ export default function RootLayout({
         <link rel="manifest" type="application/manifest+json" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+        {/* Google Search Console Verification */}
+        <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GSC_VERIFICATION || ""} />
+        {/* Google Analytics GA4 */}
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');`}
+            </Script>
+          </>
+        )}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -168,6 +184,7 @@ export default function RootLayout({
             </LayoutClient>
           </ErrorBoundary>
           <Toaster />
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>
