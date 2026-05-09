@@ -20,7 +20,7 @@ User-agent: facebookexternalhit
 Allow: /
 
 # Sitemaps
-Sitemap: https://my-project-vipmarket.vercel.app/sitemap.xml
+Sitemap: https://elite-vip-shop.vercel.app/sitemap.xml
 
 # Crawl-delay
 Crawl-delay: 1

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
 import {
   Search,
   ShoppingBag,
@@ -165,7 +166,18 @@ export function ProductsSection() {
               >
                 {/* Image placeholder */}
                 <div className="product-img-placeholder relative bg-muted cursor-pointer" onClick={() => handleProductClick(product)}>
-                  {getCategoryIcon(product.category, "size-14 text-muted-foreground/40")}
+                  {product.images[0] ? (
+                    <Image
+                      src={product.images[0]}
+                      alt={product.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      loading="lazy"
+                    />
+                  ) : (
+                    getCategoryIcon(product.category, "size-14 text-muted-foreground/40")
+                  )}
                   {product.salePrice && (
                     <Badge className="absolute top-3 right-3 z-10 bg-red-500 text-white hover:bg-red-500 shadow-lg">
                       خصم{" "}

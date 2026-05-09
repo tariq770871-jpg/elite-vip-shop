@@ -21,7 +21,7 @@ export async function getProducts() {
       price: Number(p.price),
       salePrice: p.sale_price ? Number(p.sale_price) : undefined,
       category: p.category_name || 'أخرى',
-      images: Array.isArray(p.images) && p.images.length > 0 ? p.images : ['/placeholder-product.svg'],
+      images: Array.isArray(p.images) && p.images.length > 0 ? p.images : ['/products/product-1.webp'],
       availability: p.availability,
       seller: 'متجر النخبة',
     }))

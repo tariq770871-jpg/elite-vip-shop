@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Image from "next/image";
 import {
   ShoppingCart,
   Heart,
@@ -153,8 +154,19 @@ export function ProductDetailSection() {
         <div className="grid gap-8 md:grid-cols-2">
           {/* Product Image */}
           <div className="card-3d overflow-hidden">
-            <div className="product-img-placeholder bg-muted !min-h-[320px] md:!min-h-[400px]">
-              {getCategoryIcon(product.category, "size-20 text-muted-foreground/40")}
+            <div className="product-img-placeholder relative bg-muted !min-h-[320px] md:!min-h-[400px]">
+              {product.images[0] ? (
+                <Image
+                  src={product.images[0]}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  loading="lazy"
+                />
+              ) : (
+                getCategoryIcon(product.category, "size-20 text-muted-foreground/40")
+              )}
               {hasSale && (
                 <Badge className="absolute top-4 right-4 z-10 bg-red-500 text-white hover:bg-red-500 shadow-lg text-sm px-3 py-1">
                   خصم{" "}

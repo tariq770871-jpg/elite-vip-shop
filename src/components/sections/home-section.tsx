@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
+import Image from "next/image";
 import {
   ShoppingBag,
   ArrowLeft,
@@ -381,10 +382,21 @@ export function HomeSection({ onOpenCart }: HomeSectionProps) {
                     className="card-3d group min-w-[220px] max-w-[260px] shrink-0 md:min-w-[260px]"
                   >
                     <div
-                      className="product-img-placeholder bg-muted cursor-pointer transition-opacity hover:opacity-80 active:scale-[0.98]"
+                      className="product-img-placeholder relative bg-muted cursor-pointer transition-opacity hover:opacity-80 active:scale-[0.98]"
                       onClick={() => setCurrentPage("products")}
                     >
-                      {getCategoryIcon(product.category, "size-12 text-muted-foreground/40")}
+                      {product.images[0] ? (
+                        <Image
+                          src={product.images[0]}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          loading="lazy"
+                        />
+                      ) : (
+                        getCategoryIcon(product.category, "size-12 text-muted-foreground/40")
+                      )}
                       <div className="absolute inset-0 flex items-end justify-center pb-2 opacity-0 transition-opacity group-hover:opacity-100">
                         <span className="rounded-full bg-black/60 px-3 py-1 text-[10px] font-bold text-white backdrop-blur-sm">اضغط للعرض</span>
                       </div>
