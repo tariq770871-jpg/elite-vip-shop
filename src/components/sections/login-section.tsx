@@ -58,6 +58,15 @@ export function LoginSection() {
     const success = await login(email.trim(), password);
     if (success) {
       setSuccessMessage("تم تسجيل الدخول بنجاح! جارٍ التحويل...");
+      // Notify Telegram about login
+      fetch("/api/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "login",
+          data: { email: email.trim() },
+        }),
+      }).catch(() => {});
       setTimeout(() => navigateTo("home"), 800);
     }
   };
