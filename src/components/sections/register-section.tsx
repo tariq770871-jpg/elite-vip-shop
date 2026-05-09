@@ -114,8 +114,19 @@ export function RegisterSection() {
     setRegisteredEmail(email.trim());
     const success = await register(name.trim(), email.trim(), password, phone.trim() || undefined);
 
+    if (success) {
+      // Notify Telegram about new registration
+      fetch("/api/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "register",
+          data: { name: name.trim(), email: email.trim(), phone: phone.trim() || "" },
+        }),
+      }).catch(() => {});
+    }
+
     if (success && needsEmailConfirmation) {
-      // Email confirmation needed — stay on page, show message
       return;
     }
 
