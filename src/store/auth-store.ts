@@ -55,6 +55,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   _initAuthListener: () => {
     if (authListenerInitialized || typeof window === 'undefined') return
+    if (!supabase) { set({ isLoading: false }); return }
     authListenerInitialized = true
 
     supabase.auth.onAuthStateChange((event, session) => {
@@ -98,6 +99,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       // Initialize auth listener on first check
       get()._initAuthListener()
 
+      if (!supabase) { set({ isLoading: false }); return }
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         set({
@@ -117,6 +119,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   login: async (email: string, password: string) => {
     set({ error: null, isLoading: true, needsEmailConfirmation: false })
+    if (!supabase) { set({ error: 'النظام غير متاح حالياً', isLoading: false }); return false }
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -148,6 +151,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   register: async (name: string, email: string, password: string, phone?: string) => {
     set({ error: null, isLoading: true, needsEmailConfirmation: false })
+    if (!supabase) { set({ error: 'النظام غير متاح حالياً', isLoading: false }); return false }
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -204,6 +208,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   loginWithGoogle: async () => {
     set({ error: null, isLoading: true })
+    if (!supabase) { set({ error: 'النظام غير متاح حالياً', isLoading: false }); return }
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -223,6 +228,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   loginWithFacebook: async () => {
     set({ error: null, isLoading: true })
+    if (!supabase) { set({ error: 'النظام غير متاح حالياً', isLoading: false }); return }
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
@@ -242,7 +248,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   logout: async () => {
     try {
-      await supabase.auth.signOut()
+      if (supabase) await supabase.auth.signOut()
     } catch {
       // Continue with local logout even if Supabase fails
     }
@@ -251,6 +257,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   resetPassword: async (email: string) => {
     set({ error: null, isLoading: true })
+    if (!supabase) { set({ error: 'النظام غير متاح حالياً', isLoading: false }); return false }
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}`,

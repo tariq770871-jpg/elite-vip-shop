@@ -15,7 +15,7 @@ import { getProducts, getCategories } from "@/lib/supabase-data";
 import type { Product } from "@/lib/mock-data";
 import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
-import { useNavStore } from "@/store/nav-store";
+import { useNavigation } from "@/lib/navigation";
 import { getCategoryIcon, ShoppingBagIcon } from "@/components/icons";
 
 export function ProductsSection() {
@@ -27,7 +27,7 @@ export function ProductsSection() {
   const addItem = useCartStore((s) => s.addItem);
   const openCart = useCartStore((s) => s.openCart);
   const { toggleItem, isInWishlist } = useWishlistStore();
-  const { setCurrentPage, setSelectedProductId } = useNavStore();
+  const { navigateToProduct } = useNavigation();
 
   useEffect(() => {
     Promise.all([getProducts(), getCategories()]).then(([prods, cats]) => {
@@ -74,9 +74,7 @@ export function ProductsSection() {
   };
 
   const handleProductClick = (product: Product) => {
-    setSelectedProductId(product.id);
-    setCurrentPage("product-detail");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    navigateToProduct(product.id);
   };
 
   if (loading) {

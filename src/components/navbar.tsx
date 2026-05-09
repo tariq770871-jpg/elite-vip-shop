@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Search,
   Moon,
@@ -47,7 +49,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/components/theme-provider";
-import { useNavStore } from "@/store/nav-store";
+import { useNavigation, type PageName, PAGE_PATHS } from "@/lib/navigation";
 import { useCartStore } from "@/store/cart-store";
 import { useAuthStore } from "@/store/auth-store";
 import { useNotificationStore } from "@/store/notification-store";
@@ -58,7 +60,6 @@ import {
   EmailBrandIcon,
   FacebookBrandIcon,
 } from "@/components/icons";
-import type { PageName } from "@/store/nav-store";
 
 interface NavbarProps {
   onToggleSearch: () => void;
@@ -114,18 +115,14 @@ const socialLinks = [
 
 export function Navbar({ onToggleSearch }: NavbarProps) {
   const { theme, toggleTheme } = useTheme();
-  const { currentPage, setCurrentPage, navigateToSection, goBack, previousPage } = useNavStore();
+  const { currentPage, isActive, navigateTo, goBack, getPath } = useNavigation();
+  const pathname = usePathname();
+  const router = useRouter();
   const totalItems = useCartStore((s) => s.totalItems());
   const openCart = useCartStore((s) => s.openCart);
   const { isAuthenticated, user, logout } = useAuthStore();
   const unreadCount = useNotificationStore((s) => s.unreadCount());
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  const handleNav = (page: PageName) => {
-    setCurrentPage(page);
-    setMobileOpen(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
 
   const handleLogout = () => {
     logout();
@@ -142,17 +139,17 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
         {/* Center: Desktop nav links (hidden on mobile) */}
         <nav className="hidden items-center gap-1 lg:flex" role="navigation" aria-label="التنقل الرئيسي">
           {navLinks.map((link) => (
-            <button
+            <Link
               key={link.page}
-              onClick={() => handleNav(link.page)}
+              href={PAGE_PATHS[link.page]}
               className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                currentPage === link.page
+                isActive(link.page)
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
             >
               {link.label}
-            </button>
+            </Link>
           ))}
         </nav>
 
@@ -217,15 +214,15 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuLabel>{user?.name || "المستخدم"}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleNav("profile")}>
+                  <DropdownMenuItem onClick={() => navigateTo("profile")}>
                     <User className="ms-2 size-4" />
                     الملف الشخصي
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleNav("orders")}>
+                  <DropdownMenuItem onClick={() => navigateTo("orders")}>
                     <Package className="ms-2 size-4" />
                     الطلبات
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleNav("dashboard")}>
+                  <DropdownMenuItem onClick={() => navigateTo("dashboard")}>
                     <LayoutDashboard className="ms-2 size-4" />
                     لوحة التحكم
                   </DropdownMenuItem>
@@ -240,7 +237,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => handleNav("login")}
+                onClick={() => navigateTo("login")}
                 className="gap-1.5"
               >
                 <User className="size-4" />
@@ -268,9 +265,9 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
               {/* ===== SIDEBAR HEADER ===== */}
               <div className="px-4 pb-3 pt-4">
                 <div className="flex items-center justify-between">
-                  <div className="cursor-pointer" onClick={() => handleNav("home")}>
+                  <Link href={getPath("home")} onClick={() => setMobileOpen(false)}>
                     <Logo />
-                  </div>
+                  </Link>
                   <div className="flex items-center gap-1">
                     {/* Theme Toggle */}
                     <Button
@@ -316,21 +313,21 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
                     {/* Quick action buttons */}
                     <div className="grid grid-cols-3 gap-2">
                       <button
-                        onClick={() => handleNav("profile")}
+                        onClick={() => { navigateTo("profile"); setMobileOpen(false); }}
                         className="flex flex-col items-center gap-1.5 rounded-xl bg-primary/10 py-3 text-primary transition-all hover:bg-primary/20 hover:scale-[1.02]"
                       >
                         <User className="size-5" />
                         <span className="text-[10px] font-bold">الملف الشخصي</span>
                       </button>
                       <button
-                        onClick={() => handleNav("orders")}
+                        onClick={() => { navigateTo("orders"); setMobileOpen(false); }}
                         className="flex flex-col items-center gap-1.5 rounded-xl bg-primary/10 py-3 text-primary transition-all hover:bg-primary/20 hover:scale-[1.02]"
                       >
                         <Package className="size-5" />
                         <span className="text-[10px] font-bold">الطلبات</span>
                       </button>
                       <button
-                        onClick={() => handleNav("dashboard")}
+                        onClick={() => { navigateTo("dashboard"); setMobileOpen(false); }}
                         className="flex flex-col items-center gap-1.5 rounded-xl bg-primary/10 py-3 text-primary transition-all hover:bg-primary/20 hover:scale-[1.02]"
                       >
                         <LayoutDashboard className="size-5" />
@@ -365,7 +362,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleNav("login")}
+                      onClick={() => { navigateTo("login"); setMobileOpen(false); }}
                       className="btn-3d w-full flex items-center justify-center gap-2 py-3.5 text-sm"
                     >
                       <User className="size-4" />
@@ -389,16 +386,17 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
                   القائمة الرئيسية
                 </p>
                 {navLinks.map((link) => (
-                  <button
+                  <Link
                     key={link.page}
-                    onClick={() => handleNav(link.page)}
+                    href={getPath(link.page)}
+                    onClick={() => setMobileOpen(false)}
                     className={`touch-target flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 hover:scale-[1.01] hover:shadow-sm text-right ${
-                      currentPage === link.page
+                      isActive(link.page)
                         ? "border-e-[3px] border-e-transparent bg-primary/10 text-primary"
                         : "border-e-[3px] border-e-transparent text-muted-foreground hover:bg-primary/5 hover:text-foreground"
                     }`}
                     style={
-                      currentPage === link.page
+                      isActive(link.page)
                         ? {
                             borderImage:
                               "linear-gradient(to bottom, #d4a843, #f0d078, #d4a843) 1",
@@ -408,7 +406,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
                   >
                     {link.icon}
                     {link.label}
-                  </button>
+                  </Link>
                 ))}
               </div>
 
@@ -421,16 +419,17 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
                   معلومات
                 </p>
                 {infoLinks.map((link) => (
-                  <button
+                  <Link
                     key={link.page}
-                    onClick={() => handleNav(link.page)}
+                    href={getPath(link.page)}
+                    onClick={() => setMobileOpen(false)}
                     className={`touch-target flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 hover:scale-[1.01] hover:shadow-sm text-right ${
-                      currentPage === link.page
+                      isActive(link.page)
                         ? "border-e-[3px] border-e-transparent bg-primary/10 text-primary"
                         : "border-e-[3px] border-e-transparent text-muted-foreground hover:bg-primary/5 hover:text-foreground"
                     }`}
                     style={
-                      currentPage === link.page
+                      isActive(link.page)
                         ? {
                             borderImage:
                               "linear-gradient(to bottom, #d4a843, #f0d078, #d4a843) 1",
@@ -440,7 +439,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
                   >
                     {link.icon}
                     {link.label}
-                  </button>
+                  </Link>
                 ))}
               </div>
 
@@ -474,13 +473,13 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
     </header>
 
     {/* ===== FLOATING BACK BUTTON ===== */}
-    {currentPage !== "home" && (
+    {pathname !== "/" && (
       <button
         onClick={() => {
-          if (previousPage) {
-            goBack();
+          if (window.history.length > 1) {
+            router.back();
           } else {
-            setCurrentPage("home");
+            router.push("/");
           }
           window.scrollTo({ top: 0, behavior: "smooth" });
         }}

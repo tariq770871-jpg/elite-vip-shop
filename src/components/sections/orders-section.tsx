@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/auth-store";
-import { useNavStore } from "@/store/nav-store";
+import { useNavigation } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -199,7 +199,7 @@ function OrderCard({ order }: { order: Order }) {
 export function OrdersSection() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
-  const { setCurrentPage } = useNavStore();
+  const { navigateTo } = useNavigation();
   const [activeFilter, setActiveFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(isAuthenticated && !!user?.id);
   const [orders, setOrders] = useState<Order[]>(mockOrders);
@@ -258,7 +258,7 @@ export function OrdersSection() {
           طلباتي
         </div>
         <p className="text-muted-foreground">سجل دخولك لعرض طلباتك</p>
-        <Button className="btn-3d-sm" onClick={() => setCurrentPage("login")}>
+        <Button className="btn-3d-sm" onClick={() => navigateTo("login")}>
           <LogIn className="ms-2 size-4" /> تسجيل الدخول
         </Button>
       </section>

@@ -26,8 +26,8 @@ import { Input } from "@/components/ui/input";
 import { getProducts, getApps, getAiTools, getAcademyCourses, getEarningMethods } from "@/lib/supabase-data";
 import type { Product, FreeItem } from "@/lib/mock-data";
 import { useCartStore } from "@/store/cart-store";
-import { useNavStore } from "@/store/nav-store";
-import type { PageName } from "@/store/nav-store";
+import { useNavigation } from "@/lib/navigation";
+import type { PageName } from "@/lib/navigation";
 import {
   SmartphoneIcon,
   RobotIcon,
@@ -114,7 +114,7 @@ function ScrollSection({
     setTimeout(checkScroll, 350);
   };
 
-  const { setCurrentPage } = useNavStore();
+  const { navigateTo } = useNavigation();
 
   return (
     <div className="relative">
@@ -132,7 +132,7 @@ function ScrollSection({
         {viewAllPage && (
           <button
             className="btn-3d-sm hidden sm:flex items-center gap-2"
-            onClick={() => setCurrentPage(viewAllPage)}
+            onClick={() => navigateTo(viewAllPage)}
           >
             عرض الكل
             <ArrowLeft className="size-4" />
@@ -174,7 +174,7 @@ function ScrollSection({
             <div className="flex min-w-[140px] shrink-0 flex-col items-center justify-center gap-2">
               <button
                 className="btn-3d-sm sm:hidden"
-                onClick={() => setCurrentPage(viewAllPage)}
+                onClick={() => navigateTo(viewAllPage)}
               >
                 عرض الكل
                 <ArrowLeft className="size-4" />
@@ -188,7 +188,7 @@ function ScrollSection({
 }
 
 export function HomeSection({ onOpenCart }: HomeSectionProps) {
-  const { setCurrentPage } = useNavStore();
+  const { navigateTo } = useNavigation();
   const addItem = useCartStore((s) => s.addItem);
   const sectionsRef = useRef<HTMLDivElement>(null);
 
@@ -328,7 +328,7 @@ export function HomeSection({ onOpenCart }: HomeSectionProps) {
             <div className="flex flex-col gap-5 sm:flex-row sm:gap-6">
               <button
                 className="btn-3d flex items-center justify-center gap-3 px-8 py-4 text-base sm:px-10 sm:py-5 sm:text-lg md:text-xl"
-                onClick={() => setCurrentPage("products")}
+                onClick={() => navigateTo("products")}
               >
                 <ShoppingBag className="size-6 md:size-7" />
                 متجر المنتجات
@@ -358,7 +358,7 @@ export function HomeSection({ onOpenCart }: HomeSectionProps) {
               {/* Section title as luxury 3D button - clickable */}
               <div className="flex justify-center mb-8">
                 <button
-                  onClick={() => setCurrentPage("products")}
+                  onClick={() => navigateTo("products")}
                   className="section-title-3d cursor-pointer"
                 >
                   <span className="title-icon">
@@ -383,7 +383,7 @@ export function HomeSection({ onOpenCart }: HomeSectionProps) {
                   >
                     <div
                       className="product-img-placeholder relative bg-muted cursor-pointer transition-opacity hover:opacity-80 active:scale-[0.98]"
-                      onClick={() => setCurrentPage("products")}
+                      onClick={() => navigateTo("products")}
                     >
                       {product.images[0] ? (
                         <Image
@@ -445,7 +445,7 @@ export function HomeSection({ onOpenCart }: HomeSectionProps) {
                     </div>
                     <button
                       className="btn-3d-sm hidden sm:flex items-center gap-2 shrink-0"
-                      onClick={() => setCurrentPage(section.page)}
+                      onClick={() => navigateTo(section.page)}
                     >
                       عرض الكل
                       <ArrowLeft className="size-4" />
@@ -463,14 +463,14 @@ export function HomeSection({ onOpenCart }: HomeSectionProps) {
                         <div
                           key={item.id}
                           className="card-3d group min-w-[220px] max-w-[260px] shrink-0 cursor-pointer p-5 md:min-w-[260px]"
-                          onClick={() => setCurrentPage(section.page)}
+                          onClick={() => navigateTo(section.page)}
                         >
                           <div className={`icon-box mb-4 transition-transform duration-200 group-hover:scale-110 group-active:scale-95 ${section.iconColor}`}>
                             <ItemIcon className="size-7" />
                           </div>
                           <h3 className="mb-2 line-clamp-1 text-base font-bold">{item.title}</h3>
                           <p className="mb-4 line-clamp-2 text-sm text-muted-foreground">{item.description}</p>
-                          <button className="btn-3d-sm w-full text-sm" onClick={(e) => { e.stopPropagation(); setCurrentPage(section.page); }}>
+                          <button className="btn-3d-sm w-full text-sm" onClick={(e) => { e.stopPropagation(); navigateTo(section.page); }}>
                             عرض التفاصيل
                           </button>
                         </div>

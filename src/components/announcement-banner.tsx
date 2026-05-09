@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { X, Truck, Zap, Gift, Megaphone } from "lucide-react";
-import { useNavStore } from "@/store/nav-store";
+import { useNavigation } from "@/lib/navigation";
+import type { PageName } from "@/lib/navigation";
 
 const announcements = [
   {
@@ -33,7 +34,7 @@ export function AnnouncementBanner() {
     }
     return true;
   });
-  const { setCurrentPage } = useNavStore();
+  const { navigateTo } = useNavigation();
 
   const goNext = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % announcements.length);
@@ -50,7 +51,7 @@ export function AnnouncementBanner() {
   };
 
   const handleClick = (link: string) => {
-    setCurrentPage(link as any);
+    navigateTo(link as PageName);
   };
 
   if (!isVisible) return null;

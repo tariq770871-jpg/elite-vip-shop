@@ -11,7 +11,7 @@ import {
   Loader2,
   Star,
 } from "lucide-react";
-import { useNavStore } from "@/store/nav-store";
+import { useNavigation } from "@/lib/navigation";
 import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { useRecentlyViewedStore } from "@/store/recently-viewed-store";
@@ -22,25 +22,30 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ProductReviewsSection } from "@/components/sections/product-reviews-section";
 
-export function ProductDetailSection() {
-  const { selectedProductId, setCurrentPage, setSelectedProductId } = useNavStore();
+interface ProductDetailSectionProps {
+  productId?: string;
+}
+
+export function ProductDetailSection({ productId: productIdProp }: ProductDetailSectionProps) {
+  const { productId: navProductId, navigateTo } = useNavigation();
+  const effectiveProductId = productIdProp || navProductId;
   const addItem = useCartStore((s) => s.addItem);
   const openCart = useCartStore((s) => s.openCart);
   const { toggleItem, isInWishlist } = useWishlistStore();
   const addRecentlyViewed = useRecentlyViewedStore((s) => s.addItem);
 
   const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(!!selectedProductId);
+  const [loading, setLoading] = useState(!!effectiveProductId);
   const [quantity, setQuantity] = useState(1);
   const [productRating, setProductRating] = useState<{ avg: number; count: number }>({ avg: 0, count: 0 });
   const fetchedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!selectedProductId) return;
-    if (fetchedIdRef.current === selectedProductId) return;
-    fetchedIdRef.current = selectedProductId;
+    if (!effectiveProductId) return;
+    if (fetchedIdRef.current === effectiveProductId) return;
+    fetchedIdRef.current = effectiveProductId;
     getProducts().then((products) => {
-      const found = products.find((p) => p.id === selectedProductId) || null;
+      const found = products.find((p) => p.id === effectiveProductId) || null;
       setProduct(found);
       if (found) {
         addRecentlyViewed({
@@ -56,7 +61,7 @@ export function ProductDetailSection() {
     });
 
     // Fetch product rating
-    fetch(`/api/reviews?product_id=${encodeURIComponent(selectedProductId)}`)
+    fetch(`/api/reviews?product_id=${encodeURIComponent(effectiveProductId)}`)
       .then((res) => res.json())
       .then((json) => {
         if (json.averageRating !== undefined) {
@@ -64,7 +69,7 @@ export function ProductDetailSection() {
         }
       })
       .catch(() => {});
-  }, [selectedProductId, addRecentlyViewed]);
+  }, [effectiveProductId, addRecentlyViewed]);
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -100,9 +105,7 @@ export function ProductDetailSection() {
   };
 
   const handleGoBack = () => {
-    setSelectedProductId(null);
-    setCurrentPage("products");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    navigateTo("products");
   };
 
   if (loading) {

@@ -1,10 +1,10 @@
 "use client";
 
 import { FileQuestion, Home } from "lucide-react";
-import { useNavStore } from "@/store/nav-store";
+import { useNavigation } from "@/lib/navigation";
 
 export function NotFoundSection() {
-  const { setCurrentPage } = useNavStore();
+  const { navigateTo } = useNavigation();
 
   return (
     <section className="flex min-h-[60vh] flex-col items-center justify-center gap-6 px-4 py-16">
@@ -22,7 +22,7 @@ export function NotFoundSection() {
       </p>
       <button
         className="btn-3d-sm flex items-center gap-2"
-        onClick={() => setCurrentPage("home")}
+        onClick={() => navigateTo("home")}
       >
         <Home className="size-4" />
         العودة للرئيسية

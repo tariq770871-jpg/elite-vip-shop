@@ -11,9 +11,10 @@ import {
   Fingerprint,
   CheckCircle2,
 } from "lucide-react";
-import { useNavStore } from "@/store/nav-store";
+import { useNavigation } from "@/lib/navigation";
 
 export function ZeroProtocolsSection() {
+  const { navigateTo } = useNavigation();
   return (
     <div>
       {/* Header */}
@@ -218,7 +219,7 @@ export function ZeroProtocolsSection() {
               </a>
               <button
                 onClick={() => {
-                  useNavStore.getState().setCurrentPage("values");
+                  navigateTo("values");
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 className="flex items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-6 py-3 text-sm font-medium text-primary transition-all hover:bg-primary/10"

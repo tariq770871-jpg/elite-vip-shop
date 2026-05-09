@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Star, Loader2, MessageSquarePlus, LogIn } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
-import { useNavStore } from "@/store/nav-store";
+import { useNavigation } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -77,7 +77,7 @@ export function ProductReviewsSection({ productId }: ProductReviewsSectionProps)
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const session = useAuthStore((s) => s.session);
-  const { setCurrentPage } = useNavStore();
+  const { navigateTo } = useNavigation();
 
   const fetchReviews = useCallback(async () => {
     try {
@@ -314,7 +314,7 @@ export function ProductReviewsSection({ productId }: ProductReviewsSectionProps)
               </p>
               <Button
                 className="btn-3d-sm gap-2"
-                onClick={() => setCurrentPage("login")}
+                onClick={() => navigateTo("login")}
               >
                 <LogIn className="size-4" />
                 تسجيل الدخول

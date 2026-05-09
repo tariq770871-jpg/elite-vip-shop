@@ -1,10 +1,8 @@
-import { App } from "@/components/app";
-import { ErrorBoundary } from "@/components/error-boundary";
+"use client";
 
-export default function Home() {
-  return (
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  );
+import { HomeSection } from "@/components/sections/home-section";
+import { useCartStore } from "@/store/cart-store";
+
+export default function HomePage() {
+  return <HomeSection onOpenCart={() => useCartStore.getState().openCart()} />;
 }

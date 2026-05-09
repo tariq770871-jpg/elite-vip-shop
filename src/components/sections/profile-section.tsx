@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAuthStore } from "@/store/auth-store";
-import { useNavStore } from "@/store/nav-store";
+import { useNavigation } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,7 +37,7 @@ export function ProfileSection() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const updateProfile = useAuthStore((s) => s.updateProfile);
   const changePassword = useAuthStore((s) => s.changePassword);
-  const { setCurrentPage } = useNavStore();
+  const { navigateTo } = useNavigation();
 
   const [name, setName] = useState(user?.name ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
@@ -107,7 +107,7 @@ export function ProfileSection() {
           الملف الشخصي
         </div>
         <p className="text-muted-foreground">سجل دخولك للوصول إلى الملف الشخصي</p>
-        <Button className="btn-3d-sm" onClick={() => setCurrentPage("login")}>
+        <Button className="btn-3d-sm" onClick={() => navigateTo("login")}>
           <LogIn className="ms-2 size-4" />
           تسجيل الدخول
         </Button>

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuthStore } from "@/store/auth-store";
-import { useNavStore } from "@/store/nav-store";
+import { useNavigation } from "@/lib/navigation";
 import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail, ArrowRight } from "lucide-react";
 
 function PasswordStrength({ password }: { password: string }) {
@@ -50,7 +50,7 @@ function PasswordStrength({ password }: { password: string }) {
 
 export function RegisterSection() {
   const { register, loginWithGoogle, loginWithFacebook, isAuthenticated, isLoading, error, clearError, needsEmailConfirmation, checkSession } = useAuthStore();
-  const { setCurrentPage } = useNavStore();
+  const { navigateTo } = useNavigation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -68,9 +68,9 @@ export function RegisterSection() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      setCurrentPage("home");
+      navigateTo("home");
     }
-  }, [isAuthenticated, setCurrentPage]);
+  }, [isAuthenticated, navigateTo]);
 
   const getError = () => localError || error;
 
@@ -121,7 +121,7 @@ export function RegisterSection() {
 
     if (success) {
       setSuccessMessage("تم إنشاء الحساب بنجاح! مرحباً بك في متجر النخبة.");
-      setTimeout(() => setCurrentPage("home"), 1500);
+      setTimeout(() => navigateTo("home"), 1500);
     }
   };
 
@@ -152,7 +152,7 @@ export function RegisterSection() {
 
           <div className="space-y-3">
             <Button
-              onClick={() => setCurrentPage("login")}
+              onClick={() => navigateTo("login")}
               className="btn-3d-sm w-full"
             >
               <ArrowRight className="ms-2 size-4" />
@@ -311,7 +311,7 @@ export function RegisterSection() {
               أوافق على{" "}
               <button
                 type="button"
-                onClick={() => setCurrentPage("terms")}
+                onClick={() => navigateTo("terms")}
                 className="text-primary hover:underline font-medium"
               >
                 شروط الاستخدام
@@ -319,7 +319,7 @@ export function RegisterSection() {
               و{" "}
               <button
                 type="button"
-                onClick={() => setCurrentPage("privacy")}
+                onClick={() => navigateTo("privacy")}
                 className="text-primary hover:underline font-medium"
               >
                 سياسة الخصوصية
@@ -397,7 +397,7 @@ export function RegisterSection() {
           <button
             type="button"
             className="font-semibold text-primary hover:underline"
-            onClick={() => setCurrentPage("login")}
+            onClick={() => navigateTo("login")}
           >
             تسجيل الدخول
           </button>

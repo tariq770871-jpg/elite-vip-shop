@@ -3,6 +3,8 @@ import { Cairo } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { LayoutClient } from "@/components/layout-client";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 const cairo = Cairo({
   variable: "--font-cairo",
@@ -99,7 +101,7 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="alternate" hreflang="ar" href="https://elite-vip-shop.vercel.app/" />
+        <link rel="alternate" hrefLang="ar" href="https://elite-vip-shop.vercel.app/" />
         <meta name="theme-color" content="#d4a843" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -160,7 +162,11 @@ export default function RootLayout({
           تخطي إلى المحتوى الرئيسي
         </a>
         <ThemeProvider>
-          {children}
+          <ErrorBoundary>
+            <LayoutClient>
+              {children}
+            </LayoutClient>
+          </ErrorBoundary>
           <Toaster />
         </ThemeProvider>
       </body>

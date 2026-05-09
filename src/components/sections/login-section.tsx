@@ -8,12 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuthStore } from "@/store/auth-store";
-import { useNavStore } from "@/store/nav-store";
+import { useNavigation } from "@/lib/navigation";
 import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail } from "lucide-react";
 
 export function LoginSection() {
   const { login, loginWithGoogle, loginWithFacebook, isAuthenticated, isLoading, error, clearError, needsEmailConfirmation, checkSession } = useAuthStore();
-  const { setCurrentPage } = useNavStore();
+  const { navigateTo } = useNavigation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -25,9 +25,9 @@ export function LoginSection() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      setCurrentPage("home");
+      navigateTo("home");
     }
-  }, [isAuthenticated, setCurrentPage]);
+  }, [isAuthenticated, navigateTo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +58,7 @@ export function LoginSection() {
     const success = await login(email.trim(), password);
     if (success) {
       setSuccessMessage("تم تسجيل الدخول بنجاح! جارٍ التحويل...");
-      setTimeout(() => setCurrentPage("home"), 800);
+      setTimeout(() => navigateTo("home"), 800);
     }
   };
 
@@ -143,7 +143,7 @@ export function LoginSection() {
             <button
               type="button"
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
-              onClick={() => setCurrentPage("forgot-password")}
+              onClick={() => navigateTo("forgot-password")}
             >
               نسيت كلمة المرور؟
             </button>
@@ -219,7 +219,7 @@ export function LoginSection() {
           <button
             type="button"
             className="font-semibold text-primary hover:underline"
-            onClick={() => setCurrentPage("register")}
+            onClick={() => navigateTo("register")}
           >
             إنشاء حساب جديد
           </button>

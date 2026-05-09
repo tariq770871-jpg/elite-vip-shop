@@ -3,7 +3,7 @@
 import { Heart, ShoppingCart, Trash2, ArrowRight } from "lucide-react";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { useCartStore } from "@/store/cart-store";
-import { useNavStore } from "@/store/nav-store";
+import { useNavigation } from "@/lib/navigation";
 import { getCategoryIcon } from "@/components/icons";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,7 @@ export function WishlistSection() {
   const { items, removeItem, toggleItem, isInWishlist } = useWishlistStore();
   const addItem = useCartStore((s) => s.addItem);
   const openCart = useCartStore((s) => s.openCart);
-  const { setCurrentPage, setSelectedProductId } = useNavStore();
+  const { navigateTo, navigateToProduct } = useNavigation();
 
   const handleAddToCart = (item: typeof items[0]) => {
     addItem({
@@ -60,7 +60,7 @@ export function WishlistSection() {
         </p>
         <button
           className="btn-3d-sm flex items-center gap-2"
-          onClick={() => setCurrentPage("products")}
+          onClick={() => navigateTo("products")}
         >
           <ShoppingCart className="size-4" />
           تصفح المنتجات
@@ -95,8 +95,7 @@ export function WishlistSection() {
               <div
                 className="product-img-placeholder relative bg-muted cursor-pointer"
                 onClick={() => {
-                  setSelectedProductId(item.id);
-                  setCurrentPage("product-detail");
+                    navigateToProduct(item.id);
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
               >
@@ -165,7 +164,7 @@ export function WishlistSection() {
         <div className="mt-8 flex justify-center">
           <button
             className="flex items-center gap-2 rounded-xl border border-border bg-card px-5 py-2.5 text-sm font-medium transition-all hover:bg-accent"
-            onClick={() => setCurrentPage("products")}
+            onClick={() => navigateTo("products")}
           >
             <ArrowRight className="size-4" />
             العودة للمنتجات

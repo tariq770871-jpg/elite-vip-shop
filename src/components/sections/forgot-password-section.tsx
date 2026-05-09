@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { useNavStore } from '@/store/nav-store'
+import { useNavigation } from '@/lib/navigation'
 import { useAuthStore } from '@/store/auth-store'
 
 export function ForgotPasswordSection() {
-  const { setCurrentPage } = useNavStore()
+  const { navigateTo } = useNavigation()
   const { resetPassword, isLoading, error, clearError } = useAuthStore()
   const [email, setEmail] = useState('')
   const [step, setStep] = useState<1 | 2>(1)
@@ -41,7 +41,7 @@ export function ForgotPasswordSection() {
 
   const goToLogin = () => {
     clearError()
-    setCurrentPage('login')
+    navigateTo('login')
   }
 
   const currentError = localError || error
@@ -52,7 +52,7 @@ export function ForgotPasswordSection() {
         <div className="card-3d p-8">
           {/* Logo */}
           <div className="mb-6 flex justify-center">
-            <div className="cursor-pointer" onClick={() => setCurrentPage('home')}>
+            <div className="cursor-pointer" onClick={() => navigateTo('home')}>
               <Logo />
             </div>
           </div>

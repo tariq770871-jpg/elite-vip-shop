@@ -8,7 +8,7 @@ import type { Product } from "@/lib/mock-data";
 import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { useRecentlyViewedStore } from "@/store/recently-viewed-store";
-import { useNavStore } from "@/store/nav-store";
+import { useNavigation } from "@/lib/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 function useCountdown(targetDate: Date) {
@@ -71,7 +71,7 @@ export function FlashDealsSection() {
   const openCart = useCartStore((s) => s.openCart);
   const { toggleItem, isInWishlist } = useWishlistStore();
   const addRecentlyViewed = useRecentlyViewedStore((s) => s.addItem);
-  const { setCurrentPage } = useNavStore();
+  const { navigateTo } = useNavigation();
 
   // Set deal end time to midnight today + remaining hours (or tomorrow if past midnight)
   const dealEndTime = useMemo(() => {
@@ -212,7 +212,7 @@ export function FlashDealsSection() {
           <div className="mt-8 flex justify-center">
             <button
               className="btn-3d-sm flex items-center gap-2"
-              onClick={() => setCurrentPage("products")}
+              onClick={() => navigateTo("products")}
             >
               <ShoppingBag className="size-4" />
               عرض جميع المنتجات

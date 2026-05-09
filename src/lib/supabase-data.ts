@@ -7,6 +7,7 @@ import { products, categories, appsData, aiToolsData, academyData, earningData }
 
 export async function getProducts() {
   try {
+    if (!supabase) return products
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -32,6 +33,7 @@ export async function getProducts() {
 
 export async function getCategories() {
   try {
+    if (!supabase) return categories
     const { data, error } = await supabase
       .from('categories')
       .select('*')
@@ -47,6 +49,7 @@ export async function getCategories() {
 
 export async function getApps() {
   try {
+    if (!supabase) return appsData
     const { data, error } = await supabase
       .from('apps')
       .select('*')
@@ -68,6 +71,7 @@ export async function getApps() {
 
 export async function getAiTools() {
   try {
+    if (!supabase) return aiToolsData
     const { data, error } = await supabase
       .from('ai_tools')
       .select('*')
@@ -89,6 +93,7 @@ export async function getAiTools() {
 
 export async function getAcademyCourses() {
   try {
+    if (!supabase) return academyData
     const { data, error } = await supabase
       .from('academy_courses')
       .select('*')
@@ -109,6 +114,7 @@ export async function getAcademyCourses() {
 
 export async function getEarningMethods() {
   try {
+    if (!supabase) return earningData
     const { data, error } = await supabase
       .from('earning_methods')
       .select('*')
@@ -133,6 +139,7 @@ export async function getEarningMethods() {
 
 export async function getAllProducts() {
   try {
+    if (!supabase) return []
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -169,6 +176,7 @@ export async function addProduct(product: {
   category_id?: string
   availability?: boolean
 }) {
+  if (!supabase) throw new Error('Supabase not configured')
   const { data, error } = await supabase
     .from('products')
     .insert(product)
@@ -180,6 +188,7 @@ export async function addProduct(product: {
 }
 
 export async function updateProduct(id: string, updates: Record<string, any>) {
+  if (!supabase) throw new Error('Supabase not configured')
   const { data, error } = await supabase
     .from('products')
     .update(updates)
@@ -192,6 +201,7 @@ export async function updateProduct(id: string, updates: Record<string, any>) {
 }
 
 export async function deleteProduct(id: string) {
+  if (!supabase) throw new Error('Supabase not configured')
   const { error } = await supabase
     .from('products')
     .delete()
@@ -210,6 +220,7 @@ export async function addApp(app: {
   link?: string
   platform?: string
 }) {
+  if (!supabase) throw new Error('Supabase not configured')
   const { data, error } = await supabase
     .from('apps')
     .insert(app)
@@ -221,6 +232,7 @@ export async function addApp(app: {
 }
 
 export async function updateApp(id: string, updates: Record<string, any>) {
+  if (!supabase) throw new Error('Supabase not configured')
   const { data, error } = await supabase
     .from('apps')
     .update(updates)
@@ -233,6 +245,7 @@ export async function updateApp(id: string, updates: Record<string, any>) {
 }
 
 export async function deleteApp(id: string) {
+  if (!supabase) throw new Error('Supabase not configured')
   const { error } = await supabase
     .from('apps')
     .delete()

@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { Heart, MessageSquareWarning, Shield, Truck, RotateCcw, Headphones } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { useNavStore } from "@/store/nav-store";
+import { useNavigation, type PageName, PAGE_PATHS } from "@/lib/navigation";
 import { Logo } from "@/components/logo";
 import {
   WhatsAppBrandIcon,
@@ -10,7 +11,6 @@ import {
   FacebookBrandIcon,
   EmailBrandIcon,
 } from "@/components/icons";
-import type { PageName } from "@/store/nav-store";
 
 const quickLinks: { label: string; page: PageName }[] = [
   { label: "الرئيسية", page: "home" },
@@ -59,10 +59,9 @@ const socialLinks = [
 ];
 
 export function Footer() {
-  const { setCurrentPage } = useNavStore();
+  const { getPath } = useNavigation();
 
-  const handleNav = (page: PageName) => {
-    setCurrentPage(page);
+  const handleNavScroll = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -85,13 +84,14 @@ export function Footer() {
             <h3 className="text-sm font-bold">روابط سريعة</h3>
             <nav className="flex flex-col gap-2">
               {quickLinks.map((link) => (
-                <button
+                <Link
                   key={link.label}
-                  onClick={() => handleNav(link.page)}
+                  href={getPath(link.page)}
+                  onClick={handleNavScroll}
                   className="text-sm text-muted-foreground transition-colors hover:text-primary text-right"
                 >
                   {link.label}
-                </button>
+                </Link>
               ))}
             </nav>
           </div>
@@ -101,24 +101,26 @@ export function Footer() {
             <h3 className="text-sm font-bold">الأقسام</h3>
             <nav className="flex flex-col gap-2">
               {sectionLinks.map((link) => (
-                <button
+                <Link
                   key={link.label}
-                  onClick={() => handleNav(link.page)}
+                  href={getPath(link.page)}
+                  onClick={handleNavScroll}
                   className="text-sm text-muted-foreground transition-colors hover:text-primary text-right"
                 >
                   {link.label}
-                </button>
+                </Link>
               ))}
               <div className="my-1 h-px bg-border/50" />
               {quickSectionPages.map((link) => (
-                <button
+                <Link
                   key={link.page}
-                  onClick={() => handleNav(link.page)}
+                  href={getPath(link.page)}
+                  onClick={handleNavScroll}
                   className="flex items-center gap-2 text-sm text-amber-500 transition-colors hover:text-amber-400 text-right"
                 >
                   {link.icon}
                   {link.label}
-                </button>
+                </Link>
               ))}
             </nav>
           </div>
@@ -176,18 +178,20 @@ export function Footer() {
             © 2026 Elite VIP Shop - متجر النخبة. جميع الحقوق محفوظة.
           </p>
           <div className="flex gap-4 text-xs text-muted-foreground">
-            <button
-              onClick={() => handleNav("privacy")}
+            <Link
+              href={PAGE_PATHS.privacy}
+              onClick={handleNavScroll}
               className="transition-colors hover:text-primary"
             >
               سياسة الخصوصية
-            </button>
-            <button
-              onClick={() => handleNav("terms")}
+            </Link>
+            <Link
+              href={PAGE_PATHS.terms}
+              onClick={handleNavScroll}
               className="transition-colors hover:text-primary"
             >
               شروط الاستخدام
-            </button>
+            </Link>
           </div>
         </div>
       </div>

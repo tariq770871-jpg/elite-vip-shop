@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getProducts } from "@/lib/supabase-data";
 import type { Product } from "@/lib/mock-data";
-import { useNavStore } from "@/store/nav-store";
+import { useRouter } from "next/navigation";
 
 interface SearchBarProps {
   isOpen: boolean;
@@ -17,7 +17,7 @@ export function SearchBar({ isOpen, onClose }: SearchBarProps) {
   const [query, setQuery] = useState("");
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { setCurrentPage } = useNavStore();
+  const router = useRouter();
 
   useEffect(() => {
     getProducts().then(d => setAllProducts(d));
@@ -47,7 +47,7 @@ export function SearchBar({ isOpen, onClose }: SearchBarProps) {
   if (!isOpen) return null;
 
   const handleSelect = (productId: string) => {
-    setCurrentPage("products");
+    router.push(`/product/${productId}`);
     setQuery("");
     onClose();
   };

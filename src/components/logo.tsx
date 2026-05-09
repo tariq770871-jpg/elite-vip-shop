@@ -1,6 +1,6 @@
 "use client";
 
-import { useNavStore } from "@/store/nav-store";
+import Link from "next/link";
 
 interface LogoProps {
   className?: string;
@@ -8,11 +8,9 @@ interface LogoProps {
 }
 
 export function Logo({ className = "", compact = false }: LogoProps) {
-  const { setCurrentPage } = useNavStore();
-
   return (
-    <button
-      onClick={() => setCurrentPage("home")}
+    <Link
+      href="/"
       className={`flex items-center gap-2 transition-opacity hover:opacity-80 ${className}`}
       aria-label="العودة إلى الصفحة الرئيسية"
     >
@@ -28,6 +26,6 @@ export function Logo({ className = "", compact = false }: LogoProps) {
           متجر النخبة
         </span>
       )}
-    </button>
+    </Link>
   );
 }

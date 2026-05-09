@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useCartStore } from "@/store/cart-store";
-import { useNavStore } from "@/store/nav-store";
+import { useNavigation } from "@/lib/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import {
   ShoppingCart, Package, Minus, Plus, Trash2, ArrowRight,
@@ -58,7 +58,7 @@ export function CartPageSection() {
   const appliedCoupon = useCartStore((s) => s.appliedCoupon);
   const applyCoupon = useCartStore((s) => s.applyCoupon);
   const removeCoupon = useCartStore((s) => s.removeCoupon);
-  const { setCurrentPage } = useNavStore();
+  const { navigateTo } = useNavigation();
 
   // Customer form
   const [customerName, setCustomerName] = useState("");
@@ -157,10 +157,10 @@ export function CartPageSection() {
             : "تم فتح الرسائل النصية مع تفاصيل الطلب"}
         </p>
         <div className="flex gap-3 flex-wrap justify-center mt-2">
-          <button className="btn-3d flex items-center gap-2" onClick={() => { setOrderPlaced(false); setCurrentPage("products"); }}>
+          <button className="btn-3d flex items-center gap-2" onClick={() => { setOrderPlaced(false); navigateTo("products"); }}>
             <ShoppingCart className="size-4" /> متابعة التسوق
           </button>
-          <button className="flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium hover:bg-accent" onClick={() => { setOrderPlaced(false); setCurrentPage("orders"); }}>
+          <button className="flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium hover:bg-accent" onClick={() => { setOrderPlaced(false); navigateTo("orders"); }}>
             تتبع الطلبات
           </button>
         </div>
@@ -176,7 +176,7 @@ export function CartPageSection() {
         </div>
         <div className="section-title-3d">سلتك فارغة</div>
         <p className="text-muted-foreground">لم تقم بإضافة أي منتجات بعد</p>
-        <button className="btn-3d flex items-center gap-2" onClick={() => setCurrentPage("products")}>
+        <button className="btn-3d flex items-center gap-2" onClick={() => navigateTo("products")}>
           <ShoppingCart className="size-4" /> تسوق الآن
         </button>
       </section>
@@ -390,7 +390,7 @@ export function CartPageSection() {
 
               <button
                 className="w-full flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium transition-all hover:bg-accent"
-                onClick={() => setCurrentPage("products")}
+                onClick={() => navigateTo("products")}
               >
                 <ArrowRight className="size-4" /> متابعة التسوق
               </button>

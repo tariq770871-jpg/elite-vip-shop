@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/auth-store";
-import { useNavStore } from "@/store/nav-store";
+import { useNavigation } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -908,7 +908,7 @@ function UserDashboard() {
 export function DashboardSection() {
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const { setCurrentPage } = useNavStore();
+  const { navigateTo } = useNavigation();
 
   if (!isAuthenticated) {
     return (
@@ -923,7 +923,7 @@ export function DashboardSection() {
           لوحة التحكم
         </div>
         <p className="text-muted-foreground">سجل دخولك للوصول إلى لوحة التحكم</p>
-        <Button className="btn-3d-sm" onClick={() => setCurrentPage("login")}>
+        <Button className="btn-3d-sm" onClick={() => navigateTo("login")}>
           <LogIn className="ms-2 size-4" />
           تسجيل الدخول
         </Button>
