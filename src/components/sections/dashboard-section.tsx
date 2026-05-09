@@ -545,16 +545,36 @@ function AdminDashboard() {
     setEditName(u.name);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editUser) return;
-    setUsers((prev) =>
-      prev.map((u) => (u.id === editUser.id ? { ...u, name: editName } : u))
-    );
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: editUser.id, name: editName }),
+      });
+      if (res.ok) {
+        setUsers((prev) =>
+          prev.map((u) => (u.id === editUser.id ? { ...u, name: editName } : u))
+        );
+      }
+    } catch {
+      // silently fail — local state unchanged
+    }
     setEditUser(null);
   };
 
-  const deleteUser = (id: string) => {
-    setUsers((prev) => prev.filter((u) => u.id !== id));
+  const deleteUser = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/users?userId=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setUsers((prev) => prev.filter((u) => u.id !== id));
+      }
+    } catch {
+      // silently fail — local state unchanged
+    }
   };
 
   return (

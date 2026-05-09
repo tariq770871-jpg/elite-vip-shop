@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { rateLimitResponse } from "@/lib/rate-limit";
+import { verifyAuthToken } from "@/lib/supabase-server";
 
 // GET: Fetch all users with their roles
 export async function GET(request: Request) {
@@ -61,5 +62,84 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("Admin users API error:", error);
     return NextResponse.json({ error: "حدث خطأ في جلب المستخدمين" }, { status: 500 });
+  }
+}
+
+// PATCH: Update a user's name (admin only)
+export async function PATCH(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
+  try {
+    // Admin auth check
+    const { user: admin, error: authError } = await verifyAuthToken(request);
+    if (authError || !admin) {
+      return NextResponse.json({ error: "غير مصرح به" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { userId, name } = body;
+
+    if (!userId || !name) {
+      return NextResponse.json({ error: "معرف المستخدم والاسم مطلوبان" }, { status: 400 });
+    }
+
+    if (!supabase) {
+      return NextResponse.json({ success: true });
+    }
+
+    const { error } = await supabase
+      .from("users")
+      .update({ name })
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error("User update error:", error);
+      return NextResponse.json({ error: "فشل في تحديث المستخدم" }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Admin user patch error:", error);
+    return NextResponse.json({ error: "حدث خطأ في تحديث المستخدم" }, { status: 500 });
+  }
+}
+
+// DELETE: Deactivate a user (admin only) — soft delete by setting is_active = false
+export async function DELETE(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
+  try {
+    // Admin auth check
+    const { user: admin, error: authError } = await verifyAuthToken(request);
+    if (authError || !admin) {
+      return NextResponse.json({ error: "غير مصرح به" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+
+    if (!userId) {
+      return NextResponse.json({ error: "معرف المستخدم مطلوب" }, { status: 400 });
+    }
+
+    if (!supabase) {
+      return NextResponse.json({ success: true });
+    }
+
+    // Soft delete: deactivate instead of removing to preserve data integrity
+    const { error } = await supabase
+      .from("users")
+      .update({ is_active: false })
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error("User deactivate error:", error);
+      return NextResponse.json({ error: "فشل في تعطيل المستخدم" }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Admin user delete error:", error);
+    return NextResponse.json({ error: "حدث خطأ في حذف المستخدم" }, { status: 500 });
   }
 }
