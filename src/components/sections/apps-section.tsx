@@ -76,13 +76,17 @@ export function AppsSection() {
                 <button
                   className="btn-3d-sm w-full flex items-center justify-center gap-2"
                   onClick={() => {
-                    if (app.link && app.link !== "#") { const w = window.open(app.link, "_blank"); if (w) w.opener = null; }
+                    if (app.link && app.link !== "#") {
+                      const w = window.open(app.link, "_blank");
+                      if (w) w.opener = null;
+                    } else {
+                      const w = window.open(`https://wa.me/967782138587?text=${encodeURIComponent("أرغب في الاستفسار عن: " + app.title)}`, "_blank");
+                      if (w) w.opener = null;
+                    }
                   }}
-                  disabled={!app.link || app.link === "#"}
-                  style={(!app.link || app.link === "#") ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
                 >
-                  عرض التفاصيل
-                  {app.link && app.link !== "#" && <ExternalLink className="size-4" />}
+                  {app.link && app.link !== "#" ? "عرض التفاصيل" : "استفسار"}
+                  {app.link && app.link !== "#" ? <ExternalLink className="size-4" /> : null}
                 </button>
               </div>
             );
