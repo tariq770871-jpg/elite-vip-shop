@@ -56,7 +56,7 @@ export function CartDrawer() {
 
     let msg = `🛒 *طلب جديد من متجر النخبة*\n━━━━━━━━━━━━━━\n\n📋 *المنتجات:*\n${orderLines}\n\n`;
     if (discount > 0) {
-      msg += `━━━━━━━━━━━━━━\n🎁 الخصم (${appliedCoupon.discount}%): -${discount.toLocaleString("ar-SA")} ر.ي\n`;
+      msg += `━━━━━━━━━━━━━━\n🎁 الخصم (${appliedCoupon!.discount}%): -${discount.toLocaleString("ar-SA")} ر.ي\n`;
     }
     msg += `━━━━━━━━━━━━━━\n💰 *المجموع الكلي:* ${total.toLocaleString("ar-SA")} ر.ي\n\n`;
     msg += `🕐 ${new Date().toLocaleDateString("ar-YE", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}\n`;

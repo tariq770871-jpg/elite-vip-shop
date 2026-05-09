@@ -232,6 +232,7 @@ function AdminDashboard() {
   const fetchAdminProducts = async () => {
     try {
       const { supabase } = await import("@/lib/supabase");
+      if (!supabase) return;
       const { data, error } = await supabase
         .from("products")
         .select("*")
@@ -300,7 +301,7 @@ function AdminDashboard() {
         await updateProduct(editingProduct.id, payload);
         toast.success("تم تحديث المنتج بنجاح ✅");
       } else {
-        await addProduct(payload);
+        await addProduct(payload as any);
         toast.success("تمت إضافة المنتج بنجاح ✅");
       }
       setProductDialogOpen(false);
@@ -340,6 +341,7 @@ function AdminDashboard() {
     async function fetchData() {
       try {
         const { supabase } = await import("@/lib/supabase");
+        if (!supabase) return;
         // Fetch real stats
         const [productsRes, usersRes, ordersRes] = await Promise.all([
           supabase.from("products").select("product_id", { count: "exact", head: true }),
@@ -756,8 +758,8 @@ function AdminDashboard() {
 /* ------------------------------------------------------------------ */
 
 function SellerDashboard() {
-  const [products] = useState(sellerProducts);
-  const [orders] = useState(sellerOrders);
+  const [products] = useState<any[]>([]);
+  const [orders] = useState<any[]>([]);
 
   return (
     <div className="space-y-8">

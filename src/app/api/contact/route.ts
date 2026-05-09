@@ -10,16 +10,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "يرجى ملء الاسم والرسالة" }, { status: 400 });
     }
 
-    const { error } = await supabase.from("contact_messages").insert({
-      name,
-      email: email || null,
-      phone: phone || null,
-      subject: subject || "رسالة عامة",
-      message,
-    });
+    if (supabase) {
+      const { error } = await supabase.from("contact_messages").insert({
+        name,
+        email: email || null,
+        phone: phone || null,
+        subject: subject || "رسالة عامة",
+        message,
+      });
 
-    if (error) {
-      console.log("Contact save (table may not exist):", error.message);
+      if (error) {
+        console.log("Contact save (table may not exist):", error.message);
+      }
     }
 
     try {
@@ -43,6 +45,7 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
+    if (!supabase) return NextResponse.json({ messages: [] });
     const { data, error } = await supabase
       .from("contact_messages")
       .select("*")

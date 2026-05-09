@@ -11,6 +11,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "بيانات غير مكتملة" }, { status: 400 });
     }
 
+    if (!supabase) {
+      return NextResponse.json({ success: true, orderId: "local", orderNumber: "N/A" });
+    }
+
     // Generate order number
     const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
@@ -72,6 +76,10 @@ export async function GET(request: Request) {
 
     if (!userId) {
       return NextResponse.json({ error: "معرف المستخدم مطلوب" }, { status: 400 });
+    }
+
+    if (!supabase) {
+      return NextResponse.json({ orders: [] });
     }
 
     const { data: orders, error } = await supabase

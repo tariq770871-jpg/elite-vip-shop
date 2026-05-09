@@ -14,6 +14,10 @@ export async function GET(request: Request) {
       );
     }
 
+    if (!supabase) {
+      return NextResponse.json({ reviews: [], averageRating: 0, totalCount: 0 });
+    }
+
     const { data: reviews, error } = await supabase
       .from("reviews")
       .select("*, profiles:user_id(name)")
@@ -72,6 +76,10 @@ export async function POST(request: Request) {
         { error: "التقييم يجب أن يكون بين 1 و 5" },
         { status: 400 }
       );
+    }
+
+    if (!supabase) {
+      return NextResponse.json({ error: "النظام غير متاح حالياً" }, { status: 503 });
     }
 
     // Get user from Authorization header
