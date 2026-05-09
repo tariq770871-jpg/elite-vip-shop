@@ -329,6 +329,10 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
+  /* ---- Coupon State ---- */
+  const [coupons, setCoupons] = useState<Array<{ code: string; discount: number; minOrder: number; isActive: boolean }>>([]);
+  const [couponsLoading, setCouponsLoading] = useState(true);
+
   /* ---- Product CRUD State ---- */
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
@@ -490,6 +494,18 @@ function AdminDashboard() {
           setStats((prev) => ({ ...prev, products: count || 0 }));
         }
       } catch { /* ignore */ }
+
+      // Fetch coupons from API
+      try {
+        const couponsRes = await fetch("/api/coupons");
+        if (couponsRes.ok) {
+          const couponsData = await couponsRes.json();
+          if (couponsData.coupons) {
+            setCoupons(couponsData.coupons);
+          }
+        }
+      } catch { /* ignore */ }
+      setCouponsLoading(false);
     } catch {
       toast.error("تعذّر تحميل بيانات لوحة التحكم");
     } finally {
@@ -920,22 +936,38 @@ function AdminDashboard() {
           <Tag className="size-5" />
           إدارة كوبونات الخصم
         </h2>
+        {couponsLoading ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="rounded-lg border p-3 text-center animate-pulse">
+                <div className="h-6 bg-muted rounded w-12 mx-auto" />
+                <div className="h-3 bg-muted rounded w-20 mx-auto mt-2" />
+                <div className="h-3 bg-muted rounded w-16 mx-auto mt-1" />
+              </div>
+            ))}
+          </div>
+        ) : coupons.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-8 text-center">
+            <Tag className="size-8 text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground">لا توجد كوبونات بعد</p>
+          </div>
+        ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[
-            { code: "WELCOME10", discount: "10%", min: "0 ر.ي", status: "نشط" },
-            { code: "VIP20", discount: "20%", min: "5,000 ر.ي", status: "نشط" },
-            { code: "SUMMER15", discount: "15%", min: "3,000 ر.ي", status: "نشط" },
-            { code: "ELITE25", discount: "25%", min: "10,000 ر.ي", status: "نشط" },
-          ].map((c) => (
+          {coupons.map((c) => (
             <div key={c.code} className="rounded-lg border p-3 text-center">
-              <p className="font-bold text-gold-gradient text-lg">{c.discount}</p>
+              <p className="font-bold text-gold-gradient text-lg">{c.discount}%</p>
               <p className="text-xs font-mono bg-muted rounded px-2 py-0.5 mt-1 inline-block" dir="ltr">{c.code}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">الحد الأدنى: {c.min}</p>
-              <Badge variant="outline" className="mt-2 text-[10px] border-green-500/30 text-green-700 dark:text-green-400">{c.status}</Badge>
+              <p className="text-[10px] text-muted-foreground mt-1">الحد الأدنى: {c.minOrder.toLocaleString("ar-SA")} ر.ي</p>
+              <Badge variant="outline" className={`mt-2 text-[10px] ${c.isActive ? "border-green-500/30 text-green-700 dark:text-green-400" : "border-red-500/30 text-red-700 dark:text-red-400"}`}>
+                {c.isActive ? "نشط" : "معطّل"}
+              </Badge>
             </div>
           ))}
         </div>
-        <p className="text-xs text-muted-foreground mt-3">💡 شارك هذه الأكواد مع العملاء لتحفيزهم على الشراء</p>
+        )}
+        {coupons.length > 0 && (
+          <p className="text-xs text-muted-foreground mt-3">💡 شارك هذه الأكواد مع العملاء لتحفيزهم على الشراء</p>
+        )}
       </section>
 
       {/* Telegram Bot Settings */}
