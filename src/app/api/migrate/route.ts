@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   // Check if columns exist by trying to select with them
   const { data: testData, error: testError } = await serviceClient
     .from("orders")
-    .select("order_id, delivery_type, customer_name, customer_phone, province, district, street, landmark, seller_id")
+    .select("order_id, delivery_type, customer_name, customer_phone, province, district, street, landmark, seller_id, product_id, product_name_snapshot, unit_price, quantity, total_price")
     .limit(1);
 
   if (!testError) {
@@ -44,6 +44,11 @@ export async function POST(request: Request) {
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS street VARCHAR(255)",
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS landmark VARCHAR(255)",
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS seller_id UUID",
+    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS product_id UUID",
+    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS product_name_snapshot VARCHAR(500)",
+    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS unit_price NUMERIC(12,2)",
+    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1",
+    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_price NUMERIC(12,2)",
   ];
 
   for (const sql of sqlStatements) {

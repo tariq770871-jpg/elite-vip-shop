@@ -1330,13 +1330,19 @@ function SellerDashboard() {
 
       {/* Orders Tracking */}
       <section className="card-3d p-4 sm:p-6">
-        <h2 className="mb-4 text-lg font-bold flex items-center gap-2">
-          <ClipboardList className="size-5" />
-          متابعة الطلبات
-          {orders.length > 0 && (
-            <Badge variant="outline" className="text-xs">{orders.length}</Badge>
-          )}
-        </h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <ClipboardList className="size-5" />
+            متابعة الطلبات
+            {orders.length > 0 && (
+              <Badge variant="outline" className="text-xs">{orders.length}</Badge>
+            )}
+          </h2>
+          <Button variant="outline" size="sm" onClick={() => fetchSellerOrders()} disabled={loading} className="gap-1">
+            <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+            تحديث
+          </Button>
+        </div>
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-12">
             <Loader2 className="size-5 animate-spin text-gold-gradient" />
@@ -1348,12 +1354,15 @@ function SellerDashboard() {
             <p className="text-muted-foreground">لا توجد طلبات بعد</p>
           </div>
         ) : (
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-[500px] overflow-y-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>رقم الطلب</TableHead>
-                  <TableHead>التاريخ</TableHead>
+                  <TableHead>المنتج</TableHead>
+                  <TableHead>العميل</TableHead>
+                  <TableHead>الهاتف</TableHead>
+                  <TableHead>الاستلام</TableHead>
                   <TableHead>المبلغ</TableHead>
                   <TableHead>الحالة</TableHead>
                 </TableRow>
@@ -1364,10 +1373,28 @@ function SellerDashboard() {
                     <TableCell className="font-medium text-xs" dir="ltr">
                       #{(o.order_number || o.order_id).slice(-8).toUpperCase()}
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-xs">
-                      {new Date(o.created_at).toLocaleDateString("ar-YE", { month: "short", day: "numeric" })}
+                    <TableCell className="max-w-[120px] truncate text-xs">
+                      {o.product_name_snapshot || (o.items?.[0]?.name || "—")}
+                      {o.quantity && o.quantity > 1 && (
+                        <span className="text-muted-foreground mr-1">×{o.quantity}</span>
+                      )}
                     </TableCell>
-                    <TableCell className="font-semibold text-gold-gradient">
+                    <TableCell className="max-w-[100px] truncate text-xs">{o.customer_name || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs" dir="ltr">{o.customer_phone || "—"}</TableCell>
+                    <TableCell className="text-xs">
+                      {o.delivery_type === "delivery" ? (
+                        <Badge variant="outline" className="text-[10px] gap-0.5 border-amber-500/30 text-amber-600">
+                          🚚 توصيل
+                        </Badge>
+                      ) : o.delivery_type === "pickup" ? (
+                        <Badge variant="outline" className="text-[10px] gap-0.5 border-emerald-500/30 text-emerald-600">
+                          🏪 استلام
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-semibold text-gold-gradient text-xs">
                       {Number(o.total_amount).toLocaleString("ar-SA")} ر.ي
                     </TableCell>
                     <TableCell>{statusBadge(o.status)}</TableCell>
@@ -1470,6 +1497,17 @@ interface UserOrder {
   total_amount: number;
   created_at: string;
   items?: Array<{ name: string; quantity: number; price: number }>;
+  // Chat-based ordering fields
+  delivery_type?: string | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  province?: string | null;
+  district?: string | null;
+  street?: string | null;
+  landmark?: string | null;
+  product_name_snapshot?: string | null;
+  quantity?: number | null;
+  total_price?: number | null;
 }
 
 function UserDashboard() {
@@ -1542,33 +1580,49 @@ function UserDashboard() {
             <p className="text-xs text-muted-foreground">تسوّق الآن واستمتع بأفضل العروض</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>رقم الطلب</TableHead>
-                  <TableHead>التاريخ</TableHead>
-                  <TableHead>المبلغ</TableHead>
-                  <TableHead>الحالة</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders.map((o) => (
-                  <TableRow key={o.order_id}>
-                    <TableCell className="font-medium text-xs" dir="ltr">
-                      #{(o.order_number || o.order_id).slice(-8).toUpperCase()}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-xs">
-                      {new Date(o.created_at).toLocaleDateString("ar-YE", { year: "numeric", month: "short", day: "numeric" })}
-                    </TableCell>
-                    <TableCell className="font-semibold text-gold-gradient">
-                      {Number(o.total_amount).toLocaleString("ar-SA")} ر.ي
-                    </TableCell>
-                    <TableCell>{statusBadge(o.status)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <div className="space-y-3">
+            {orders.map((o) => {
+              const productName = o.product_name_snapshot || (o.items?.[0]?.name || "منتج");
+              const orderQty = o.quantity || o.items?.[0]?.quantity || 1;
+              return (
+                <div key={o.order_id} className="card-3d p-4 transition-shadow hover:shadow-md">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-sm flex items-center gap-1.5">
+                          <Package className="size-4 text-muted-foreground" />
+                          #{(o.order_number || o.order_id).slice(-6).toUpperCase()}
+                        </span>
+                        {statusBadge(o.status)}
+                        {o.delivery_type === "delivery" ? (
+                          <Badge variant="outline" className="text-[10px] gap-0.5 border-amber-500/30 text-amber-600">
+                            🚚 توصيل
+                          </Badge>
+                        ) : o.delivery_type === "pickup" ? (
+                          <Badge variant="outline" className="text-[10px] gap-0.5 border-emerald-500/30 text-emerald-600">
+                            🏪 استلام
+                          </Badge>
+                        ) : null}
+                      </div>
+                      <p className="text-sm font-medium">{productName}{orderQty > 1 ? <span className="text-muted-foreground mr-1"> × {orderQty}</span> : null}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(o.created_at).toLocaleDateString("ar-YE", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                      {o.delivery_type === "delivery" && o.province && (
+                        <p className="text-xs text-muted-foreground">
+                          📍 {o.province}{o.district ? `، ${o.district}` : ""}{o.street ? `، ${o.street}` : ""}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-left">
+                      <span className="text-lg font-bold text-gold-gradient">
+                        {Number(o.total_amount).toLocaleString("ar-SA")} ر.ي
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
