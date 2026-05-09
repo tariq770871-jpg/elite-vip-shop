@@ -16,7 +16,17 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { items, notes, paymentMethod, customerName, customerPhone, customerAddress, discount, couponCode } = body;
+    const {
+      items, notes, paymentMethod,
+      customerName, customerPhone, customerAddress,
+      discount, couponCode,
+      // NEW FIELDS for chat-based ordering:
+      deliveryType,    // "delivery" or "pickup"
+      province,        // المحافظة
+      district,        // المديرية
+      street,          // الشارع
+      landmark,        // جوار أقرب معلم
+    } = body;
 
     // Use authenticated user's ID instead of client-sent userId
     const userId = user.id;
@@ -89,26 +99,85 @@ export async function POST(request: Request) {
       });
     }
 
-    // Insert order
-    const { data: order, error: orderError } = await supabase
+    // Build notes with delivery info
+    const sanitize = (val: string | undefined | null) => (val || "").replace(/\|/g, "│");
+    const paymentNames: Record<string, string> = {
+      jeeb: "جيب", jawaly: "جوالي", easy_fulusk: "ايزي فلوسك", saltef: "سلطيف",
+      local_transfer: "حوالة شبكة محلية", whatsapp: "واتساب", sms: "رسالة نصية", in_app: "طلب عبر الموقع",
+    };
+    const pmLabel = paymentNames[paymentMethod] || paymentMethod || "غير محدد";
+
+    let notesContent = notes || "";
+    // Add payment method if no custom notes
+    if (!notesContent) {
+      notesContent = `طريقة الدفع: ${pmLabel}`;
+    }
+
+    // Add customer info
+    if (customerName) notesContent += ` | العميل: ${sanitize(customerName)}`;
+    if (customerPhone) notesContent += ` | الهاتف: ${sanitize(customerPhone)}`;
+    if (customerAddress) notesContent += ` | العنوان: ${sanitize(customerAddress)}`;
+
+    // Add delivery type info
+    if (deliveryType === "delivery") {
+      notesContent += ` | نوع الاستلام: توصيل`;
+      if (province) notesContent += ` | المحافظة: ${sanitize(province)}`;
+      if (district) notesContent += ` | المديرية: ${sanitize(district)}`;
+      if (street) notesContent += ` | الشارع: ${sanitize(street)}`;
+      if (landmark) notesContent += ` | أقرب معلم: ${sanitize(landmark)}`;
+    } else if (deliveryType === "pickup") {
+      notesContent += ` | نوع الاستلام: استلام شخصي`;
+    }
+
+    if (discount) notesContent += ` | خصم: ${discount} ر.ي`;
+    if (couponCode) notesContent += ` | كود: ${sanitize(couponCode)}`;
+
+    // Insert order — try with new columns first, fallback to basic columns if migration not run yet
+    const orderInsertBase: Record<string, unknown> = {
+      order_number: orderNumber,
+      user_id: userId,
+      status: "pending",
+      total_amount: calculatedTotal,
+      notes: notesContent,
+    };
+
+    // Add new delivery columns (may not exist if migration not yet run)
+    const orderInsertExtended: Record<string, unknown> = {
+      ...orderInsertBase,
+      delivery_type: deliveryType || "pickup",
+      customer_name: customerName || null,
+      customer_phone: customerPhone || null,
+      customer_address: customerAddress || null,
+      province: province || null,
+      district: district || null,
+      street: street || null,
+      landmark: landmark || null,
+    };
+
+    let order: any = null;
+    let orderError: any = null;
+
+    // Try extended insert first (with new columns)
+    const extendedResult = await supabase
       .from("orders")
-      .insert({
-        order_number: orderNumber,
-        user_id: userId,
-        status: "new",
-        total_amount: calculatedTotal,
-        notes: (() => {
-          const sanitize = (val: string | undefined | null) => (val || "").replace(/\|/g, "│");
-          const paymentNames: Record<string, string> = {
-            jeeb: "جيب", jawaly: "جوالي", easy_fulusk: "ايزي فلوسك", saltef: "سلطيف",
-            local_transfer: "حوالة شبكة محلية", whatsapp: "واتساب", sms: "رسالة نصية", in_app: "طلب عبر الموقع",
-          };
-          const pmLabel = paymentNames[paymentMethod] || paymentMethod || "غير محدد";
-          return notes || `طريقة الدفع: ${pmLabel}${customerName ? ` | العميل: ${sanitize(customerName)}` : ""}${customerPhone ? ` | الهاتف: ${sanitize(customerPhone)}` : ""}${customerAddress ? ` | العنوان: ${sanitize(customerAddress)}` : ""}${discount ? ` | خصم: ${discount} ر.ي` : ""}${couponCode ? ` | كود: ${sanitize(couponCode)}` : ""}`;
-        })(),
-      })
+      .insert(orderInsertExtended)
       .select()
       .single();
+
+    if (extendedResult.error && extendedResult.error.message?.includes("column")) {
+      // Fallback: columns don't exist yet, insert without them
+      console.warn("New columns not yet migrated, using basic insert");
+      const basicResult = await supabase
+        .from("orders")
+        .insert(orderInsertBase)
+        .select()
+        .single();
+      order = basicResult.data;
+      orderError = basicResult.error;
+    } else {
+      order = extendedResult.data;
+      orderError = extendedResult.error;
+    }
 
     if (orderError) {
       console.error("Order insert error:", orderError);
@@ -175,6 +244,11 @@ export async function POST(request: Request) {
       paymentMethod,
       couponCode: couponCode || undefined,
       discount: discount || undefined,
+      deliveryType: deliveryType || undefined,
+      province: province || undefined,
+      district: district || undefined,
+      street: street || undefined,
+      landmark: landmark || undefined,
     }).catch(() => {});
 
     return NextResponse.json({

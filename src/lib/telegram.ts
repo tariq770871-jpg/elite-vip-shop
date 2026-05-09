@@ -69,6 +69,11 @@ export async function sendOrderNotification(order: {
   paymentMethod?: string;
   couponCode?: string;
   discount?: number;
+  deliveryType?: string;
+  province?: string;
+  district?: string;
+  street?: string;
+  landmark?: string;
 }): Promise<boolean> {
   const itemsList = order.items
     .map((i) => `  • ${i.name} × ${i.quantity} — ${Number(i.price).toLocaleString("ar-SA")} ر.ي`)
@@ -80,7 +85,9 @@ export async function sendOrderNotification(order: {
     `📦 <b>رقم الطلب:</b> ${order.orderNumber}`,
     order.customerName ? `👤 <b>العميل:</b> ${order.customerName}` : null,
     order.customerPhone ? `📞 <b>الهاتف:</b> ${order.customerPhone}` : null,
-    order.customerAddress ? `📍 <b>العنوان:</b> ${order.customerAddress}` : null,
+    order.deliveryType ? `🚚 <b>نوع الاستلام:</b> ${order.deliveryType === "delivery" ? "توصيل" : "استلام شخصي"}` : null,
+    order.province || order.district ? `📍 <b>العنوان:</b> ${[order.province, order.district, order.street, order.landmark].filter(Boolean).join("، ")}` : null,
+    order.customerAddress && !order.province ? `📍 <b>العنوان:</b> ${order.customerAddress}` : null,
     ``,
     `🧾 <b>المنتجات:</b>`,
     itemsList,
