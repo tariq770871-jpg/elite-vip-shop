@@ -4,7 +4,7 @@ import { useState } from "react";
 import { HelpCircle, ChevronDown } from "lucide-react";
 import { faqData } from "@/lib/mock-data";
 
-const faqCategories = ["الكل", "عام", "طلب", "دفع", "شحن"];
+const faqCategories = ["الكل", "عام", "طلب", "دفع", "شحن", "خدمات"];
 
 export function FaqSection() {
   const [selectedCategory, setSelectedCategory] = useState("الكل");

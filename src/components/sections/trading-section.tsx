@@ -67,10 +67,15 @@ export function TradingSection() {
                 </span>
                 <h3 className="mb-2 text-lg font-bold">{item.title}</h3>
                 <p className="mb-5 flex-1 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
-                <button className="btn-3d-sm w-full flex items-center justify-center gap-2">
-                  عرض التفاصيل
+                <a
+                  href={`https://wa.me/967782138587?text=${encodeURIComponent(`مرحباً، أرغب بالاستفسار عن: ${item.title}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-3d-whatsapp w-full flex items-center justify-center gap-2 no-underline"
+                >
+                  تواصل للاستفسار
                   <ArrowLeft className="size-4" />
-                </button>
+                </a>
               </div>
             );
           })}
