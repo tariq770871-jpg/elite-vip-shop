@@ -32,12 +32,51 @@ export async function POST(request: Request) {
     // Generate order number using crypto.randomUUID() for uniqueness
     const orderNumber = `ORD-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
 
-    // Calculate total server-side from items instead of trusting client-sent total
-    // TODO: Server-side price calculation should be implemented when product prices are available from DB
-    const calculatedTotal = items.reduce((sum: number, item: { id: string; name: string; quantity: number; price: number; salePrice?: number }) => {
-      const effectivePrice = item.salePrice && item.salePrice < item.price ? item.salePrice : item.price;
-      return sum + effectivePrice * item.quantity;
-    }, 0);
+    // ── Server-side price verification ──
+    // Extract only product IDs and quantities from client — ignore client-provided prices
+    const productIds = items.map((item: { id: string }) => item.id);
+
+    // Fetch real prices from the products table
+    const { data: dbProducts, error: dbError } = await supabase
+      .from("products")
+      .select("product_id, price, sale_price, name, availability")
+      .in("product_id", productIds);
+
+    if (dbError) {
+      console.error("Product lookup error:", dbError);
+      return NextResponse.json({ error: "فشل في التحقق من المنتجات" }, { status: 500 });
+    }
+
+    // Build a lookup map for quick access
+    const productMap = new Map(
+      (dbProducts || []).map((p: { product_id: string; price: number; sale_price: number | null; name: string; availability: boolean }) => [p.product_id, p])
+    );
+
+    // Validate all products exist and are available, then calculate total from DB prices
+    let calculatedTotal = 0;
+    const validatedItems: Array<{ productId: string; productName: string; quantity: number; price: number }> = [];
+
+    for (const item of items) {
+      const dbProduct = productMap.get(item.id);
+      if (!dbProduct) {
+        return NextResponse.json({ error: `المنتج غير موجود: ${item.name || item.id}` }, { status: 400 });
+      }
+      if (!dbProduct.availability) {
+        return NextResponse.json({ error: `المنتج غير متوفر: ${dbProduct.name}` }, { status: 400 });
+      }
+      // Use DB price — sale_price if valid, otherwise regular price
+      const effectivePrice = dbProduct.sale_price != null && dbProduct.sale_price < dbProduct.price
+        ? Number(dbProduct.sale_price)
+        : Number(dbProduct.price);
+
+      calculatedTotal += effectivePrice * item.quantity;
+      validatedItems.push({
+        productId: dbProduct.product_id,
+        productName: dbProduct.name,
+        quantity: item.quantity,
+        price: effectivePrice,
+      });
+    }
 
     // Insert order
     const { data: order, error: orderError } = await supabase
@@ -57,17 +96,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "فشل في حفظ الطلب" }, { status: 500 });
     }
 
-    // Insert order items
-    const orderItems = items.map((item: { id: string; name: string; quantity: number; price: number; salePrice?: number }) => {
-      const effectivePrice = item.salePrice && item.salePrice < item.price ? item.salePrice : item.price;
-      return {
-        order_id: order.order_id,
-        product_id: item.id,
-        product_name: item.name,
-        quantity: item.quantity,
-        price: effectivePrice,
-      };
-    });
+    // Insert order items with server-verified prices only
+    const orderItems = validatedItems.map((vi) => ({
+      order_id: order.order_id,
+      product_id: vi.productId,
+      product_name: vi.productName,
+      quantity: vi.quantity,
+      price: vi.price,
+    }));
 
     const { error: itemsError } = await supabase
       .from("order_items")
@@ -78,14 +114,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "فشل في حفظ بنود الطلب" }, { status: 500 });
     }
 
-    // Send Telegram notification (non-blocking)
+    // Send Telegram notification (non-blocking) — uses server-verified prices
     sendOrderNotification({
       orderNumber: order.order_number,
       customerName: customerName || undefined,
       customerPhone: customerPhone || undefined,
       customerAddress: customerAddress || undefined,
       total: calculatedTotal,
-      items: orderItems.map((i: { product_name: string; quantity: number; price: number }) => ({
+      items: orderItems.map((i) => ({
         name: i.product_name,
         quantity: i.quantity,
         price: i.price,
