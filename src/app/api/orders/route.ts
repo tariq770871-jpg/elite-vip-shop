@@ -168,9 +168,13 @@ export async function POST(request: Request) {
       .select()
       .single();
 
-    if (extendedResult.error && extendedResult.error.message?.includes("column")) {
+    if (extendedResult.error && (
+      extendedResult.error.message?.includes("column") ||
+      extendedResult.error.message?.includes("Could not find")
+    )) {
       // Fallback: new columns don't exist yet, insert without them
-      console.warn("New columns not yet migrated, using basic insert");
+      // All delivery/customer info is already captured in notesContent
+      console.warn("Extended columns not yet migrated, using basic insert with notes fallback");
       const basicInsert: Record<string, unknown> = {
         order_number: orderNumber,
         user_id: userId,

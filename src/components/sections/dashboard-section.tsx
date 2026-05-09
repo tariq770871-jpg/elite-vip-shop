@@ -48,6 +48,7 @@ import {
   Power,
   PowerOff,
   ChevronDown,
+  Database,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -335,6 +336,144 @@ interface AdminOrder {
   product_name_snapshot?: string | null;
   quantity?: number | null;
   total_price?: number | null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Database Migration Component                                        */
+/* ------------------------------------------------------------------ */
+
+function DatabaseMigration({ authHeaders }: { authHeaders: Record<string, string> }) {
+  const [status, setStatus] = useState<"idle" | "checking" | "needed" | "running" | "done" | "error">("idle");
+  const [result, setResult] = useState<Record<string, string>>({});
+  const [migrateSQL, setMigrateSQL] = useState("");
+
+  const checkMigration = async () => {
+    setStatus("checking");
+    try {
+      const res = await fetch("/api/migrate-db", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+      });
+      const data = await res.json();
+
+      if (data.status === "all_ok") {
+        setStatus("done");
+        setResult(Object.fromEntries(data.results.map((r: { table: string; status: string }) => [r.table, r.status])));
+      } else if (data.status === "migration_needed") {
+        setStatus("needed");
+        setResult(Object.fromEntries(data.results.map((r: { table: string; status: string; detail?: string }) => [r.table, r.detail || r.status])));
+        setMigrateSQL(data.sql || "");
+      } else {
+        setStatus("error");
+      }
+    } catch {
+      setStatus("error");
+    }
+  };
+
+  const runMigration = async () => {
+    setStatus("running");
+    try {
+      const res = await fetch("/api/migrate", {
+        method: "POST",
+        headers: { ...authHeaders },
+      });
+      const data = await res.json();
+      if (data.status === "migration_complete" || data.status === "already_migrated") {
+        setStatus("done");
+      } else {
+        setStatus("needed");
+      }
+    } catch {
+      setStatus("error");
+    }
+  };
+
+  const copySQL = () => {
+    navigator.clipboard.writeText(migrateSQL);
+  };
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        تحقق من حالة قاعدة البيانات وأضف الأعمدة والجداول الناقصة
+      </p>
+
+      {status === "idle" && (
+        <Button onClick={checkMigration} className="btn-3d-sm gap-2">
+          <Database className="size-4" /> فحص قاعدة البيانات
+        </Button>
+      )}
+
+      {status === "checking" && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" /> جاري الفحص...
+        </div>
+      )}
+
+      {status === "done" && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium text-green-600">
+            <CheckCircle2 className="size-4" /> قاعدة البيانات محدّثة — جميع الجداول والأعمدة موجودة
+          </div>
+          <Button variant="outline" size="sm" onClick={checkMigration} className="gap-2">
+            <RefreshCw className="size-3.5" /> إعادة الفحص
+          </Button>
+        </div>
+      )}
+
+      {status === "needed" && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-amber-600">
+            <XCircle className="size-4" /> يوجد تحديثات مطلوبة
+          </div>
+          <div className="space-y-1">
+            {Object.entries(result).map(([table, tableStatus]) => (
+              <div key={table} className="flex items-center gap-2 text-sm">
+                {tableStatus === "ok" || tableStatus === "EXISTS" ? (
+                  <CheckCircle2 className="size-3.5 text-green-500" />
+                ) : (
+                  <XCircle className="size-3.5 text-red-500" />
+                )}
+                <span className="font-mono">{table}</span>
+                <span className="text-muted-foreground text-xs">
+                  {tableStatus === "ok" || tableStatus === "EXISTS" ? "موجود" : tableStatus}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={runMigration} className="btn-3d-sm gap-2">
+              <Database className="size-4" />
+              تنفيذ التحديث التلقائي
+            </Button>
+            <Button variant="outline" size="sm" onClick={copySQL} className="gap-2">
+              نسخ SQL
+            </Button>
+          </div>
+          {migrateSQL && (
+            <details className="text-xs">
+              <summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+                عرض SQL يدوي
+              </summary>
+              <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-muted p-3 text-[10px] leading-relaxed" dir="ltr">
+                {migrateSQL}
+              </pre>
+            </details>
+          )}
+        </div>
+      )}
+
+      {status === "error" && (
+        <div className="space-y-2">
+          <p className="text-sm text-red-500">حدث خطأ أثناء الفحص</p>
+          <Button variant="outline" size="sm" onClick={checkMigration} className="gap-2">
+            <RefreshCw className="size-3.5" /> إعادة المحاولة
+          </Button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function AdminDashboard() {
@@ -1064,6 +1203,15 @@ function AdminDashboard() {
           إشعارات تيليجرام
         </h2>
         <TelegramSettings authHeaders={authHeaders} />
+      </section>
+
+      {/* Database Migration */}
+      <section className="card-3d p-4 sm:p-6">
+        <h2 className="mb-4 text-lg font-bold flex items-center gap-2">
+          <Database className="size-5" />
+          تحديث قاعدة البيانات
+        </h2>
+        <DatabaseMigration authHeaders={authHeaders} />
       </section>
     </div>
   );
