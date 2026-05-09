@@ -21,7 +21,7 @@ export function AppsSection() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getApps().then(d => { setAppsData(d); setLoading(false); });
+    getApps().then(d => { setAppsData(d); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
   if (loading) {

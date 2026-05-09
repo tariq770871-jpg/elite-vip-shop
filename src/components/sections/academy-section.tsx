@@ -19,7 +19,7 @@ export function AcademySection() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getAcademyCourses().then(d => { setAcademyData(d); setLoading(false); });
+    getAcademyCourses().then(d => { setAcademyData(d); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
   if (loading) {

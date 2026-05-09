@@ -93,7 +93,7 @@ export function FlashDealsSection() {
       const deals = prods.filter((p) => p.salePrice && p.salePrice < p.price && p.availability);
       setProducts(deals);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   const handleAddToCart = (product: Product) => {

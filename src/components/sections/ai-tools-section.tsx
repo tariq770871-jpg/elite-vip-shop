@@ -21,7 +21,7 @@ export function AiToolsSection() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getAiTools().then(d => { setAiToolsData(d); setLoading(false); });
+    getAiTools().then(d => { setAiToolsData(d); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
   if (loading) {

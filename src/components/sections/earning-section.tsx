@@ -19,7 +19,7 @@ export function EarningSection() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getEarningMethods().then(d => { setEarningData(d); setLoading(false); });
+    getEarningMethods().then(d => { setEarningData(d); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
   if (loading) {

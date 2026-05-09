@@ -146,7 +146,7 @@ export function HomeSection() {
     getProducts().then((prods) => {
       setAllProducts(prods);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   const featuredProducts = allProducts.filter((p) => p.availability).slice(0, 6);
