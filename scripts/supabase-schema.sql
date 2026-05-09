@@ -682,3 +682,48 @@ CREATE POLICY "site_settings_public_read" ON public.site_settings
 -- Only admins can modify settings
 CREATE POLICY "site_settings_admin_write" ON public.site_settings
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+-- ============================================================
+-- SEED DATA — بيانات أولية
+-- ============================================================
+
+-- ──────────────────────────────────────────────────────────────
+-- أدوار المستخدمين (visitor, user, seller, admin)
+-- ──────────────────────────────────────────────────────────────
+INSERT INTO public.roles (role_name, description) VALUES
+  ('visitor', 'زائر — تصفح فقط'),
+  ('user', 'مستخدم — تسوق وطلبات'),
+  ('seller', 'بائع — إضافة منتجات'),
+  ('admin', 'مدير — تحكم كامل')
+ON CONFLICT (role_name) DO NOTHING;
+
+-- ──────────────────────────────────────────────────────────────
+-- ترقية أول مستخدم لأدمن تلقائياً
+-- أول مستخدم يسجل في النظام يصبح مديراً تلقائياً
+-- ──────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.auto_promote_first_user()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_user_count INTEGER;
+  v_admin_role_id UUID;
+BEGIN
+  -- Count existing users
+  SELECT COUNT(*) INTO v_user_count FROM public.users;
+
+  -- If this is the first user, promote to admin
+  IF v_user_count = 0 THEN
+    SELECT role_id INTO v_admin_role_id FROM public.roles WHERE role_name = 'admin' LIMIT 1;
+    IF v_admin_role_id IS NOT NULL THEN
+      NEW.role_id := v_admin_role_id;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Attach trigger — fires BEFORE insert on users
+DROP TRIGGER IF EXISTS trg_auto_admin ON public.users;
+CREATE TRIGGER trg_auto_admin
+  BEFORE INSERT ON public.users
+  FOR EACH ROW EXECUTE FUNCTION public.auto_promote_first_user();
