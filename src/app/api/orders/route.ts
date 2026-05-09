@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { sendOrderNotification } from "@/lib/telegram";
 
 // POST: Save a new order to Supabase
 export async function POST(request: Request) {
@@ -56,6 +57,23 @@ export async function POST(request: Request) {
       console.error("Order items insert error:", itemsError);
       return NextResponse.json({ error: "فشل في حفظ بنود الطلب" }, { status: 500 });
     }
+
+    // Send Telegram notification (non-blocking)
+    sendOrderNotification({
+      orderNumber: order.order_number,
+      customerName: customerName || undefined,
+      customerPhone: customerPhone || undefined,
+      customerAddress: customerAddress || undefined,
+      total,
+      items: orderItems.map((i: { product_name: string; quantity: number; price: number }) => ({
+        name: i.product_name,
+        quantity: i.quantity,
+        price: i.price,
+      })),
+      paymentMethod,
+      couponCode: couponCode || undefined,
+      discount: discount || undefined,
+    }).catch(() => {});
 
     return NextResponse.json({
       success: true,
