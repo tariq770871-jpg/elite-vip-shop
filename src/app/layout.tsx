@@ -3,6 +3,7 @@ import { Cairo } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const cairo = Cairo({
   variable: "--font-cairo",
@@ -162,6 +163,7 @@ export default function RootLayout({
         <ThemeProvider>
           {children}
           <Toaster />
+          <SpeedInsights />
         </ThemeProvider>
       </body>
     </html>
