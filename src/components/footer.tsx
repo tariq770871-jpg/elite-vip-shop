@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Heart, MessageSquareWarning, Shield, Truck, RotateCcw, Headphones, Palette, TrendingUp, HelpCircle, Info, Phone, Bot } from "lucide-react";
+import { Heart, Shield, Truck, RotateCcw, Headphones, HelpCircle, Info, Phone } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useNavigation, type PageName, PAGE_PATHS } from "@/lib/navigation";
 import { Logo } from "@/components/logo";
@@ -30,11 +30,11 @@ const sectionLinks: { label: string; page: PageName }[] = [
 
 const quickSectionPages: { label: string; page: PageName; icon: React.ReactNode }[] = [
   { label: "من نحن", page: "about", icon: <Info className="size-4" /> },
-  { label: "اتصل بنا", page: "contact", icon: <Phone className="size-4" /> },
+  { label: "تواصل معنا", page: "contact", icon: <Phone className="size-4" /> },
   { label: "الأسئلة الشائعة", page: "faq", icon: <HelpCircle className="size-4" /> },
-  { label: "أدوات AI", page: "ai-tools", icon: <Bot className="size-4" /> },
+  { label: "سياسة الشحن", page: "shipping-policy", icon: <Truck className="size-4" /> },
+  { label: "سياسة الاسترجاع", page: "return-policy", icon: <RotateCcw className="size-4" /> },
   { label: "قيم الموقع", page: "values", icon: <Heart className="size-4" /> },
-  { label: "بروتوكول النقد الصريح", page: "criticism", icon: <MessageSquareWarning className="size-4" /> },
 ];
 
 const socialLinks = [
@@ -172,7 +172,7 @@ export function Footer() {
             { icon: Shield, title: "دفع آمن" },
             { icon: Truck, title: "شحن مجاني للطلبات فوق 5,000 ر.ي" },
             { icon: RotateCcw, title: "استرجاع خلال 14 يوم" },
-            { icon: Headphones, title: "دعم 24/7" },
+            { icon: Headphones, title: "دعم عبر واتساب" },
           ].map((badge) => (
             <div
               key={badge.title}
@@ -193,7 +193,7 @@ export function Footer() {
           <p className="text-sm text-muted-foreground">
             © 2026 Elite VIP Shop - متجر النخبة. جميع الحقوق محفوظة.
           </p>
-          <div className="flex gap-4 text-xs text-muted-foreground">
+          <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
             <Link
               href={PAGE_PATHS.privacy}
               onClick={handleNavScroll}
@@ -206,7 +206,21 @@ export function Footer() {
               onClick={handleNavScroll}
               className="transition-colors hover:text-primary"
             >
-              شروط الاستخدام
+              الشروط والأحكام
+            </Link>
+            <Link
+              href={PAGE_PATHS["shipping-policy"]}
+              onClick={handleNavScroll}
+              className="transition-colors hover:text-primary"
+            >
+              سياسة الشحن
+            </Link>
+            <Link
+              href={PAGE_PATHS["return-policy"]}
+              onClick={handleNavScroll}
+              className="transition-colors hover:text-primary"
+            >
+              سياسة الاسترجاع
             </Link>
           </div>
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Star, ChevronRight, ChevronLeft, Quote, Award } from "lucide-react";
+import { Star, ChevronRight, ChevronLeft, Quote } from "lucide-react";
 
 const testimonials = [
   {
@@ -13,7 +13,6 @@ const testimonials = [
     product: "سماعة بلوتوث فاخرة Elite Pro",
     avatar: "أ",
     date: "منذ أسبوع",
-    verified: true,
   },
   {
     id: 2,
@@ -24,7 +23,6 @@ const testimonials = [
     product: "ساعة ذكية VIP Series X",
     avatar: "س",
     date: "منذ 3 أيام",
-    verified: true,
   },
   {
     id: 3,
@@ -35,7 +33,6 @@ const testimonials = [
     product: "كورس التداول الاحترافي",
     avatar: "خ",
     date: "منذ 5 أيام",
-    verified: true,
   },
   {
     id: 4,
@@ -46,7 +43,6 @@ const testimonials = [
     product: "باور بانك 20000mAh",
     avatar: "ن",
     date: "منذ يومين",
-    verified: true,
   },
   {
     id: 5,
@@ -57,7 +53,6 @@ const testimonials = [
     product: "ماوس لاسلكي ميكانيكي للجيمرز",
     avatar: "ع",
     date: "منذ يوم",
-    verified: true,
   },
   {
     id: 6,
@@ -68,7 +63,6 @@ const testimonials = [
     product: "كتاب أسرار الربح من الإنترنت",
     avatar: "ل",
     date: "منذ 4 أيام",
-    verified: true,
   },
 ];
 
@@ -121,26 +115,8 @@ export function TestimonialsSection() {
               <Quote className="size-7 text-amber-500" />
             </div>
           </div>
-          <h2 className="mb-2 text-xl font-bold md:text-2xl">ماذا يقول عملاؤنا</h2>
-          <p className="text-sm text-muted-foreground">آراء حقيقية من عملاء سعداء تجربوا خدماتنا</p>
-        </div>
-
-        {/* Stats Bar */}
-        <div className="mb-8 grid grid-cols-3 gap-4">
-          {[
-            { value: "4.9", label: "تقييم عام", sublabel: "من 5 نجوم" },
-            { value: "+1000", label: "عميل سعيد", sublabel: "يثقون بنا" },
-            { value: "98%", label: "نسبة الرضا", sublabel: "عن الخدمة" },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="flex flex-col items-center gap-1 rounded-2xl border border-border/50 bg-card/50 p-4"
-            >
-              <span className="text-2xl font-black text-gold-gradient">{stat.value}</span>
-              <span className="text-xs font-bold">{stat.label}</span>
-              <span className="text-[10px] text-muted-foreground">{stat.sublabel}</span>
-            </div>
-          ))}
+          <h2 className="mb-2 text-xl font-bold md:text-2xl">آراء العملاء</h2>
+          <p className="text-sm text-muted-foreground">تجارب عملائنا مع خدماتنا ومنتجاتنا</p>
         </div>
 
         {/* Testimonials Carousel */}
@@ -184,12 +160,6 @@ export function TestimonialsSection() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <h4 className="truncate text-sm font-bold">{review.name}</h4>
-                      {review.verified && (
-                        <span className="flex items-center gap-0.5 text-[10px] font-medium text-blue-500">
-                          <Award className="size-3" />
-                          موثق
-                        </span>
-                      )}
                     </div>
                     <p className="text-[11px] text-muted-foreground">{review.location}</p>
                   </div>

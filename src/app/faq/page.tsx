@@ -2,9 +2,21 @@ import type { Metadata } from "next";
 import { FaqSection } from "@/components/sections/faq-section";
 import { faqData } from "@/lib/mock-data";
 
+const SITE_URL = "https://elite-vip-shop.vercel.app";
+
 export const metadata: Metadata = {
   title: "الأسئلة الشائعة",
-  description: "إجابات على أكثر الأسئلة شيوعاً حول متجر النخبة — الطلبات، الدفع، الشحن، والخدمات",
+  description:
+    "إجابات على الأسئلة الأكثر شيوعاً حول Elite VIP Shop — الطلبات، الشحن، الاسترجاع، والتواصل.",
+  openGraph: {
+    title: "الأسئلة الشائعة",
+    description:
+      "إجابات على الأسئلة الأكثر شيوعاً حول Elite VIP Shop — الطلبات، الشحن، الاسترجاع، والتواصل.",
+    url: `${SITE_URL}/faq`,
+    type: "website",
+    locale: "ar_AR",
+    siteName: "Elite VIP Shop - متجر النخبة",
+  },
 };
 
 export default function FaqPage() {

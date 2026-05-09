@@ -7,11 +7,6 @@ import {
   ArrowLeft,
   ChevronRight,
   ChevronLeft,
-  Package,
-  Users,
-  Star,
-  Mail,
-  Bell,
   Loader2,
   Shield,
   Truck,
@@ -26,23 +21,16 @@ import {
 import { FlashDealsSection } from "@/components/sections/flash-deals-section";
 import { TestimonialsSection } from "@/components/sections/testimonials-section";
 import { RecentlyViewedSection } from "@/components/sections/recently-viewed-section";
-import { Input } from "@/components/ui/input";
 import { getProducts } from "@/lib/supabase-data";
 import { getWhatsAppOrderLink } from "@/lib/mock-data";
 import type { Product } from "@/lib/mock-data";
 import { useNavigation } from "@/lib/navigation";
 import { getCategoryIcon } from "@/components/icons";
 
-const stats = [
-  { icon: Package, value: "+500", label: "منتج" },
-  { icon: Users, value: "+1000", label: "عميل" },
-  { icon: Star, value: "+50", label: "تقييم" },
-];
-
 const mainSections = [
   {
     title: "المتجر",
-    description: "منتجات متنوعة بأفضل الأسعار — اطلب عبر واتساب",
+    description: "منتجات متنوعة — اطلب عبر واتساب مباشرة",
     icon: <ShoppingBag className="size-8" />,
     iconBg: "bg-amber-500/10 text-amber-500",
     gradient: "from-amber-500/20 to-amber-600/5",
@@ -50,7 +38,7 @@ const mainSections = [
   },
   {
     title: "التطبيقات والأدوات",
-    description: "تطبيقات وأدوات ذكية لتحسين إنتاجيتك",
+    description: "تطبيقات وأدوات — التحميل من المصادر الرسمية مثل Google Play",
     icon: <Smartphone className="size-8" />,
     iconBg: "bg-blue-500/10 text-blue-500",
     gradient: "from-blue-500/20 to-blue-600/5",
@@ -58,7 +46,7 @@ const mainSections = [
   },
   {
     title: "الخدمات",
-    description: "تصميم وتطوير وتسويق رقمي",
+    description: "خدمات تصميم وتطوير وتسويق — تواصل عبر واتساب",
     icon: <Palette className="size-8" />,
     iconBg: "bg-orange-500/10 text-orange-500",
     gradient: "from-orange-500/20 to-orange-600/5",
@@ -66,7 +54,7 @@ const mainSections = [
   },
   {
     title: "التداول",
-    description: "تعليم وأدوات وشروحات التداول",
+    description: "محتوى تعليمي وشروحات في التداول",
     icon: <TrendingUp className="size-8" />,
     iconBg: "bg-teal-500/10 text-teal-500",
     gradient: "from-teal-500/20 to-teal-600/5",
@@ -74,7 +62,7 @@ const mainSections = [
   },
   {
     title: "الربح من الإنترنت",
-    description: "طرق وأفكار واستراتيجيات الربح",
+    description: "أفكار ومحتوى تعليمي للربح من الإنترنت",
     icon: <DollarSign className="size-8" />,
     iconBg: "bg-emerald-500/10 text-emerald-500",
     gradient: "from-emerald-500/20 to-emerald-600/5",
@@ -133,9 +121,6 @@ export function HomeSection() {
   const { navigateTo } = useNavigation();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newsletterEmail, setNewsletterEmail] = useState("");
-  const [newsletterSubmitted, setNewsletterSubmitted] = useState(false);
-
   useEffect(() => {
     getProducts().then((prods) => {
       setAllProducts(prods);
@@ -144,15 +129,6 @@ export function HomeSection() {
   }, []);
 
   const featuredProducts = allProducts.filter((p) => p.availability).slice(0, 6);
-
-  const handleNewsletter = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newsletterEmail) {
-      setNewsletterSubmitted(true);
-      setNewsletterEmail("");
-      setTimeout(() => setNewsletterSubmitted(false), 3000);
-    }
-  };
 
   return (
     <div>
@@ -182,7 +158,7 @@ export function HomeSection() {
             </h1>
             <p className="hidden mb-2 text-2xl font-light sm:block md:text-4xl" style={{ color: "#f0d078" }}>متجر النخبة</p>
             <p className="mb-6 max-w-xl text-sm md:text-xl" style={{ color: "rgba(240, 208, 120, 0.8)" }}>
-              منصتك المتكاملة — متجر، أدوات، خدمات، تداول، وربح من الإنترنت
+              منصة تجمع بين متجر المنتجات، التطبيقات والأدوات، والخدمات الرقمية. الطلب يتم عبر واتساب والتطبيقات تُحمّل من مصادرها الرسمية.
             </p>
             <a href="https://wa.me/967782138587" target="_blank" rel="noopener noreferrer" className="btn-3d-whatsapp flex items-center justify-center gap-3 px-8 py-4 text-base sm:px-10 sm:py-5 no-underline">
               <svg className="size-6" viewBox="0 0 24 24" fill="currentColor">
@@ -240,7 +216,7 @@ export function HomeSection() {
             </button>
           </div>
           <p className="text-center text-muted-foreground mb-6 max-w-xl mx-auto">
-            اكتشف أحدث المنتجات المميزة — اطلب عبر واتساب مباشرة
+            تصفح منتجاتنا المتنوعة — اطلب عبر واتساب مباشرة
           </p>
 
           {loading ? (
@@ -301,21 +277,6 @@ export function HomeSection() {
       {/* Testimonials */}
       <TestimonialsSection />
 
-      {/* Stats */}
-      <section className="border-y bg-card py-6">
-        <div className="mx-auto max-w-7xl px-4 md:px-8">
-          <div className="grid grid-cols-3 gap-6">
-            {stats.map((stat) => (
-              <div key={stat.label} className="flex flex-col items-center gap-2 text-center">
-                <stat.icon className="size-6 text-gold-gradient" />
-                <span className="text-gold-gradient text-2xl font-bold md:text-3xl">{stat.value}</span>
-                <span className="text-sm text-muted-foreground">{stat.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Recently Viewed */}
       <RecentlyViewedSection />
 
@@ -333,10 +294,10 @@ export function HomeSection() {
           </div>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { icon: Shield, title: "منتجات أصلية 100%", description: "جميع منتجاتنا أصلية ومضمونة بأعلى معايير الجودة" },
-              { icon: Truck, title: "شحن سريع وآمن", description: "شحن سريع وآمن لجميع الطلبات مع تتبع مباشر" },
-              { icon: BadgeCheck, title: "ضمان استرجاع كامل", description: "استرجع منتجك خلال 14 يوم من الاستلام بسهولة" },
-              { icon: Headphones, title: "دعم فني متواصل", description: "فريق دعم متخصص متاح على مدار الساعة لمساعدتك" },
+              { icon: Shield, title: "جودة مضمونة", description: "نختار منتجاتنا بعناية لضمان جودتها" },
+              { icon: Truck, title: "شحن آمن", description: "شحن آمن مع إمكانية تتبع الطلبات" },
+              { icon: BadgeCheck, title: "خدمة واتساب مباشرة", description: "تواصل مباشر معنا عبر واتساب للاستفسار والطلب" },
+              { icon: Headphones, title: "دعم متخصص", description: "فريق دعم متخصص للإجابة على استفساراتكم" },
             ].map((feature) => (
               <div key={feature.title} className="card-3d p-6">
                 <div className="mb-4 flex size-14 items-center justify-center rounded-2xl" style={{ background: "linear-gradient(135deg, #d4a843, #f0d078, #d4a843)" }}>
@@ -346,35 +307,6 @@ export function HomeSection() {
                 <p className="text-sm leading-relaxed text-muted-foreground">{feature.description}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Newsletter */}
-      <section className="relative overflow-hidden bg-gradient-to-bl from-black via-black/95 to-black/90 py-6 md:py-10">
-        <div className="relative mx-auto max-w-7xl px-4 md:px-8">
-          <div className="mx-auto max-w-lg text-center">
-            <div className="mb-4 flex justify-center">
-              <div className="icon-box" style={{ width: "64px", height: "64px", borderRadius: "20px" }}>
-                <Mail className="size-8 text-gold-gradient" />
-              </div>
-            </div>
-            <h2 className="mb-2 text-2xl font-black md:text-3xl" style={{ color: "#f0d078" }}>اشترك في نشرتنا البريدية</h2>
-            <p className="mb-6 text-base" style={{ color: "rgba(240, 208, 120, 0.7)" }}>احصل على أحدث العروض والمنتجات الجديدة مباشرة في بريدك الإلكتروني</p>
-            {newsletterSubmitted ? (
-              <div className="flex items-center justify-center gap-2 rounded-xl bg-green-500/10 py-4" style={{ color: "#f0d078" }}>
-                <Bell className="size-5" />
-                <span className="text-sm font-medium">تم الاشتراك بنجاح!</span>
-              </div>
-            ) : (
-              <form onSubmit={handleNewsletter} className="flex flex-col gap-3 sm:flex-row">
-                <Input type="email" placeholder="أدخل بريدك الإلكتروني" value={newsletterEmail} onChange={(e) => setNewsletterEmail(e.target.value)} dir="ltr" className="flex-1 rounded-xl bg-background border-border/50 text-right" required />
-                <button type="submit" className="btn-3d shrink-0 flex items-center justify-center gap-2">
-                  <Mail className="size-4" />
-                  اشتراك
-                </button>
-              </form>
-            )}
           </div>
         </div>
       </section>
