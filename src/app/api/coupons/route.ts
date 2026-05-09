@@ -9,16 +9,18 @@ async function verifyAdmin(request: Request) {
     return { user: null, errorResponse: NextResponse.json({ error: "غير مصرح به" }, { status: 401 }) };
   }
   const serviceClient = getSupabaseServiceClient();
-  if (serviceClient) {
-    const { data: profile } = await serviceClient
-      .from("users")
-      .select("role_id, roles(role_name)")
-      .eq("email", user.email)
-      .single();
-    const roleName = (profile?.roles as { role_name?: string } | null)?.role_name;
-    if (roleName !== "admin") {
-      return { user: null, errorResponse: NextResponse.json({ error: "ممنوع — يتطلب صلاحية المدير" }, { status: 403 }) };
-    }
+  if (!serviceClient) {
+    // FAIL CLOSED: deny access when we can't verify the role
+    return { user: null, errorResponse: NextResponse.json({ error: "خدمة المصادقة غير متاحة" }, { status: 503 }) };
+  }
+  const { data: profile } = await serviceClient
+    .from("users")
+    .select("role_id, roles(role_name)")
+    .eq("email", user.email)
+    .single();
+  const roleName = (profile?.roles as { role_name?: string } | null)?.role_name;
+  if (roleName !== "admin") {
+    return { user: null, errorResponse: NextResponse.json({ error: "ممنوع — يتطلب صلاحية المدير" }, { status: 403 }) };
   }
   return { user, errorResponse: null };
 }
@@ -75,21 +77,9 @@ export async function POST(request: Request) {
       });
     }
 
-    // Atomic increment with conditional check — prevents TOCTOU race condition
-    // Only increments if used_count < max_uses (or max_uses is unlimited)
-    const maxUsesCondition = coupon.max_uses ? `and.used_count.lt.${coupon.max_uses}` : undefined;
-    const { data: updated, error: incrementError } = await serviceClient
-      .from("coupons")
-      .update({ used_count: coupon.used_count + 1 })
-      .eq("code", upperCode)
-      .lt(coupon.max_uses ? "used_count" : "code", coupon.max_uses ?? upperCode) // ensures used_count < max_uses
-      .select()
-      .single();
-
-    if (incrementError || !updated) {
-      // Race condition: another request used the last slot between our check and update
-      return NextResponse.json({ valid: false, error: "تم استخدام هذا الكود الحد الأقصى" });
-    }
+    // Do NOT increment used_count here — it will be incremented when the order is actually created.
+    // This prevents used_count from being consumed by users who validate but don't complete checkout.
+    // The order creation API (/api/orders) will handle the increment after successful order placement.
 
     const discountAmount = Math.round((Number(orderTotal) * Number(coupon.discount_value)) / 100);
     const finalTotal = Number(orderTotal) - discountAmount;
@@ -106,11 +96,15 @@ export async function POST(request: Request) {
   }
 }
 
-// GET: List all coupons
+// GET: List all coupons (admin only)
 export async function GET(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
   try {
+    // Admin-only: coupon codes are sensitive business data
+    const { errorResponse } = await verifyAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const serviceClient = getSupabaseServiceClient();
     if (!serviceClient) {
       return NextResponse.json({ coupons: [] });

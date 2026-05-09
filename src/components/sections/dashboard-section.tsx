@@ -485,12 +485,12 @@ function AdminDashboard() {
     }
   };
 
-  const fetchAdminData = async () => {
+  const fetchAdminData = async (signal?: AbortSignal) => {
     setLoading(true);
     try {
       const [ordersRes, usersRes] = await Promise.all([
-        fetch("/api/admin/orders?limit=100", { headers: authHeaders }),
-        fetch("/api/admin/users", { headers: authHeaders }),
+        fetch("/api/admin/orders?limit=100", { headers: authHeaders, signal }),
+        fetch("/api/admin/users", { headers: authHeaders, signal }),
       ]);
 
       if (ordersRes.ok) {
@@ -526,7 +526,7 @@ function AdminDashboard() {
 
       // Fetch coupons from API
       try {
-        const couponsRes = await fetch("/api/coupons", { headers: authHeaders });
+        const couponsRes = await fetch("/api/coupons", { headers: authHeaders, signal });
         if (couponsRes.ok) {
           const couponsData = await couponsRes.json();
           if (couponsData.coupons) {
@@ -544,7 +544,7 @@ function AdminDashboard() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchAdminData();
+    fetchAdminData(controller.signal);
     return () => controller.abort();
   }, []);
 
@@ -686,7 +686,7 @@ function AdminDashboard() {
               <Badge variant="outline" className="text-xs">{orders.length}</Badge>
             )}
           </h2>
-          <Button variant="outline" size="sm" onClick={fetchAdminData} disabled={loading} className="gap-1">
+          <Button variant="outline" size="sm" onClick={() => fetchAdminData()} disabled={loading} className="gap-1">
             <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
             تحديث
           </Button>
@@ -1080,9 +1080,9 @@ function SellerDashboard() {
     } catch { /* fallback */ }
   };
 
-  const fetchSellerOrders = async () => {
+  const fetchSellerOrders = async (signal?: AbortSignal) => {
     try {
-      const res = await fetch("/api/orders", { headers: authHeaders });
+      const res = await fetch("/api/orders", { headers: authHeaders, signal });
       if (res.ok) {
         const data = await res.json();
         const orderList = data.orders || [];
@@ -1095,9 +1095,10 @@ function SellerDashboard() {
 
   useEffect(() => {
     const controller = new AbortController();
+    const signal = controller.signal;
     const load = async () => {
       setLoading(true);
-      await Promise.all([fetchSellerProducts(), fetchSellerOrders()]);
+      await Promise.all([fetchSellerProducts(), fetchSellerOrders(signal)]);
       setLoading(false);
     };
     load();

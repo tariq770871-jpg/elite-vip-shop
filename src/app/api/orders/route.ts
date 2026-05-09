@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { sendOrderNotification } from "@/lib/telegram";
-import { verifyAuthToken } from "@/lib/supabase-server";
+import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
 
 // POST: Save a new order to Supabase
@@ -35,6 +35,17 @@ export async function POST(request: Request) {
     // ── Server-side price verification ──
     // Extract only product IDs and quantities from client — ignore client-provided prices
     const productIds = items.map((item: { id: string }) => item.id);
+
+    // Validate quantities before proceeding
+    for (const item of items) {
+      const qty = Number(item.quantity);
+      if (!Number.isInteger(qty) || qty < 1 || qty > 100) {
+        return NextResponse.json(
+          { error: `كمية غير صالحة للمنتج: ${item.name || item.id}` },
+          { status: 400 }
+        );
+      }
+    }
 
     // Fetch real prices from the products table
     const { data: dbProducts, error: dbError } = await supabase
@@ -115,6 +126,33 @@ export async function POST(request: Request) {
     if (itemsError) {
       console.error("Order items insert error:", itemsError);
       return NextResponse.json({ error: "فشل في حفظ بنود الطلب" }, { status: 500 });
+    }
+
+    // Increment coupon used_count if a coupon was applied (now that order is confirmed)
+    if (couponCode) {
+      try {
+        const serviceClient = getSupabaseServiceClient();
+        if (serviceClient) {
+          const { data: couponData } = await serviceClient
+            .from("coupons")
+            .select("used_count, max_uses")
+            .eq("code", couponCode.toUpperCase())
+            .single();
+
+          if (couponData) {
+            const newCount = (couponData.used_count || 0) + 1;
+            // Only increment if below max_uses (or unlimited)
+            if (!couponData.max_uses || newCount <= couponData.max_uses) {
+              await serviceClient
+                .from("coupons")
+                .update({ used_count: newCount })
+                .eq("code", couponCode.toUpperCase());
+            }
+          }
+        }
+      } catch {
+        // Non-critical: coupon usage tracking should not block order creation
+      }
     }
 
     // Send Telegram notification (non-blocking) — uses server-verified prices

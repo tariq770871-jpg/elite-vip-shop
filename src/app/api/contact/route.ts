@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
+import { sendTelegramNotification } from "@/lib/telegram";
 
 /** Verify the authenticated user has admin role */
 async function verifyAdmin(request: Request) {
@@ -10,16 +11,18 @@ async function verifyAdmin(request: Request) {
     return { user: null, errorResponse: NextResponse.json({ error: "غير مصرح به" }, { status: 401 }) };
   }
   const serviceClient = getSupabaseServiceClient();
-  if (serviceClient) {
-    const { data: profile } = await serviceClient
-      .from("users")
-      .select("role_id, roles(role_name)")
-      .eq("email", user.email)
-      .single();
-    const roleName = (profile?.roles as { role_name?: string } | null)?.role_name;
-    if (roleName !== "admin") {
-      return { user: null, errorResponse: NextResponse.json({ error: "ممنوع — يتطلب صلاحية المدير" }, { status: 403 }) };
-    }
+  if (!serviceClient) {
+    // FAIL CLOSED: deny access when we can't verify the role
+    return { user: null, errorResponse: NextResponse.json({ error: "خدمة المصادقة غير متاحة" }, { status: 503 }) };
+  }
+  const { data: profile } = await serviceClient
+    .from("users")
+    .select("role_id, roles(role_name)")
+    .eq("email", user.email)
+    .single();
+  const roleName = (profile?.roles as { role_name?: string } | null)?.role_name;
+  if (roleName !== "admin") {
+    return { user: null, errorResponse: NextResponse.json({ error: "ممنوع — يتطلب صلاحية المدير" }, { status: 403 }) };
   }
   return { user, errorResponse: null };
 }
@@ -49,18 +52,21 @@ export async function POST(request: Request) {
       }
     }
 
+    // Send Telegram notification directly via the telegram library
     try {
-      const baseUrl = new URL(request.url).origin;
-      await fetch(`${baseUrl}/api/notify?XTransformPort=3005`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "contact_message",
-          data: { name, email, phone, subject, message },
-        }),
-      });
+      const tgMessage = [
+        `📩 <b>رسالة تواصل جديدة</b>`,
+        `👤 الاسم: ${name}`,
+        email ? `📧 البريد: ${email}` : null,
+        phone ? `📞 الهاتف: ${phone}` : null,
+        subject ? `📋 الموضوع: ${subject}` : null,
+        `💬 الرسالة: ${message}`,
+        `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
+      ].filter(Boolean).join("\n");
+
+      await sendTelegramNotification(tgMessage);
     } catch {
-      // Telegram bot may not be running
+      // Telegram may not be configured
     }
 
     return NextResponse.json({ success: true });

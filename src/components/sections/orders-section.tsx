@@ -177,12 +177,12 @@ export function OrdersSection() {
   const [orders, setOrders] = useState<Order[]>([]);
   const userId = user?.id;
 
-  const fetchOrders = () => {
+  const fetchOrders = (signal?: AbortSignal) => {
     if (!isAuthenticated || !userId) {
       return;
     }
     setIsLoading(true);
-    fetch(`/api/orders?userId=${userId}`)
+    fetch(`/api/orders?userId=${userId}`, { signal })
       .then((res) => {
         if (res.ok) return res.json();
         return null;
@@ -209,14 +209,16 @@ export function OrdersSection() {
         setOrders(mappedOrders);
         setIsLoading(false);
       })
-      .catch(() => {
+      .catch((err) => {
+        // Ignore abort errors — they're intentional on unmount
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         setIsLoading(false);
       });
   };
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchOrders();
+    fetchOrders(controller.signal);
     return () => controller.abort();
   }, [isAuthenticated, userId]);
 

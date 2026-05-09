@@ -7,6 +7,7 @@ import { BlogImage } from "@/components/blog-image";
 import { BlogShareButtons } from "./share-buttons";
 import { RelatedPosts } from "./related-posts";
 import { BlogCTA } from "./blog-cta";
+import DOMPurify from "isomorphic-dompurify";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -103,7 +104,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   };
 
   // Convert markdown-like content to HTML
-  const contentHtml = post.content
+  const rawHtml = post.content
     .replace(/^### (.+)$/gm, '<h3 class="text-base font-bold mt-6 mb-3">$1</h3>')
     .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold mt-8 mb-4 text-foreground">$1</h2>')
     .replace(/^\- \*\*(.+?)\*\*: (.+)$/gm, '<li class="mb-2 mr-4"><strong class="text-foreground">$1:</strong> $2</li>')
@@ -114,6 +115,12 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       /^([^<#\-\n].+)/gm,
       "<p class='mb-4 leading-relaxed text-muted-foreground'>$1</p>"
     );
+
+  // Sanitize HTML to prevent XSS — strip script tags and event handlers
+  const contentHtml = DOMPurify.sanitize(rawHtml, {
+    ALLOWED_TAGS: ['h2', 'h3', 'p', 'strong', 'em', 'ul', 'ol', 'li', 'br', 'span', 'div'],
+    ALLOWED_ATTR: ['class'],
+  });
 
   return (
     <main className="min-h-screen">

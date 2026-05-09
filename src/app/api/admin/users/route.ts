@@ -10,25 +10,31 @@ async function verifyAdmin(request: Request) {
     return { user: null, errorResponse: NextResponse.json({ error: "غير مصرح به" }, { status: 401 }) };
   }
   const serviceClient = getSupabaseServiceClient();
-  if (serviceClient) {
-    const { data: profile } = await serviceClient
-      .from("users")
-      .select("role_id, roles(role_name)")
-      .eq("email", user.email)
-      .single();
-    const roleName = (profile?.roles as { role_name?: string } | null)?.role_name;
-    if (roleName !== "admin") {
-      return { user: null, errorResponse: NextResponse.json({ error: "ممنوع — يتطلب صلاحية المدير" }, { status: 403 }) };
-    }
+  if (!serviceClient) {
+    // FAIL CLOSED: deny access when we can't verify the role
+    return { user: null, errorResponse: NextResponse.json({ error: "خدمة المصادقة غير متاحة" }, { status: 503 }) };
+  }
+  const { data: profile } = await serviceClient
+    .from("users")
+    .select("role_id, roles(role_name)")
+    .eq("email", user.email)
+    .single();
+  const roleName = (profile?.roles as { role_name?: string } | null)?.role_name;
+  if (roleName !== "admin") {
+    return { user: null, errorResponse: NextResponse.json({ error: "ممنوع — يتطلب صلاحية المدير" }, { status: 403 }) };
   }
   return { user, errorResponse: null };
 }
 
-// GET: Fetch all users with their roles
+// GET: Fetch all users with their roles (admin only)
 export async function GET(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
   try {
+    // Admin authorization check — only admins can list all users (PII)
+    const { errorResponse: getErr } = await verifyAdmin(request);
+    if (getErr) return getErr;
+
     if (!supabase) {
       return NextResponse.json({ users: [], total: 0 });
     }

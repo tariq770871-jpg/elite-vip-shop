@@ -10,16 +10,18 @@ async function verifyAdmin(request: Request) {
     return { user: null, errorResponse: NextResponse.json({ error: "غير مصرح به" }, { status: 401 }) };
   }
   const serviceClient = getSupabaseServiceClient();
-  if (serviceClient) {
-    const { data: profile } = await serviceClient
-      .from("users")
-      .select("role_id, roles(role_name)")
-      .eq("email", user.email)
-      .single();
-    const roleName = (profile?.roles as { role_name?: string } | null)?.role_name;
-    if (roleName !== "admin") {
-      return { user: null, errorResponse: NextResponse.json({ error: "ممنوع — يتطلب صلاحية المدير" }, { status: 403 }) };
-    }
+  if (!serviceClient) {
+    // FAIL CLOSED: deny access when we can't verify the role
+    return { user: null, errorResponse: NextResponse.json({ error: "خدمة المصادقة غير متاحة" }, { status: 503 }) };
+  }
+  const { data: profile } = await serviceClient
+    .from("users")
+    .select("role_id, roles(role_name)")
+    .eq("email", user.email)
+    .single();
+  const roleName = (profile?.roles as { role_name?: string } | null)?.role_name;
+  if (roleName !== "admin") {
+    return { user: null, errorResponse: NextResponse.json({ error: "ممنوع — يتطلب صلاحية المدير" }, { status: 403 }) };
   }
   return { user, errorResponse: null };
 }

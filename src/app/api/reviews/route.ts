@@ -103,6 +103,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "النظام غير متاح حالياً" }, { status: 503 });
     }
 
+    // Check for existing review by this user for this product (prevent duplicates)
+    const { data: existingReview } = await serviceClient
+      .from("reviews")
+      .select("review_id")
+      .eq("product_id", product_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existingReview) {
+      return NextResponse.json(
+        { error: "لقد قمت بتقييم هذا المنتج مسبقاً" },
+        { status: 409 }
+      );
+    }
+
     // Insert the review using service role client
     const { data: review, error: insertError } = await serviceClient
       .from("reviews")
