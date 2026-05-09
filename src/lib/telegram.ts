@@ -48,6 +48,17 @@ export async function sendTelegramNotification(message: string): Promise<boolean
   }
 }
 
+const paymentMethodNames: Record<string, string> = {
+  jeeb: "جيب",
+  jawaly: "جوالي",
+  easy_fulusk: "ايزي فلوسك",
+  saltef: "سلطيف",
+  local_transfer: "حوالة شبكة محلية",
+  whatsapp: "واتساب",
+  sms: "رسالة نصية",
+  in_app: "طلب عبر الموقع",
+};
+
 export async function sendOrderNotification(order: {
   orderNumber: string;
   customerName?: string;
@@ -77,9 +88,21 @@ export async function sendOrderNotification(order: {
     order.discount ? `🏷️ <b>الخصم:</b> ${Number(order.discount).toLocaleString("ar-SA")} ر.ي` : null,
     order.couponCode ? `🎫 <b>كود الخصم:</b> ${order.couponCode}` : null,
     `💰 <b>الإجمالي:</b> ${Number(order.total).toLocaleString("ar-SA")} ر.ي`,
-    order.paymentMethod ? `💳 <b>طريقة الدفع:</b> ${order.paymentMethod === "whatsapp" ? "واتساب" : "رسالة نصية"}` : null,
+    order.paymentMethod ? `💳 <b>طريقة الدفع:</b> ${paymentMethodNames[order.paymentMethod] || order.paymentMethod}` : null,
     ``,
     `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
+    ``,
+    `━━━━━━━━━━━━━━`,
+    `📋 <b>الرد التلقائي للعميل:</b>`,
+    ``,
+    `💳 اختر طريقة الدفع المفضلة:`,
+    `  • جيب`,
+    `  • جوالي`,
+    `  • ايزي فلوسك`,
+    `  • سلطيف`,
+    `  • حوالة شبكة محلية`,
+    ``,
+    `⚠️ <b>تنبيه هام:</b> لا تسلّم المبلغ أو تقوم بالتحويل والإيداع حتى تستلم بضاعتك أو طلبك. هذا الإجراء للتحقق من مصداقية الشراء.`,
   ]
     .filter(Boolean)
     .join("\n");

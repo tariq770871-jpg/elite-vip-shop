@@ -21,6 +21,7 @@ import {
   Rocket,
   Globe,
   BarChart3,
+  ShoppingCart,
 } from "lucide-react";
 import { FlashDealsSection } from "@/components/sections/flash-deals-section";
 import { TestimonialsSection } from "@/components/sections/testimonials-section";
@@ -33,6 +34,7 @@ import type { Product } from "@/lib/mock-data";
 import { useNavigation } from "@/lib/navigation";
 import { getCategoryIcon } from "@/components/icons";
 import { WhatsAppIcon } from "@/components/whatsapp-icon";
+import { OrderModal } from "@/components/order-modal";
 
 const mainSections = [
   {
@@ -142,6 +144,8 @@ export function HomeSection() {
   const { navigateTo } = useNavigation();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
+  const [orderingProduct, setOrderingProduct] = useState<Product | null>(null);
   useEffect(() => {
     getProducts().then((prods) => {
       setAllProducts(prods);
@@ -276,15 +280,24 @@ export function HomeSection() {
                         <span className="text-lg font-extrabold text-gold-gradient">{product.price} ر.ي</span>
                       )}
                     </div>
-                    <a
-                      href={getWhatsAppOrderLink(product.name)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-3d-whatsapp w-full flex items-center justify-center gap-2 text-xs no-underline !py-3 !rounded-xl"
-                    >
-                      <WhatsAppIcon size={16} className="size-4" />
-                      اطلب عبر واتساب
-                    </a>
+                    <div className="flex items-center gap-2">
+                      {/* Golden Order Button */}
+                      <button
+                        onClick={() => { setOrderingProduct(product); setOrderModalOpen(true); }}
+                        className="flex-1 flex items-center justify-center gap-2 text-xs !py-3 !rounded-xl
+                          bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-bold
+                          shadow-md shadow-amber-500/20 hover:shadow-amber-500/30
+                          transition-all active:scale-[0.98]"
+                      >
+                        <ShoppingCart className="size-4" />
+                        اطلب الآن
+                      </button>
+                      {/* Inquiry Button */}
+                      <a href={getWhatsAppOrderLink(product.name)} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-1 rounded-xl border border-border bg-card px-3 py-3 text-xs font-medium transition-all hover:bg-accent no-underline shrink-0">
+                        <WhatsAppIcon size={14} className="size-3.5" />
+                      </a>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -415,6 +428,25 @@ export function HomeSection() {
         description="لا تتردد في التواصل معنا لأي استفسار أو طلب — فريقنا جاهز لخدمتك على مدار الساعة"
         buttonText="احصل على استشارة مجانية"
         whatsappMessage="مرحباً، أريد الحصول على استشارة مجانية حول خدماتكم"
+      />
+
+      {/* Order Modal */}
+      <OrderModal
+        open={orderModalOpen}
+        onOpenChange={setOrderModalOpen}
+        product={
+          orderingProduct
+            ? {
+                id: orderingProduct.id,
+                name: orderingProduct.name,
+                price: orderingProduct.price,
+                salePrice: orderingProduct.salePrice,
+                image: orderingProduct.images[0],
+                category: orderingProduct.category,
+                availability: orderingProduct.availability,
+              }
+            : null
+        }
       />
     </div>
   );

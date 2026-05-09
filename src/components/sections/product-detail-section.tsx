@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import {
   ArrowRight,
   Loader2,
   Star,
+  ShoppingCart,
 } from "lucide-react";
 import { useNavigation } from "@/lib/navigation";
 import { useRecentlyViewedStore } from "@/store/recently-viewed-store";
@@ -16,6 +17,7 @@ import { getCategoryIcon } from "@/components/icons";
 import { WhatsAppIcon } from "@/components/whatsapp-icon";
 import { Badge } from "@/components/ui/badge";
 import { ProductReviewsSection } from "@/components/sections/product-reviews-section";
+import { OrderModal } from "@/components/order-modal";
 
 interface ProductDetailSectionProps {
   productId?: string;
@@ -29,6 +31,7 @@ export function ProductDetailSection({ productId: productIdProp }: ProductDetail
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(!!effectiveProductId);
   const [productRating, setProductRating] = useState<{ avg: number; count: number }>({ avg: 0, count: 0 });
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
   const fetchedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -160,23 +163,37 @@ export function ProductDetailSection({ productId: productIdProp }: ProductDetail
             </div>
 
             {product.availability ? (
-              <a
-                href={getWhatsAppOrderLink(product.name)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-3d-whatsapp flex items-center justify-center gap-3 text-base no-underline !py-4"
-              >
-                <WhatsAppIcon size={24} className="size-6" />
-                اطلب عبر واتساب
-              </a>
+              <div className="flex items-center gap-3">
+                {/* Golden Order Button - PRIMARY */}
+                <button
+                  onClick={() => setOrderModalOpen(true)}
+                  className="flex-1 flex items-center justify-center gap-3 text-base !py-4 rounded-xl
+                    bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-bold
+                    shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:from-amber-400 hover:to-yellow-500
+                    transition-all active:scale-[0.98]"
+                >
+                  <ShoppingCart className="size-5" />
+                  اطلب الآن
+                </button>
+
+                {/* Inquiry Button - SECONDARY */}
+                <a
+                  href={getWhatsAppOrderLink(product.name)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-4 text-sm font-medium transition-all hover:bg-accent no-underline"
+                >
+                  <WhatsAppIcon size={18} className="size-4" />
+                  استعلام
+                </a>
+              </div>
             ) : (
               <button
                 disabled
-                className="btn-3d-whatsapp flex items-center justify-center gap-3 text-base !py-4 opacity-50 cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-3 text-base !py-4 rounded-xl opacity-50 cursor-not-allowed bg-muted text-muted-foreground"
                 aria-disabled="true"
               >
-                <WhatsAppIcon size={24} className="size-6" />
-                اطلب عبر واتساب
+                غير متوفر حالياً
               </button>
             )}
 
@@ -189,6 +206,25 @@ export function ProductDetailSection({ productId: productIdProp }: ProductDetail
 
         <ProductReviewsSection productId={product.id} />
       </div>
+
+      {/* Order Modal */}
+      <OrderModal
+        open={orderModalOpen}
+        onOpenChange={setOrderModalOpen}
+        product={
+          product
+            ? {
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                salePrice: product.salePrice,
+                image: product.images[0],
+                category: product.category,
+                availability: product.availability,
+              }
+            : null
+        }
+      />
     </section>
   );
 }

@@ -6,43 +6,15 @@ import { useNavigation } from "@/lib/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import {
   ShoppingCart, Package, Minus, Plus, Trash2, ArrowRight,
-  MessageSquare, Tag, Gift, Loader2, X, User, Phone, MapPin,
-  CheckCircle2, MessageCircle,
+  Tag, Gift, Loader2, X, User, Phone, MapPin,
+  CheckCircle2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { WhatsAppBrandIcon, SmsBrandIcon } from "@/components/icons";
 import { toast } from "sonner";
-
-/* ------------------------------------------------------------------ */
-/*  Order Message Builder                                               */
-/* ------------------------------------------------------------------ */
-
-function buildOrderMessage(items: ReturnType<typeof useCartStore.getState>["items"], total: number, customerName: string, customerPhone: string, customerAddress?: string, notes?: string, coupon?: { code: string; discount: number; discountAmount: number }) {
-  const lines = items.map((item) => {
-    const p = item.salePrice && item.salePrice < item.price ? item.salePrice : item.price;
-    return `${items.indexOf(item) + 1}. ${item.name} × ${item.quantity} = ${(p * item.quantity).toLocaleString("ar-SA")} ر.ي`;
-  });
-
-  let msg = `🛒 *طلب جديد من متجر النخبة*\n━━━━━━━━━━━━━━━\n\n`;
-  msg += `👤 *العميل:* ${customerName}\n`;
-  msg += `📱 *الهاتف:* ${customerPhone}\n`;
-  if (customerAddress) msg += `📍 *العنوان:* ${customerAddress}\n`;
-  msg += `\n📋 *المنتجات:*\n${lines.join("\n")}\n\n`;
-  msg += `━━━━━━━━━━━━━━━\n`;
-  msg += `💰 *المجموع الكلي:* ${total.toLocaleString("ar-SA")} ر.ي\n`;
-  if (coupon && coupon.discountAmount > 0) {
-    msg += `🎁 *الخصم (${coupon.discount}%):* -${coupon.discountAmount.toLocaleString("ar-SA")} ر.ي\n`;
-    msg += `💳 *المجموع بعد الخصم:* ${(total - coupon.discountAmount).toLocaleString("ar-SA")} ر.ي\n`;
-  }
-  if (notes) msg += `\n📝 *ملاحظات:* ${notes}\n`;
-  msg += `\n🕐 *${new Date().toLocaleDateString("ar-YE", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}*\n`;
-  msg += `\n━━━━━━━━━━━━━━━\n✅ في انتظار تأكيد الطلب`;
-  return msg;
-}
 
 /* ------------------------------------------------------------------ */
 /*  Cart Page Section                                                  */
@@ -65,7 +37,7 @@ export function CartPageSection() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [notes, setNotes] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"whatsapp" | "sms">("whatsapp");
+  const [paymentMethod, setPaymentMethod] = useState("jeeb");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
 
@@ -100,52 +72,49 @@ export function CartPageSection() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!customerName.trim()) { toast.error("يرجى إدخال اسمك"); return; }
     if (!customerPhone.trim()) { toast.error("يرجى إدخال رقم الهاتف"); return; }
     if (items.length === 0) { toast.error("السلة فارغة!"); return; }
 
-    setIsSubmitting(true);
-    const msg = buildOrderMessage(items, subtotal, customerName, customerPhone, customerAddress, notes, appliedCoupon || undefined);
-
-    // Save order to Supabase
     const { user } = useAuthStore.getState();
-    const saveOrder = user?.id
-      ? fetch("/api/orders", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: user.id,
-            items,
-            total: grandTotal,
-            notes,
-            paymentMethod: paymentMethod,
-            customerName,
-            customerPhone,
-            customerAddress,
-            discount,
-            couponCode: appliedCoupon?.code,
-          }),
-        }).then((res) => {
-          if (!res.ok) toast.error("تعذّر حفظ الطلب في النظام، لكن يمكنك إرساله عبر واتساب");
-        }).catch(() => {
-          toast.error("تعذّر حفظ الطلب في النظام، لكن يمكنك إرساله عبر واتساب");
-        })
-      : Promise.resolve();
+    if (!user?.id) {
+      toast.error("يرجى تسجيل الدخول أولاً");
+      return;
+    }
 
-    saveOrder.finally(() => {
-      if (paymentMethod === "whatsapp") {
-        const w = window.open(`https://wa.me/967782138587?text=${encodeURIComponent(msg)}`, "_blank");
-        if (w) w.opener = null;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          items,
+          total: grandTotal,
+          paymentMethod,
+          customerName: customerName.trim(),
+          customerPhone: customerPhone.trim(),
+          customerAddress: customerAddress.trim() || undefined,
+          notes: notes.trim() || undefined,
+          couponCode: appliedCoupon?.code,
+          discount,
+        }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        clearCart();
+        setOrderPlaced(true);
+        toast.success("تم تأكيد طلبك بنجاح! 🎉");
       } else {
-        const w = window.open(`sms:967782138587?body=${encodeURIComponent(msg)}`, "_blank");
-        if (w) w.opener = null;
+        toast.error(data.error || "حدث خطأ أثناء إرسال الطلب");
       }
-      clearCart();
-      setOrderPlaced(true);
+    } catch {
+      toast.error("حدث خطأ في الاتصال بالخادم");
+    } finally {
       setIsSubmitting(false);
-      toast.success("تم إرسال طلبك بنجاح! 🎉");
-    });
+    }
   };
 
   if (orderPlaced) {
@@ -154,11 +123,9 @@ export function CartPageSection() {
         <div className="flex size-20 items-center justify-center rounded-full bg-emerald-500/10">
           <CheckCircle2 className="size-10 text-emerald-500" />
         </div>
-        <div className="section-title-3d">تم إرسال طلبك بنجاح! 🎉</div>
+        <div className="section-title-3d">تم تأكيد طلبك بنجاح! 🎉</div>
         <p className="text-center text-muted-foreground max-w-md">
-          {paymentMethod === "whatsapp"
-            ? "تم فتح واتساب مع رسالة الطلب جاهزة للإرسال"
-            : "تم فتح الرسائل النصية مع تفاصيل الطلب"}
+          سيتم التواصل معك قريباً لتأكيد التفاصيل وطريقة الدفع
         </p>
         <div className="flex gap-3 flex-wrap justify-center mt-2">
           <button className="btn-3d flex items-center gap-2" onClick={() => { setOrderPlaced(false); navigateTo("products"); }}>
@@ -278,30 +245,40 @@ export function CartPageSection() {
 
               {/* Payment Method */}
               <div className="space-y-3">
-                <Label className="text-base font-semibold">💳 اختر طريقة إرسال الطلب:</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("whatsapp")}
-                    className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
-                      paymentMethod === "whatsapp" ? "border-green-500 bg-green-50 dark:bg-green-950/20" : "border-border hover:border-muted-foreground/30"
-                    }`}
-                  >
-                    <div className="flex size-12 items-center justify-center rounded-xl bg-green-500"><MessageCircle className="size-6 text-white" /></div>
-                    <span className="font-bold text-sm text-green-700 dark:text-green-400">واتساب</span>
-                    {paymentMethod === "whatsapp" && <CheckCircle2 className="size-4 text-green-500 absolute top-2 left-2" style={{ position: "absolute" }} />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("sms")}
-                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
-                      paymentMethod === "sms" ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" : "border-border hover:border-muted-foreground/30"
-                    }`}
-                  >
-                    <div className="flex size-12 items-center justify-center rounded-xl bg-blue-500"><MessageSquare className="size-6 text-white" /></div>
-                    <span className="font-bold text-sm text-blue-700 dark:text-blue-400">رسالة نصية</span>
-                    {paymentMethod === "sms" && <CheckCircle2 className="size-4 text-blue-500" style={{ position: "absolute", top: "8px", left: "8px" }} />}
-                  </button>
+                <Label className="text-base font-semibold">💳 اختر طريقة الدفع:</Label>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {[
+                    { value: "jeeb", label: "جيب", icon: "📱" },
+                    { value: "jawaly", label: "جوالي", icon: "📱" },
+                    { value: "easy_fulusk", label: "ايزي فلوسك", icon: "📱" },
+                    { value: "saltef", label: "سلطيف", icon: "📱" },
+                    { value: "local_transfer", label: "حوالة شبكة محلية", icon: "💵" },
+                  ].map((method) => (
+                    <button
+                      key={method.value}
+                      type="button"
+                      onClick={() => setPaymentMethod(method.value)}
+                      className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 cursor-pointer transition-all ${
+                        paymentMethod === method.value
+                          ? "border-amber-500 bg-amber-500/10 shadow-md shadow-amber-500/10"
+                          : "border-border hover:border-muted-foreground/30"
+                      }`}
+                    >
+                      <span className="text-xl">{method.icon}</span>
+                      <span
+                        className={`text-xs font-bold ${
+                          paymentMethod === method.value
+                            ? "text-amber-600 dark:text-amber-400"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {method.label}
+                      </span>
+                      {paymentMethod === method.value && (
+                        <CheckCircle2 className="size-4 text-amber-500 absolute top-1.5 left-1.5" />
+                      )}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
@@ -379,16 +356,14 @@ export function CartPageSection() {
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className={`w-full flex items-center justify-center gap-3 py-4 text-base font-bold text-white transition-all disabled:opacity-50 ${
-                  paymentMethod === "whatsapp" ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"
-                } rounded-xl`}
+                className="w-full flex items-center justify-center gap-3 py-4 text-base font-bold text-black transition-all disabled:opacity-50
+                  bg-gradient-to-r from-amber-500 to-yellow-600 shadow-lg shadow-amber-500/25
+                  hover:shadow-amber-500/40 hover:from-amber-400 hover:to-yellow-500 rounded-xl active:scale-[0.98]"
               >
                 {isSubmitting ? (
-                  <><Loader2 className="size-5 animate-spin" /> جاري الإرسال...</>
-                ) : paymentMethod === "whatsapp" ? (
-                  <><WhatsAppBrandIcon className="size-5" /> إتمام الطلب عبر واتساب</>
+                  <><Loader2 className="size-5 animate-spin" /> جاري تأكيد الطلب...</>
                 ) : (
-                  <><SmsBrandIcon className="size-5" /> إتمام الطلب برسالة نصية</>
+                  <><ShoppingCart className="size-5" /> تأكيد الطلب</>
                 )}
               </button>
 
@@ -400,7 +375,7 @@ export function CartPageSection() {
               </button>
 
               <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
-                بالضغط على الزر، سيتم فتح {paymentMethod === "whatsapp" ? "واتساب" : "تطبيق الرسائل"} مع تفاصيل طلبك جاهزة
+                بالضغط على الزر، سيتم تأكيد طلبك وإرساله للمراجعة
               </p>
             </div>
           </div>

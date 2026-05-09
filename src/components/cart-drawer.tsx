@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingCart, Plus, Minus, Trash2, MessageSquare, Tag, Gift, Loader2, X } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, Tag, Gift, Loader2, X } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,6 @@ import {
 import { useCartStore } from "@/store/cart-store";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
-import { WhatsAppBrandIcon, SmsBrandIcon } from "@/components/icons";
 import { toast } from "sonner";
 
 export function CartDrawer() {
@@ -38,69 +37,50 @@ export function CartDrawer() {
 
   const [couponCode, setCouponCode] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const itemCount = totalItems();
   const subtotal = totalPrice();
   const discount = appliedCoupon?.discountAmount || 0;
   const total = appliedCoupon ? appliedCoupon.finalTotal : subtotal;
 
-  const buildOrderMessage = () => {
-    const orderLines = items
-      .map(
-        (item) => {
-          const p = item.salePrice && item.salePrice < item.price ? item.salePrice : item.price;
-          return `• ${item.name} × ${item.quantity} = ${(p * item.quantity).toLocaleString("ar-SA")} ر.ي`;
-        }
-      )
-      .join("\n");
+  const handleSubmitOrder = async () => {
+    if (items.length === 0) return;
 
-    let msg = `🛒 *طلب جديد من متجر النخبة*\n━━━━━━━━━━━━━━\n\n📋 *المنتجات:*\n${orderLines}\n\n`;
-    if (discount > 0) {
-      msg += `━━━━━━━━━━━━━━\n🎁 الخصم (${appliedCoupon!.discount}%): -${discount.toLocaleString("ar-SA")} ر.ي\n`;
+    const { user } = useAuthStore.getState();
+    if (!user?.id) {
+      toast.error("يرجى تسجيل الدخول أولاً");
+      return;
     }
-    msg += `━━━━━━━━━━━━━━\n💰 *المجموع الكلي:* ${total.toLocaleString("ar-SA")} ر.ي\n\n`;
-    msg += `🕐 ${new Date().toLocaleDateString("ar-YE", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}\n`;
-    msg += `\n✅ في انتظار تأكيد الطلب`;
-    return msg;
-  };
 
-  const saveOrderToSupabase = async (paymentMethod: string) => {
+    setIsSubmitting(true);
     try {
-      const { user } = useAuthStore.getState();
-      if (!user?.id) return;
-      await fetch("/api/orders", {
+      const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: user.id,
           items,
           total,
-          paymentMethod,
+          paymentMethod: "in_app",
           couponCode: appliedCoupon?.code,
-          discount: discount,
+          discount,
         }),
       });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        clearCart();
+        toast.success("تم إرسال طلبك بنجاح! 🎉");
+        closeCart();
+      } else {
+        toast.error(data.error || "حدث خطأ أثناء إرسال الطلب");
+      }
     } catch {
-      // Silent fail - order already sent via WhatsApp/SMS
+      toast.error("حدث خطأ في الاتصال بالخادم");
+    } finally {
+      setIsSubmitting(false);
     }
-  };
-
-  const handleCheckoutWhatsApp = () => {
-    if (items.length === 0) return;
-    const message = buildOrderMessage();
-    const w = window.open(`https://wa.me/967782138587?text=${encodeURIComponent(message)}`, "_blank");
-    if (w) w.opener = null;
-    toast.success("تم فتح واتساب مع تفاصيل الطلب!");
-    saveOrderToSupabase("whatsapp");
-  };
-
-  const handleCheckoutSMS = () => {
-    if (items.length === 0) return;
-    const message = buildOrderMessage();
-    const w = window.open(`sms:967782138587?body=${encodeURIComponent(message)}`, "_blank");
-    if (w) w.opener = null;
-    toast.success("تم فتح الرسائل مع تفاصيل الطلب!");
-    saveOrderToSupabase("sms");
   };
 
   const handleApplyCoupon = async () => {
@@ -302,23 +282,15 @@ export function CartDrawer() {
                 </div>
               </div>
 
-              {/* Checkout Buttons */}
-              <div className="grid w-full grid-cols-2 gap-2">
-                <button
-                  className="btn-3d-whatsapp flex items-center justify-center gap-2 !py-3 text-sm"
-                  onClick={handleCheckoutWhatsApp}
-                >
-                  <WhatsAppBrandIcon className="size-4" />
-                  واتساب
-                </button>
-                <button
-                  className="flex items-center justify-center gap-2 rounded-xl border-2 border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm font-bold text-blue-700 transition-all hover:bg-blue-500/20 dark:text-blue-400"
-                  onClick={handleCheckoutSMS}
-                >
-                  <SmsBrandIcon className="size-4" />
-                  رسالة نصية
-                </button>
-              </div>
+              {/* Checkout Button */}
+              <Button
+                onClick={handleSubmitOrder}
+                disabled={isSubmitting || items.length === 0}
+                className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-bold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:from-amber-400 hover:to-yellow-500 !py-3"
+              >
+                {isSubmitting ? <Loader2 className="size-4 animate-spin ms-2" /> : <ShoppingCart className="size-4 ms-2" />}
+                إتمام الطلب
+              </Button>
 
               <div className="grid w-full grid-cols-2 gap-2">
                 <button

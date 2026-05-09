@@ -99,7 +99,12 @@ export async function POST(request: Request) {
         total_amount: calculatedTotal,
         notes: (() => {
           const sanitize = (val: string | undefined | null) => (val || "").replace(/\|/g, "│");
-          return notes || `طريقة الدفع: ${paymentMethod === "whatsapp" ? "واتساب" : "رسالة نصية"}${customerName ? ` | العميل: ${sanitize(customerName)}` : ""}${customerPhone ? ` | الهاتف: ${sanitize(customerPhone)}` : ""}${customerAddress ? ` | العنوان: ${sanitize(customerAddress)}` : ""}${discount ? ` | خصم: ${discount} ر.ي` : ""}${couponCode ? ` | كود: ${sanitize(couponCode)}` : ""}`;
+          const paymentNames: Record<string, string> = {
+            jeeb: "جيب", jawaly: "جوالي", easy_fulusk: "ايزي فلوسك", saltef: "سلطيف",
+            local_transfer: "حوالة شبكة محلية", whatsapp: "واتساب", sms: "رسالة نصية", in_app: "طلب عبر الموقع",
+          };
+          const pmLabel = paymentNames[paymentMethod] || paymentMethod || "غير محدد";
+          return notes || `طريقة الدفع: ${pmLabel}${customerName ? ` | العميل: ${sanitize(customerName)}` : ""}${customerPhone ? ` | الهاتف: ${sanitize(customerPhone)}` : ""}${customerAddress ? ` | العنوان: ${sanitize(customerAddress)}` : ""}${discount ? ` | خصم: ${discount} ر.ي` : ""}${couponCode ? ` | كود: ${sanitize(couponCode)}` : ""}`;
         })(),
       })
       .select()
