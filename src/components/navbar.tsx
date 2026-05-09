@@ -140,7 +140,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
         <Logo compact />
 
         {/* Center: Desktop nav links (hidden on mobile) */}
-        <nav className="hidden items-center gap-1 lg:flex">
+        <nav className="hidden items-center gap-1 lg:flex" role="navigation" aria-label="التنقل الرئيسي">
           {navLinks.map((link) => (
             <button
               key={link.page}
@@ -263,7 +263,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
             </SheetTrigger>
             <SheetContent
               side="left"
-              className="w-[320px] overflow-y-auto border-border/50 bg-card p-0 [&>button]:hidden"
+              className="w-[85vw] max-w-[320px] overflow-y-auto border-border/50 bg-card p-0 [&>button]:hidden"
             >
               {/* ===== SIDEBAR HEADER ===== */}
               <div className="px-4 pb-3 pt-4">
@@ -339,14 +339,14 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
                     </div>
                     {/* Notifications & Logout row */}
                     <div className="flex items-center gap-2 mt-3">
-                      <button className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-card border border-border/50 py-2.5 text-sm text-muted-foreground hover:bg-accent transition-all">
+                      <button className="touch-target flex flex-1 items-center justify-center gap-2 rounded-xl bg-card border border-border/50 py-2.5 text-sm text-muted-foreground hover:bg-accent transition-all">
                         <Bell className="size-4" />
                         <span className="text-xs font-medium">الإشعارات</span>
                         <Badge className="flex size-4 items-center justify-center rounded-full bg-red-500 p-0 text-[9px] text-white hover:bg-red-500">{unreadCount}</Badge>
                       </button>
                       <button
                         onClick={() => { handleLogout(); setMobileOpen(false); }}
-                        className="flex items-center justify-center gap-1.5 rounded-xl border border-red-500/20 px-3 py-2.5 text-xs font-medium text-red-400 hover:bg-red-500/10 transition-all"
+                        className="touch-target flex items-center justify-center gap-1.5 rounded-xl border border-red-500/20 px-3 py-2.5 text-xs font-medium text-red-400 hover:bg-red-500/10 transition-all"
                       >
                         <LogOut className="size-4" />
                         خروج
@@ -392,7 +392,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
                   <button
                     key={link.page}
                     onClick={() => handleNav(link.page)}
-                    className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 hover:scale-[1.01] hover:shadow-sm text-right ${
+                    className={`touch-target flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 hover:scale-[1.01] hover:shadow-sm text-right ${
                       currentPage === link.page
                         ? "border-e-[3px] border-e-transparent bg-primary/10 text-primary"
                         : "border-e-[3px] border-e-transparent text-muted-foreground hover:bg-primary/5 hover:text-foreground"
@@ -424,7 +424,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
                   <button
                     key={link.page}
                     onClick={() => handleNav(link.page)}
-                    className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 hover:scale-[1.01] hover:shadow-sm text-right ${
+                    className={`touch-target flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 hover:scale-[1.01] hover:shadow-sm text-right ${
                       currentPage === link.page
                         ? "border-e-[3px] border-e-transparent bg-primary/10 text-primary"
                         : "border-e-[3px] border-e-transparent text-muted-foreground hover:bg-primary/5 hover:text-foreground"
@@ -459,7 +459,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
                       href={social.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-card/50 px-3 py-3 text-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-sm ${social.hoverClass}`}
+                      className={`touch-target flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-card/50 px-3 py-3 text-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-sm ${social.hoverClass}`}
                     >
                       {social.icon}
                       {social.label}

@@ -12,6 +12,10 @@ import {
   Mail,
   Bell,
   Loader2,
+  Shield,
+  Truck,
+  BadgeCheck,
+  Headphones,
 } from "lucide-react";
 import { FlashDealsSection } from "@/components/sections/flash-deals-section";
 import { TestimonialsSection } from "@/components/sections/testimonials-section";
@@ -289,7 +293,7 @@ export function HomeSection({ onOpenCart }: HomeSectionProps) {
   return (
     <div>
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-bl from-black via-black/95 to-black/90 py-10 md:py-20">
+      <section className="relative overflow-hidden bg-gradient-to-bl from-black via-black/95 to-black/90 py-8 md:py-20">
         {/* Animated shimmer overlay */}
         <div className="hero-shimmer absolute inset-0" />
         {/* Gold corner accents */}
@@ -313,23 +317,23 @@ export function HomeSection({ onOpenCart }: HomeSectionProps) {
               <span className="text-sm font-bold text-gold/80">مرحباً بكم في</span>
               <div className="h-px w-16 bg-gradient-to-r from-gold/80 to-transparent" />
             </div>
-            <h1 className="mb-3 text-4xl font-black leading-tight sm:text-6xl md:text-8xl lg:text-9xl">
+            <h1 className="mb-3 text-3xl font-black leading-tight sm:text-5xl md:text-7xl lg:text-9xl">
               <span className="text-gold-gradient">ELITE VIP SHOP</span>
             </h1>
             <p className="hidden mb-2 text-2xl font-light sm:block md:text-4xl" style={{color: '#f0d078'}}>متجر النخبة</p>
-            <p className="mb-10 max-w-xl text-base md:text-xl" style={{color: 'rgba(240, 208, 120, 0.8)'}}>
+            <p className="mb-6 max-w-xl text-sm md:text-xl" style={{color: 'rgba(240, 208, 120, 0.8)'}}>
               اكتشف منتجات وخدمات متميزة بأفضل الأسعار — تجربة تسوق فاخرة تستحقها
             </p>
             <div className="flex flex-col gap-5 sm:flex-row sm:gap-6">
               <button
-                className="btn-3d flex items-center justify-center gap-3 px-10 py-5 text-lg md:text-xl"
+                className="btn-3d flex items-center justify-center gap-3 px-8 py-4 text-base sm:px-10 sm:py-5 sm:text-lg md:text-xl"
                 onClick={() => setCurrentPage("products")}
               >
                 <ShoppingBag className="size-6 md:size-7" />
                 متجر المنتجات
               </button>
               <button
-                className="btn-3d flex items-center justify-center gap-3 px-10 py-5 text-lg md:text-xl"
+                className="btn-3d flex items-center justify-center gap-3 px-8 py-4 text-base sm:px-10 sm:py-5 sm:text-lg md:text-xl"
                 onClick={scrollToSections}
               >
                 استعرض الأقسام
@@ -348,7 +352,7 @@ export function HomeSection({ onOpenCart }: HomeSectionProps) {
       ) : (
         <>
           {/* متجر منتجات النخبة - Products Horizontal Scroll */}
-          <section className="section-gradient-products py-8 md:py-12">
+          <section className="section-gradient-products py-6 md:py-12">
             <div className="mx-auto max-w-7xl px-4 md:px-8">
               {/* Section title as luxury 3D button - clickable */}
               <div className="flex justify-center mb-8">
@@ -412,7 +416,7 @@ export function HomeSection({ onOpenCart }: HomeSectionProps) {
           </section>
 
           {/* Free Sections with Horizontal Scroll - Luxury Cards */}
-          <section className="bg-muted/30 py-8 md:py-10" ref={sectionsRef}>
+          <section className="bg-muted/30 py-6 md:py-10" ref={sectionsRef}>
             <div className="mx-auto max-w-7xl space-y-6 px-4 md:px-8">
               {freeSections.map((section) => (
                 <div key={section.page} className={`${section.gradientClass} rounded-3xl p-5 md:p-8 border border-border/30`}>
@@ -500,7 +504,7 @@ export function HomeSection({ onOpenCart }: HomeSectionProps) {
       <RecentlyViewedSection />
 
       {/* Newsletter / CTA Section */}
-      <section className="relative overflow-hidden bg-gradient-to-bl from-black via-black/95 to-black/90 py-8 md:py-10">
+      <section className="relative overflow-hidden bg-gradient-to-bl from-black via-black/95 to-black/90 py-6 md:py-10">
 
         <div className="relative mx-auto max-w-7xl px-4 md:px-8">
           <div className="mx-auto max-w-lg text-center">
@@ -540,6 +544,60 @@ export function HomeSection({ onOpenCart }: HomeSectionProps) {
                 </button>
               </form>
             )}
+          </div>
+        </div>
+      </section>
+
+      {/* لماذا تختارنا؟ - Why Choose Us */}
+      <section className="py-10 md:py-14">
+        <div className="mx-auto max-w-7xl px-4 md:px-8">
+          <div className="mb-8 text-center">
+            <div className="mb-4 flex justify-center">
+              <div className="icon-box" style={{ width: "52px", height: "52px" }}>
+                <BadgeCheck className="size-7 text-amber-500" />
+              </div>
+            </div>
+            <h2 className="mb-2 text-xl font-bold md:text-2xl">لماذا تختارنا؟</h2>
+            <p className="text-sm text-muted-foreground">نوفر لك تجربة تسوق استثنائية مع أفضل الخدمات</p>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                icon: Shield,
+                title: "منتجات أصلية 100%",
+                description: "جميع منتجاتنا أصلية ومضمونة بأعلى معايير الجودة",
+              },
+              {
+                icon: Truck,
+                title: "شحن سريع وآمن",
+                description: "نوفر شحن سريع وآمن لجميع الطلبات مع تتبع مباشر",
+              },
+              {
+                icon: BadgeCheck,
+                title: "ضمان استرجاع كامل",
+                description: "استرجع منتجك خلال 14 يوم من الاستلام بسهولة",
+              },
+              {
+                icon: Headphones,
+                title: "دعم فني متواصل",
+                description: "فريق دعم متخصص متاح على مدار الساعة لمساعدتك",
+              },
+            ].map((feature) => (
+              <div key={feature.title} className="card-3d p-6">
+                <div
+                  className="mb-4 flex size-14 items-center justify-center rounded-2xl"
+                  style={{
+                    background: "linear-gradient(135deg, #d4a843, #f0d078, #d4a843)",
+                  }}
+                >
+                  <feature.icon className="size-7 text-black" />
+                </div>
+                <h3 className="mb-2 text-base font-bold">{feature.title}</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

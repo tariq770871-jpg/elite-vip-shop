@@ -97,6 +97,9 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="alternate" hreflang="ar" href="https://elite-vip-shop.vercel.app/" />
         <meta name="theme-color" content="#d4a843" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -109,10 +112,53 @@ export default function RootLayout({
         <link rel="manifest" type="application/manifest+json" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify([
+              {
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                name: "Elite VIP Shop",
+                url: SITE_URL,
+                logo: `${SITE_URL}/icons/icon-512.png`,
+                contactPoint: {
+                  "@type": "ContactPoint",
+                  telephone: "+967-782-138-587",
+                  contactType: "customer service",
+                  availableLanguage: "Arabic",
+                },
+                sameAs: ["https://wa.me/967782138587"],
+              },
+              {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                url: SITE_URL,
+                name: SITE_NAME,
+                inLanguage: "ar",
+              },
+              {
+                "@context": "https://schema.org",
+                "@type": "Store",
+                name: SITE_NAME,
+                url: SITE_URL,
+                address: {
+                  "@type": "PostalAddress",
+                  addressCountry: "YE",
+                  addressLocality: "Yemen",
+                },
+                priceRange: "$$",
+              },
+            ]),
+          }}
+        />
       </head>
       <body
         className={`${cairo.variable} font-sans antialiased bg-background text-foreground`}
       >
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:right-4 focus:z-[999] focus:bg-primary focus:text-primary-foreground focus:px-4 focus:py-2 focus:rounded-lg">
+          تخطي إلى المحتوى الرئيسي
+        </a>
         <ThemeProvider>
           {children}
           <Toaster />

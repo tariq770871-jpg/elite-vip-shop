@@ -8,6 +8,7 @@ import {
   Plus,
   ArrowRight,
   Loader2,
+  Star,
 } from "lucide-react";
 import { useNavStore } from "@/store/nav-store";
 import { useCartStore } from "@/store/cart-store";
@@ -18,6 +19,7 @@ import type { Product } from "@/lib/mock-data";
 import { getCategoryIcon } from "@/components/icons";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { ProductReviewsSection } from "@/components/sections/product-reviews-section";
 
 export function ProductDetailSection() {
   const { selectedProductId, setCurrentPage, setSelectedProductId } = useNavStore();
@@ -29,6 +31,7 @@ export function ProductDetailSection() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(!!selectedProductId);
   const [quantity, setQuantity] = useState(1);
+  const [productRating, setProductRating] = useState<{ avg: number; count: number }>({ avg: 0, count: 0 });
   const fetchedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -50,6 +53,16 @@ export function ProductDetailSection() {
       }
       setLoading(false);
     });
+
+    // Fetch product rating
+    fetch(`/api/reviews?product_id=${encodeURIComponent(selectedProductId)}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.averageRating !== undefined) {
+          setProductRating({ avg: json.averageRating, count: json.totalCount });
+        }
+      })
+      .catch(() => {});
   }, [selectedProductId, addRecentlyViewed]);
 
   const handleAddToCart = () => {
@@ -164,6 +177,30 @@ export function ProductDetailSection() {
             {/* Name */}
             <h1 className="text-2xl font-bold md:text-3xl">{product.name}</h1>
 
+            {/* Rating Badge */}
+            {productRating.count > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`size-4 ${
+                        i < Math.round(productRating.avg)
+                          ? "fill-amber-400 text-amber-400"
+                          : "fill-gray-300 text-gray-300"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm font-medium text-gold-gradient">
+                  {productRating.avg}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  ({productRating.count})
+                </span>
+              </div>
+            )}
+
             {/* Price */}
             <div className="flex items-center gap-3">
               {hasSale ? (
@@ -270,6 +307,9 @@ export function ProductDetailSection() {
             </div>
           </div>
         </div>
+
+        {/* Product Reviews */}
+        <ProductReviewsSection productId={product.id} />
       </div>
     </section>
   );

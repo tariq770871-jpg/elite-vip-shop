@@ -80,9 +80,9 @@ export function ProductsSection() {
 
   if (loading) {
     return (
-      <div className="section-gradient-products py-16">
+      <div className="section-gradient-products py-8 md:py-16">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-center mb-6 sm:mb-8">
             <div className="section-title-3d">
               <span className="title-icon">
                 <ShoppingBagIcon className="size-6" />
@@ -100,11 +100,11 @@ export function ProductsSection() {
   }
 
   return (
-    <div className="section-gradient-products py-16">
+    <div className="section-gradient-products py-8 md:py-16">
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         {/* Header */}
-        <div className="mb-10">
-          <div className="flex justify-center mb-8">
+        <div className="mb-8 md:mb-10">
+          <div className="flex justify-center mb-6 sm:mb-8">
             <div className="section-title-3d">
               <span className="title-icon">
                 <ShoppingBagIcon className="size-6" />
@@ -157,7 +157,7 @@ export function ProductsSection() {
 
         {/* Products Grid */}
         {filteredProducts.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
@@ -181,7 +181,7 @@ export function ProductsSection() {
                   </div>
                   {/* Wishlist button on image */}
                   <button
-                    className="absolute top-3 left-3 z-10 flex size-8 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm transition-all hover:scale-110 dark:bg-black/60"
+                    className="touch-target absolute top-3 left-3 z-10 flex size-11 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm transition-all hover:scale-110 dark:bg-black/60"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleToggleWishlist(product);
@@ -198,7 +198,7 @@ export function ProductsSection() {
                   </button>
                 </div>
                 {/* Content */}
-                <div className="p-5">
+                <div className="p-4 sm:p-5">
                   <Badge
                     className="mb-2 cursor-pointer bg-gradient-to-r from-amber-500/10 to-amber-600/10 text-xs font-semibold text-gold-gradient border border-amber-500/20 transition-all hover:border-amber-500/50 hover:scale-105"
                     onClick={() => setSelectedCategory(product.category === selectedCategory ? "الكل" : product.category)}

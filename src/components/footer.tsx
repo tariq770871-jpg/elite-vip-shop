@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, MessageSquareWarning } from "lucide-react";
+import { Heart, MessageSquareWarning, Shield, Truck, RotateCcw, Headphones } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useNavStore } from "@/store/nav-store";
 import { Logo } from "@/components/logo";
@@ -67,7 +67,7 @@ export function Footer() {
   };
 
   return (
-    <footer className="mt-auto border-t bg-card">
+    <footer className="mt-auto border-t bg-card" role="contentinfo">
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-12">
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* Column 1: Logo + Description */}
@@ -147,6 +147,28 @@ export function Footer() {
         </div>
 
         <Separator className="my-8" />
+
+        {/* Trust Badges */}
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          {[
+            { icon: Shield, title: "دفع آمن" },
+            { icon: Truck, title: "شحن مجاني للطلبات فوق 5,000 ر.ي" },
+            { icon: RotateCcw, title: "استرجاع خلال 14 يوم" },
+            { icon: Headphones, title: "دعم 24/7" },
+          ].map((badge) => (
+            <div
+              key={badge.title}
+              className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted/30 p-3"
+            >
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <badge.icon className="size-5 text-primary" />
+              </div>
+              <span className="text-xs font-semibold text-muted-foreground">
+                {badge.title}
+              </span>
+            </div>
+          ))}
+        </div>
 
         {/* Copyright */}
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">

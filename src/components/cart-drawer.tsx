@@ -168,7 +168,7 @@ export function CartDrawer() {
                   return (
                     <div
                       key={item.id}
-                      className="card-3d group flex items-start gap-3 p-3"
+                      className="card-3d group flex items-start gap-3 p-3 sm:p-3"
                     >
                       <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-muted">
                         <ShoppingCart className="size-5 text-muted-foreground" />
@@ -199,20 +199,20 @@ export function CartDrawer() {
                           <div className="flex items-center rounded-lg border">
                             <button
                               onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              className="flex size-7 items-center justify-center transition-colors hover:bg-accent"
+                              className="touch-target flex size-11 items-center justify-center transition-colors hover:bg-accent"
                               aria-label="تقليل الكمية"
                             >
-                              <Minus className="size-3" />
+                              <Minus className="size-4" />
                             </button>
-                            <span className="flex min-w-[2rem] items-center justify-center text-sm font-medium">
+                            <span className="flex min-w-[2.5rem] items-center justify-center text-sm font-medium">
                               {item.quantity}
                             </span>
                             <button
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              className="flex size-7 items-center justify-center transition-colors hover:bg-accent"
+                              className="touch-target flex size-11 items-center justify-center transition-colors hover:bg-accent"
                               aria-label="زيادة الكمية"
                             >
-                              <Plus className="size-3" />
+                              <Plus className="size-4" />
                             </button>
                           </div>
                           <span className="text-xs text-muted-foreground">
@@ -223,7 +223,7 @@ export function CartDrawer() {
 
                       <button
                         onClick={() => removeItem(item.id)}
-                        className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
+                        className="touch-target shrink-0 flex items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
                         aria-label="حذف المنتج"
                       >
                         <Trash2 className="size-4" />

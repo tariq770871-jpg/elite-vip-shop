@@ -90,7 +90,7 @@ function OrderCard({ order }: { order: Order }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="card-3d p-5 transition-shadow hover:shadow-md">
+    <div className="card-3d p-4 sm:p-5 transition-shadow hover:shadow-md">
       {/* Header */}
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -133,7 +133,8 @@ function OrderCard({ order }: { order: Order }) {
       {/* Status Timeline */}
       {!isCancelled && (
         <div className="mb-3 px-1">
-          <div className="flex items-center justify-between relative">
+          <div className="overflow-x-auto scrollbar-hide -mx-1 px-1">
+          <div className="flex items-center justify-between relative min-w-[320px]">
             <div className="absolute top-3 right-3 left-3 h-0.5 bg-muted rounded-full" />
             {currentStep >= 0 && (
               <div
@@ -147,23 +148,24 @@ function OrderCard({ order }: { order: Order }) {
               const isCurrent = index === currentStep;
               return (
                 <div key={step} className="relative z-10 flex flex-col items-center gap-1">
-                  <div className={`size-6 rounded-full flex items-center justify-center text-[10px] transition-all ${
+                  <div className={`touch-target size-7 sm:size-6 rounded-full flex items-center justify-center text-[10px] transition-all ${
                     isCompleted ? "bg-gold-gradient text-black" : "bg-muted text-muted-foreground"
                   } ${isCurrent ? "ring-2 ring-amber-300 ring-offset-2 ring-offset-background" : ""}`}>
                     {isCompleted ? <CheckCircle2 className="size-3.5" /> : <span>{index + 1}</span>}
                   </div>
-                  <span className={`text-[9px] sm:text-[10px] ${isCompleted ? "text-amber-700 dark:text-amber-400 font-medium" : "text-muted-foreground"}`}>
+                  <span className={`text-[10px] sm:text-[10px] whitespace-nowrap ${isCompleted ? "text-amber-700 dark:text-amber-400 font-medium" : "text-muted-foreground"}`}>
                     {stepConfig.label}
                   </span>
                 </div>
               );
             })}
           </div>
+          </div>
         </div>
       )}
 
       {/* Expand Toggle */}
-      <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center justify-center gap-1 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+      <button onClick={() => setExpanded(!expanded)} className="touch-target w-full flex items-center justify-center gap-1 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
         {expanded ? <><ChevronUp className="size-3.5" /> إخفاء التفاصيل</> : <><ChevronDown className="size-3.5" /> عرض التفاصيل</>}
       </button>
 
@@ -284,7 +286,7 @@ export function OrdersSection() {
             <button
               key={f.value}
               onClick={() => setActiveFilter(f.value)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+              className={`touch-target rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
                 activeFilter === f.value ? "btn-3d-sm" : "border bg-card text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
             >

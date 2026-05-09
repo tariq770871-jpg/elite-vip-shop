@@ -72,7 +72,7 @@ export function SearchBar({ isOpen, onClose }: SearchBarProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="absolute left-1 top-1/2 size-8 -translate-y-1/2"
+            className="touch-target absolute left-1 top-1/2 size-11 -translate-y-1/2"
             onClick={onClose}
             aria-label="إغلاق البحث"
           >

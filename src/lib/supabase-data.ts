@@ -128,6 +128,36 @@ export async function getEarningMethods() {
 }
 
 /* ============================================================
+   Fetch All Products (Admin Dashboard)
+   ============================================================ */
+
+export async function getAllProducts() {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100)
+
+    if (error || !data) return []
+    return data.map((p: any) => ({
+      id: p.product_id,
+      name: p.name,
+      description: p.description,
+      price: Number(p.price),
+      salePrice: p.sale_price ? Number(p.sale_price) : undefined,
+      category: p.category_name || 'أخرى',
+      images: Array.isArray(p.images) && p.images.length > 0 ? p.images : [],
+      availability: p.availability,
+      seller: 'متجر النخبة',
+      raw: p,
+    }))
+  } catch {
+    return []
+  }
+}
+
+/* ============================================================
    Product Management (Dashboard)
    ============================================================ */
 

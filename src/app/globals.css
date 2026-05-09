@@ -625,3 +625,37 @@
 .heart-beat {
   animation: heartBeat 1s ease-in-out;
 }
+
+/* === MOBILE TOUCH TARGETS === */
+@media (max-width: 640px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* === PREVENT HORIZONTAL OVERFLOW === */
+html, body {
+  overflow-x: hidden;
+}
+
+/* === SAFE AREA FOR NOTCHED DEVICES === */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Accessibility: Focus visible */
+*:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Custom button focus */
+.btn-3d:focus-visible,
+.btn-3d-sm:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}

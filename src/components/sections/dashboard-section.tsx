@@ -22,6 +22,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Crown,
   LayoutDashboard,
@@ -42,7 +44,11 @@ import {
   RefreshCw,
   Send,
   Bot,
+  Loader2,
+  Power,
+  PowerOff,
 } from "lucide-react";
+import { getAllProducts, addProduct, updateProduct, deleteProduct } from "@/lib/supabase-data";
 import { toast } from "sonner";
 
 /* ------------------------------------------------------------------ */
@@ -101,14 +107,14 @@ function StatCard({
   label: string;
 }) {
   return (
-    <div className="card-3d p-6 transition-shadow hover:shadow-md">
-      <div className="flex items-center gap-3">
-        <div className="flex size-11 items-center justify-center rounded-lg bg-gold-gradient">
-          <Icon className="size-5 text-black" />
+    <div className="card-3d p-4 sm:p-6 transition-shadow hover:shadow-md">
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex size-9 sm:size-11 items-center justify-center rounded-lg bg-gold-gradient shrink-0">
+          <Icon className="size-4 sm:size-5 text-black" />
         </div>
-        <div>
-          <p className="text-2xl font-bold text-gold-gradient">{value}</p>
-          <p className="text-sm text-muted-foreground">{label}</p>
+        <div className="min-w-0">
+          <p className="text-xl sm:text-2xl font-bold text-gold-gradient truncate">{value}</p>
+          <p className="text-xs sm:text-sm text-muted-foreground truncate">{label}</p>
         </div>
       </div>
     </div>
@@ -189,6 +195,17 @@ function TelegramSettings() {
 /*  Admin Dashboard                                                    */
 /* ------------------------------------------------------------------ */
 
+interface ProductRow {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  salePrice?: number;
+  category: string;
+  availability: boolean;
+  raw?: any;
+}
+
 function AdminDashboard() {
   const [users, setUsers] = useState(mockUsers);
   const [orders, setOrders] = useState(mockDashboardOrders);
@@ -196,6 +213,128 @@ function AdminDashboard() {
   const [editUser, setEditUser] = useState<(typeof mockUsers)[0] | null>(null);
   const [editName, setEditName] = useState("");
   const [loading, setLoading] = useState(true);
+
+  /* ---- Product CRUD State ---- */
+  const [products, setProducts] = useState<ProductRow[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productDialogOpen, setProductDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<ProductRow | null>(null);
+  const [productForm, setProductForm] = useState({
+    name: "",
+    description: "",
+    price: "",
+    sale_price: "",
+    category_name: "",
+    availability: true,
+  });
+  const [productSaving, setProductSaving] = useState(false);
+
+  const fetchAdminProducts = async () => {
+    try {
+      const { supabase } = await import("@/lib/supabase");
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (!error && data) {
+        setProducts(
+          data.map((p: any) => ({
+            id: p.product_id,
+            name: p.name,
+            description: p.description || "",
+            price: Number(p.price),
+            salePrice: p.sale_price ? Number(p.sale_price) : undefined,
+            category: p.category_name || "أخرى",
+            availability: p.availability,
+            raw: p,
+          }))
+        );
+      }
+    } catch {
+      // fallback to empty
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdminProducts();
+  }, []);
+
+  const openAddProduct = () => {
+    setEditingProduct(null);
+    setProductForm({ name: "", description: "", price: "", sale_price: "", category_name: "", availability: true });
+    setProductDialogOpen(true);
+  };
+
+  const openEditProduct = (p: ProductRow) => {
+    setEditingProduct(p);
+    setProductForm({
+      name: p.name,
+      description: p.description,
+      price: String(p.price),
+      sale_price: p.salePrice ? String(p.salePrice) : "",
+      category_name: p.category,
+      availability: p.availability,
+    });
+    setProductDialogOpen(true);
+  };
+
+  const handleSaveProduct = async () => {
+    if (!productForm.name.trim() || !productForm.price.trim()) {
+      toast.error("اسم المنتج والسعر مطلوبان");
+      return;
+    }
+    setProductSaving(true);
+    try {
+      const payload: Record<string, any> = {
+        name: productForm.name.trim(),
+        description: productForm.description.trim(),
+        price: Number(productForm.price),
+        sale_price: productForm.sale_price.trim() ? Number(productForm.sale_price) : null,
+        category_name: productForm.category_name.trim() || null,
+        availability: productForm.availability,
+      };
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, payload);
+        toast.success("تم تحديث المنتج بنجاح ✅");
+      } else {
+        await addProduct(payload);
+        toast.success("تمت إضافة المنتج بنجاح ✅");
+      }
+      setProductDialogOpen(false);
+      fetchAdminProducts();
+    } catch (err: any) {
+      toast.error(err?.message || "فشل في حفظ المنتج");
+    } finally {
+      setProductSaving(false);
+    }
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    try {
+      await deleteProduct(id);
+      toast.success("تم حذف المنتج ✅");
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+    } catch {
+      toast.error("فشل في حذف المنتج");
+    }
+  };
+
+  const handleToggleAvailability = async (p: ProductRow) => {
+    try {
+      await updateProduct(p.id, { availability: !p.availability });
+      setProducts((prev) =>
+        prev.map((item) =>
+          item.id === p.id ? { ...item, availability: !item.availability } : item
+        )
+      );
+      toast.success(p.availability ? "تم إلغاء تفعيل المنتج" : "تم تفعيل المنتج");
+    } catch {
+      toast.error("فشل في تحديث حالة المنتج");
+    }
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -270,7 +409,7 @@ function AdminDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
         <StatCard icon={Package} value={loading ? "..." : String(stats.products)} label="إجمالي المنتجات" />
         <StatCard icon={Users} value={loading ? "..." : String(stats.users)} label="المستخدمين" />
         <StatCard icon={ShoppingCart} value={loading ? "..." : String(stats.orders)} label="الطلبات" />
@@ -278,7 +417,7 @@ function AdminDashboard() {
       </div>
 
       {/* Users Management */}
-      <section className="card-3d p-6">
+      <section className="card-3d p-4 sm:p-6">
         <h2 className="mb-4 text-lg font-bold flex items-center gap-2">
           <Users className="size-5" />
           إدارة المستخدمين
@@ -311,10 +450,10 @@ function AdminDashboard() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="size-8" onClick={() => openEdit(u)}>
+                      <Button variant="ghost" size="icon" className="touch-target size-11" onClick={() => openEdit(u)}>
                         <Pencil className="size-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="size-8 text-destructive hover:text-destructive" onClick={() => deleteUser(u.id)}>
+                      <Button variant="ghost" size="icon" className="touch-target size-11 text-destructive hover:text-destructive" onClick={() => deleteUser(u.id)}>
                         <Trash2 className="size-4" />
                       </Button>
                     </div>
@@ -327,7 +466,7 @@ function AdminDashboard() {
       </section>
 
       {/* Orders Review */}
-      <section className="card-3d p-6">
+      <section className="card-3d p-4 sm:p-6">
         <h2 className="mb-4 text-lg font-bold flex items-center gap-2">
           <ClipboardList className="size-5" />
           مراجعة الطلبات
@@ -360,7 +499,7 @@ function AdminDashboard() {
 
       {/* Edit User Dialog */}
       <Dialog open={!!editUser} onOpenChange={() => setEditUser(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md w-[calc(100%-1.5rem)]">
           <DialogHeader>
             <DialogTitle>تعديل المستخدم</DialogTitle>
           </DialogHeader>
@@ -377,8 +516,207 @@ function AdminDashboard() {
         </DialogContent>
       </Dialog>
 
+      {/* Product Management */}
+      <section className="card-3d p-4 sm:p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <Package className="size-5" />
+            إدارة المنتجات
+          </h2>
+          <Button className="btn-3d-sm gap-2" onClick={openAddProduct}>
+            <Plus className="size-4" />
+            إضافة منتج
+          </Button>
+        </div>
+
+        {productsLoading ? (
+          <div className="flex items-center justify-center gap-2 py-12">
+            <Loader2 className="size-5 animate-spin text-gold-gradient" />
+            <span className="text-sm text-muted-foreground">جارٍ تحميل المنتجات...</span>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-12 text-center">
+            <Package className="size-10 text-muted-foreground/40" />
+            <p className="text-muted-foreground">لا توجد منتجات بعد</p>
+          </div>
+        ) : (
+          <div className="max-h-96 overflow-y-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>الاسم</TableHead>
+                  <TableHead>السعر</TableHead>
+                  <TableHead>الفئة</TableHead>
+                  <TableHead>الحالة</TableHead>
+                  <TableHead>إجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {products.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell className="font-medium max-w-[200px] truncate">
+                      {p.name}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <span className="font-semibold text-gold-gradient">
+                          {p.salePrice ? p.salePrice.toLocaleString("ar-SA") : p.price.toLocaleString("ar-SA")}
+                        </span>
+                        <span className="text-xs text-muted-foreground">ر.ي</span>
+                        {p.salePrice && p.salePrice < p.price && (
+                          <span className="mr-1 text-xs text-muted-foreground line-through">
+                            {p.price.toLocaleString("ar-SA")}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {p.category}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={
+                          p.availability
+                            ? "border-green-500/30 text-green-700 dark:text-green-400"
+                            : "border-red-500/30 text-red-700 dark:text-red-400"
+                        }
+                      >
+                        {p.availability ? "متوفر" : "غير متوفر"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          onClick={() => handleToggleAvailability(p)}
+                          title={p.availability ? "إلغاء التفعيل" : "تفعيل"}
+                        >
+                          {p.availability ? (
+                            <Power className="size-4 text-green-600" />
+                          ) : (
+                            <PowerOff className="size-4 text-red-500" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          onClick={() => openEditProduct(p)}
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteProduct(p.id)}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </section>
+
+      {/* Product Dialog (Add / Edit) */}
+      <Dialog open={productDialogOpen} onOpenChange={setProductDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto w-[calc(100%-1.5rem)]">
+          <DialogHeader>
+            <DialogTitle>
+              {editingProduct ? "تعديل المنتج" : "إضافة منتج جديد"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>اسم المنتج *</Label>
+              <Input
+                value={productForm.name}
+                onChange={(e) => setProductForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="أدخل اسم المنتج"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>الوصف</Label>
+              <Textarea
+                value={productForm.description}
+                onChange={(e) => setProductForm((f) => ({ ...f, description: e.target.value }))}
+                placeholder="وصف المنتج..."
+                rows={3}
+                className="resize-none"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>السعر (ر.ي) *</Label>
+                <Input
+                  type="number"
+                  value={productForm.price}
+                  onChange={(e) => setProductForm((f) => ({ ...f, price: e.target.value }))}
+                  placeholder="0"
+                  min="0"
+                  dir="ltr"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>سعر الخصم (اختياري)</Label>
+                <Input
+                  type="number"
+                  value={productForm.sale_price}
+                  onChange={(e) => setProductForm((f) => ({ ...f, sale_price: e.target.value }))}
+                  placeholder="0"
+                  min="0"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>الفئة</Label>
+              <Input
+                value={productForm.category_name}
+                onChange={(e) => setProductForm((f) => ({ ...f, category_name: e.target.value }))}
+                placeholder="مثال: إلكترونيات"
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <Label className="text-sm">متوفر في المخزون</Label>
+              <Switch
+                checked={productForm.availability}
+                onCheckedChange={(checked) =>
+                  setProductForm((f) => ({ ...f, availability: checked }))
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProductDialogOpen(false)}>
+              إلغاء
+            </Button>
+            <Button
+              className="btn-3d-sm"
+              onClick={handleSaveProduct}
+              disabled={productSaving}
+            >
+              {productSaving ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : null}
+              {editingProduct ? "تحديث" : "إضافة"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Coupon Management */}
-      <section className="card-3d p-6">
+      <section className="card-3d p-4 sm:p-6">
         <h2 className="mb-4 text-lg font-bold flex items-center gap-2">
           <Tag className="size-5" />
           إدارة كوبونات الخصم
@@ -402,7 +740,7 @@ function AdminDashboard() {
       </section>
 
       {/* Telegram Bot Settings */}
-      <section className="card-3d p-6">
+      <section className="card-3d p-4 sm:p-6">
         <h2 className="mb-4 text-lg font-bold flex items-center gap-2">
           <Bot className="size-5" />
           إشعارات تيليجرام
@@ -440,14 +778,14 @@ function SellerDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatCard icon={Package} value="8" label="منتجاتي" />
         <StatCard icon={ShoppingCart} value="25" label="الطلبات" />
         <StatCard icon={DollarSign} value="12,000 ريال يمني" label="المبيعات" />
       </div>
 
       {/* My Products */}
-      <section className="card-3d p-6">
+      <section className="card-3d p-4 sm:p-6">
         <h2 className="mb-4 text-lg font-bold flex items-center gap-2">
           <Package className="size-5" />
           إدارة منتجاتي
@@ -475,7 +813,7 @@ function SellerDashboard() {
       </section>
 
       {/* Orders Tracking */}
-      <section className="card-3d p-6">
+      <section className="card-3d p-4 sm:p-6">
         <h2 className="mb-4 text-lg font-bold flex items-center gap-2">
           <ClipboardList className="size-5" />
           متابعة الطلبات
@@ -531,7 +869,7 @@ function UserDashboard() {
       </div>
       <p className="text-muted-foreground">مرحباً {user?.name}</p>
 
-      <section className="card-3d p-6">
+      <section className="card-3d p-4 sm:p-6">
         <h2 className="mb-4 text-lg font-bold flex items-center gap-2">
           <ClipboardList className="size-5" />
           آخر الطلبات

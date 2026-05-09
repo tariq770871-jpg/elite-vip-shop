@@ -195,7 +195,7 @@ export function App() {
       <AnnouncementBanner />
       <Navbar onToggleSearch={() => { setSearchOpen((prev) => !prev); setSearchKey((k) => k + 1); }} />
       <SearchBar key={searchKey} isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
-      <main className="flex-1" key={pageKey}>
+      <main id="main-content" role="main" className="flex-1" key={pageKey}>
         <div className="page-enter">{renderPage()}</div>
       </main>
       <Footer />
