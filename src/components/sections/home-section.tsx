@@ -18,10 +18,10 @@ import {
   BadgeCheck,
   Headphones,
   Smartphone,
-  Bot,
   DollarSign,
   Palette,
   TrendingUp,
+  Sparkles,
 } from "lucide-react";
 import { FlashDealsSection } from "@/components/sections/flash-deals-section";
 import { TestimonialsSection } from "@/components/sections/testimonials-section";
@@ -42,9 +42,10 @@ const stats = [
 const mainSections = [
   {
     title: "المتجر",
-    description: "منتجات متنوعة بأفضل الأسعار",
+    description: "منتجات متنوعة بأفضل الأسعار — اطلب عبر واتساب",
     icon: <ShoppingBag className="size-8" />,
     iconBg: "bg-amber-500/10 text-amber-500",
+    gradient: "from-amber-500/20 to-amber-600/5",
     page: "products" as const,
   },
   {
@@ -52,6 +53,7 @@ const mainSections = [
     description: "تطبيقات وأدوات ذكية لتحسين إنتاجيتك",
     icon: <Smartphone className="size-8" />,
     iconBg: "bg-blue-500/10 text-blue-500",
+    gradient: "from-blue-500/20 to-blue-600/5",
     page: "apps" as const,
   },
   {
@@ -59,6 +61,7 @@ const mainSections = [
     description: "تصميم وتطوير وتسويق رقمي",
     icon: <Palette className="size-8" />,
     iconBg: "bg-orange-500/10 text-orange-500",
+    gradient: "from-orange-500/20 to-orange-600/5",
     page: "services" as const,
   },
   {
@@ -66,21 +69,16 @@ const mainSections = [
     description: "تعليم وأدوات وشروحات التداول",
     icon: <TrendingUp className="size-8" />,
     iconBg: "bg-teal-500/10 text-teal-500",
+    gradient: "from-teal-500/20 to-teal-600/5",
     page: "trading" as const,
   },
   {
     title: "الربح من الإنترنت",
     description: "طرق وأفكار واستراتيجيات الربح",
     icon: <DollarSign className="size-8" />,
-    iconBg: "bg-amber-500/10 text-amber-500",
+    iconBg: "bg-emerald-500/10 text-emerald-500",
+    gradient: "from-emerald-500/20 to-emerald-600/5",
     page: "earning" as const,
-  },
-  {
-    title: "أدوات الذكاء الاصطناعي",
-    description: "أقوى أدوات AI لتعزيز عملك",
-    icon: <Bot className="size-8" />,
-    iconBg: "bg-violet-500/10 text-violet-500",
-    page: "ai-tools" as const,
   },
 ];
 
@@ -196,28 +194,36 @@ export function HomeSection() {
         </div>
       </section>
 
-      {/* Main Sections Grid */}
-      <section className="py-8 md:py-14">
-        <div className="mx-auto max-w-7xl px-4 md:px-8">
-          <div className="mb-8 text-center">
-            <h2 className="mb-2 text-xl font-bold md:text-2xl">استعرض أقسام المنصة</h2>
-            <p className="text-sm text-muted-foreground">اختر القسم الذي يناسبك وابدأ الآن</p>
+      {/* ===== 5 GATEWAYS ===== */}
+      <section className="relative py-10 md:py-16">
+        <div className="mx-auto max-w-6xl px-4 md:px-8">
+          <div className="mb-10 text-center">
+            <div className="mb-3 flex justify-center">
+              <Sparkles className="size-6 text-gold-gradient" />
+            </div>
+            <h2 className="mb-2 text-xl font-bold md:text-3xl">مرحباً بك في منصة النخبة</h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">اختر البوابة التي تناسبك واستمتع بتجربة فريدة</p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+          {/* 5 Gateways — Desktop: row of 5, Mobile: scrollable row */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {mainSections.map((section) => (
               <button
                 key={section.page}
                 onClick={() => navigateTo(section.page)}
-                className="card-3d group flex items-center gap-5 p-5 text-right transition-all"
+                className={`group relative flex flex-col items-center gap-4 rounded-2xl border border-border/50 bg-gradient-to-b ${section.gradient} p-6 text-center transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:border-primary/30 hover:-translate-y-1`}
               >
-                <div className={`flex size-16 shrink-0 items-center justify-center rounded-2xl ${section.iconBg}`}>
+                <div className={`flex size-16 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110 ${section.iconBg}`}>
                   {section.icon}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="mb-1 text-lg font-bold">{section.title}</h3>
-                  <p className="text-sm text-muted-foreground">{section.description}</p>
+                <div>
+                  <h3 className="mb-1 text-base font-bold">{section.title}</h3>
+                  <p className="text-xs leading-relaxed text-muted-foreground line-clamp-2">{section.description}</p>
                 </div>
-                <ArrowLeft className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:-translate-x-1" />
+                <div className="mt-auto flex items-center gap-1 text-xs font-semibold text-primary opacity-0 transition-all duration-300 group-hover:opacity-100">
+                  <span>استكشف الآن</span>
+                  <ArrowLeft className="size-3 transition-transform group-hover:-translate-x-1" />
+                </div>
               </button>
             ))}
           </div>

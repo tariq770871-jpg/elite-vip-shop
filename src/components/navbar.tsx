@@ -72,6 +72,7 @@ const navLinks: { label: string; page: PageName; icon: React.ReactNode }[] = [
   { label: "الخدمات", page: "services", icon: <Palette className="size-4" /> },
   { label: "التداول", page: "trading", icon: <TrendingUp className="size-4" /> },
   { label: "الربح من الإنترنت", page: "earning", icon: <DollarSign className="size-4" /> },
+  { label: "أدوات AI", page: "ai-tools", icon: <Bot className="size-4" /> },
 ];
 
 const infoLinks: { label: string; page: PageName; icon: React.ReactNode }[] = [

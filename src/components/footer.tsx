@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Heart, MessageSquareWarning, Shield, Truck, RotateCcw, Headphones, Palette, TrendingUp, HelpCircle } from "lucide-react";
+import { Heart, MessageSquareWarning, Shield, Truck, RotateCcw, Headphones, Palette, TrendingUp, HelpCircle, Info, Phone, Bot } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useNavigation, type PageName, PAGE_PATHS } from "@/lib/navigation";
 import { Logo } from "@/components/logo";
@@ -29,7 +29,10 @@ const sectionLinks: { label: string; page: PageName }[] = [
 ];
 
 const quickSectionPages: { label: string; page: PageName; icon: React.ReactNode }[] = [
+  { label: "من نحن", page: "about", icon: <Info className="size-4" /> },
+  { label: "اتصل بنا", page: "contact", icon: <Phone className="size-4" /> },
   { label: "الأسئلة الشائعة", page: "faq", icon: <HelpCircle className="size-4" /> },
+  { label: "أدوات AI", page: "ai-tools", icon: <Bot className="size-4" /> },
   { label: "قيم الموقع", page: "values", icon: <Heart className="size-4" /> },
   { label: "بروتوكول النقد الصريح", page: "criticism", icon: <MessageSquareWarning className="size-4" /> },
 ];
@@ -131,8 +134,18 @@ export function Footer() {
           {/* Column 4: تواصل معنا */}
           <div className="flex flex-col gap-3">
             <h3 className="text-sm font-bold">تواصل معنا</h3>
+            {/* WhatsApp CTA Button */}
+            <a
+              href="https://wa.me/967782138587"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-3d-whatsapp flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold no-underline"
+            >
+              <WhatsAppBrandIcon className="size-5" />
+              تواصل عبر واتساب
+            </a>
             <div className="flex gap-3">
-              {socialLinks.map((social) => (
+              {socialLinks.filter((s) => s.label !== "واتساب").map((social) => (
                 <a
                   key={social.label}
                   href={social.href}
@@ -146,7 +159,7 @@ export function Footer() {
               ))}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              تواصل معنا عبر وسائل التواصل للحصول على آخر العروض والتحديثات.
+              تواصل معنا مباشرة عبر واتساب للحصول على أفضل خدمة.
             </p>
           </div>
         </div>
