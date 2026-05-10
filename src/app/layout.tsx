@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LayoutClient } from "@/components/layout-client";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { safeJsonLd } from "@/lib/utils";
 
 const cairo = Cairo({
   variable: "--font-cairo",
@@ -126,7 +127,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify([
+            __html: safeJsonLd([
               {
                 "@context": "https://schema.org",
                 "@type": "Organization",

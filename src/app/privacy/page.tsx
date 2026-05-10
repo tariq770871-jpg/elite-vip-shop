@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PrivacySection } from "@/components/sections/privacy-section";
 import { BreadcrumbSchema } from "@/components/breadcrumb-schema";
+import { safeJsonLd } from "@/lib/utils";
 
 const SITE_URL = "https://elite-vip-shop.vercel.app";
 const SITE_NAME = "Elite VIP Shop - متجر النخبة";
@@ -74,7 +75,7 @@ export default function PrivacyPage() {
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(privacySchema) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(privacySchema) }}
       />
       <PrivacySection />
     </>

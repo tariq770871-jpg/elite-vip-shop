@@ -18,6 +18,8 @@ interface AppliedCoupon {
   finalTotal: number
 }
 
+const MAX_QUANTITY_PER_ITEM = 99; // Prevent unrealistic order quantities
+
 interface CartStore {
   items: CartItemType[]
   isOpen: boolean
@@ -46,9 +48,11 @@ export const useCartStore = create<CartStore>()(
         const items = get().items
         const existing = items.find((i) => i.id === item.id)
         if (existing) {
+          // Cap quantity at MAX_QUANTITY_PER_ITEM
+          const newQty = Math.min(existing.quantity + 1, MAX_QUANTITY_PER_ITEM)
           set({
             items: items.map((i) =>
-              i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+              i.id === item.id ? { ...i, quantity: newQty } : i
             ),
           })
         } else {
@@ -65,8 +69,10 @@ export const useCartStore = create<CartStore>()(
           get().removeItem(id)
           return
         }
+        // Cap quantity at MAX_QUANTITY_PER_ITEM
+        const cappedQty = Math.min(quantity, MAX_QUANTITY_PER_ITEM)
         set({
-          items: get().items.map((i) => (i.id === id ? { ...i, quantity } : i)),
+          items: get().items.map((i) => (i.id === id ? { ...i, quantity: cappedQty } : i)),
         })
       },
 

@@ -8,7 +8,8 @@ export async function POST(request: Request) {
   try {
     const { user, error: authError } = await verifyAuthToken(request);
     if (authError || !user) {
-      return NextResponse.json({ role: "user" });
+      // Return 401 instead of defaulting to "user" — prevents role probing
+      return NextResponse.json({ error: "غير مصرح به" }, { status: 401 });
     }
 
     const serviceClient = getSupabaseServiceClient();
@@ -16,13 +17,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ role: "user" });
     }
 
+    // Try profiles table first (new schema)
     const { data: profile } = await serviceClient
+      .from("profiles")
+      .select("is_admin")
+      .eq("user_id", user.id)
+      .single();
+
+    if (profile?.is_admin === true) {
+      return NextResponse.json({ role: "admin" });
+    }
+
+    // Fallback: check legacy users/roles tables
+    const { data: legacyProfile } = await serviceClient
       .from("users")
       .select("role_id, roles(role_name)")
       .eq("email", user.email)
       .single();
 
-    const roleName = (profile?.roles as { role_name?: string } | null)?.role_name || "user";
+    const roleName = (legacyProfile?.roles as { role_name?: string } | null)?.role_name || "user";
     return NextResponse.json({ role: roleName });
   } catch {
     return NextResponse.json({ role: "user" });

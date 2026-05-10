@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ProductDetailSection } from "@/components/sections/product-detail-section";
 import { BreadcrumbSchema } from "@/components/breadcrumb-schema";
 import { products } from "@/lib/mock-data";
+import { safeJsonLd } from "@/lib/utils";
 
 const SITE_URL = "https://elite-vip-shop.vercel.app";
 const SITE_NAME = "Elite VIP Shop - متجر النخبة";
@@ -96,7 +97,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
       {productSchema && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(productSchema) }}
         />
       )}
       <BreadcrumbSchema

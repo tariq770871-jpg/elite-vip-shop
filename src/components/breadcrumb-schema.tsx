@@ -1,3 +1,5 @@
+import { safeJsonLd } from "@/lib/utils";
+
 interface BreadcrumbItem {
   name: string;
   url: string;
@@ -5,10 +7,6 @@ interface BreadcrumbItem {
 
 interface BreadcrumbSchemaProps {
   items: BreadcrumbItem[];
-}
-
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
 }
 
 const SITE_URL = "https://elite-vip-shop.vercel.app";
@@ -20,7 +18,7 @@ export function BreadcrumbSchema({ items }: BreadcrumbSchemaProps) {
     itemListElement: items.map((item, index) => ({
       "@type": "ListItem",
       position: index + 1,
-      name: escapeHtml(item.name),
+      name: item.name,
       item: item.url.startsWith("http") ? item.url : `${SITE_URL}${item.url}`,
     })),
   };
@@ -28,7 +26,7 @@ export function BreadcrumbSchema({ items }: BreadcrumbSchemaProps) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbList).replace(/</g, '\\u003c').replace(/>/g, '\\u003e') }}
+      dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbList) }}
     />
   );
 }

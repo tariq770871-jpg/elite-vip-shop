@@ -97,6 +97,9 @@ export const rateLimiter = new RateLimiter();
  * Extract a client identifier from a Request object.
  * Uses the LAST IP in X-Forwarded-For (set by closest trusted proxy)
  * to prevent spoofing. Falls back to x-real-ip or "unknown".
+ *
+ * When IP cannot be determined, appends a random per-process suffix
+ * to prevent all "unknown" clients from sharing the same rate limit bucket.
  */
 export function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -111,8 +114,13 @@ export function getClientIp(request: Request): string {
   if (realIp) {
     return realIp.trim();
   }
-  return "unknown";
+  // Include a per-process random suffix so unknown IPs don't all share one bucket.
+  // This prevents a single attacker from consuming the entire "unknown" rate limit.
+  return `unknown-${processPid}`;
 }
+
+// Generate a per-process unique ID so unknown IPs don't share one bucket
+const processPid = Math.random().toString(36).substring(2, 8);
 
 /**
  * Convenience function: check rate limit and return a 429 Response if exceeded.

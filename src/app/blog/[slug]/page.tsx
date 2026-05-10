@@ -8,6 +8,7 @@ import { BlogShareButtons } from "./share-buttons";
 import { RelatedPosts } from "./related-posts";
 import { BlogCTA } from "./blog-cta";
 import DOMPurify from "isomorphic-dompurify";
+import { safeJsonLd } from "@/lib/utils";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -135,7 +136,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       {/* Article JSON-LD */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(articleJsonLd) }}
       />
 
       {/* Hero Header */}

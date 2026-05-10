@@ -1,13 +1,22 @@
 import { NextResponse } from "next/server";
-import { getSupabaseServiceClient } from "@/lib/supabase-server";
+import { getSupabaseServiceClient, verifyAuthToken } from "@/lib/supabase-server";
 import { verifyAdmin } from "@/lib/admin-auth";
-import { rateLimitResponse } from "@/lib/rate-limit";
+import { rateLimitResponse, RATE_LIMIT_PRESETS } from "@/lib/rate-limit";
 
-// POST: Validate a coupon code
+// Add a stricter rate limit preset for coupon validation (prevents brute-force coupon guessing)
+RATE_LIMIT_PRESETS.coupon = { limit: 5, windowMs: 60_000 };
+
+// POST: Validate a coupon code (authenticated users only)
 export async function POST(request: Request) {
-  const blocked = rateLimitResponse(request, "api");
+  const blocked = rateLimitResponse(request, "coupon");
   if (blocked) return blocked;
   try {
+    // Require authentication — prevents anonymous coupon brute-forcing
+    const { user, error: authError } = await verifyAuthToken(request);
+    if (authError || !user) {
+      return NextResponse.json({ valid: false, error: "يجب تسجيل الدخول لاستخدام كوبونات الخصم" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { code, orderTotal } = body;
 

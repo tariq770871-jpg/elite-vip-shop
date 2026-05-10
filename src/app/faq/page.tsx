@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { FaqSection } from "@/components/sections/faq-section";
 import { BreadcrumbSchema } from "@/components/breadcrumb-schema";
 import { faqData } from "@/lib/mock-data";
+import { safeJsonLd } from "@/lib/utils";
 
 const SITE_URL = "https://elite-vip-shop.vercel.app";
 const SITE_NAME = "Elite VIP Shop - متجر النخبة";
@@ -63,7 +64,7 @@ export default function FaqPage() {
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(faqSchema) }}
       />
       <FaqSection />
     </>
