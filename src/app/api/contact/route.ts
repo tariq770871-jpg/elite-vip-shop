@@ -3,6 +3,7 @@ import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { rateLimitResponse } from "@/lib/rate-limit";
 import { sendTelegramNotification } from "@/lib/telegram";
+import { escapeHtml } from "@/lib/utils";
 
 export async function POST(request: Request) {
   const blocked = rateLimitResponse(request, "contact");
@@ -34,11 +35,11 @@ export async function POST(request: Request) {
     try {
       const tgMessage = [
         `📩 <b>رسالة تواصل جديدة</b>`,
-        `👤 الاسم: ${name}`,
-        email ? `📧 البريد: ${email}` : null,
-        phone ? `📞 الهاتف: ${phone}` : null,
-        subject ? `📋 الموضوع: ${subject}` : null,
-        `💬 الرسالة: ${message}`,
+        `👤 الاسم: ${escapeHtml(name)}`,
+        email ? `📧 البريد: ${escapeHtml(email)}` : null,
+        phone ? `📞 الهاتف: ${escapeHtml(phone)}` : null,
+        subject ? `📋 الموضوع: ${escapeHtml(subject)}` : null,
+        `💬 الرسالة: ${escapeHtml(message)}`,
         `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
       ].filter(Boolean).join("\n");
 

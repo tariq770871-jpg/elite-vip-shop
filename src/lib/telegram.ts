@@ -1,4 +1,5 @@
-import { supabase } from "@/lib/supabase";
+import { getSupabaseServiceClient } from "@/lib/supabase-server";
+import { escapeHtml } from "@/lib/utils";
 
 interface TelegramConfig {
   botToken: string;
@@ -6,9 +7,13 @@ interface TelegramConfig {
 }
 
 async function getTelegramConfig(): Promise<TelegramConfig | null> {
-  if (!supabase) return null;
   try {
-    const { data } = await supabase
+    // Use service client (server-side) — the browser anon client cannot read
+    // site_settings rows with type="secret" (RLS blocks anon access to tokens)
+    const serviceClient = getSupabaseServiceClient();
+    if (!serviceClient) return null;
+
+    const { data } = await serviceClient
       .from("site_settings")
       .select("key, value")
       .in("key", ["telegram_bot_token", "telegram_chat_id"]);
@@ -76,24 +81,24 @@ export async function sendOrderNotification(order: {
   landmark?: string;
 }): Promise<boolean> {
   const itemsList = order.items
-    .map((i) => `  • ${i.name} × ${i.quantity} — ${Number(i.price).toLocaleString("ar-SA")} ر.ي`)
+    .map((i) => `  • ${escapeHtml(i.name)} × ${i.quantity} — ${Number(i.price).toLocaleString("ar-SA")} ر.ي`)
     .join("\n");
 
   const message = [
     `🛒 <b>طلب جديد!</b>`,
     ``,
-    `📦 <b>رقم الطلب:</b> ${order.orderNumber}`,
-    order.customerName ? `👤 <b>العميل:</b> ${order.customerName}` : null,
-    order.customerPhone ? `📞 <b>الهاتف:</b> ${order.customerPhone}` : null,
+    `📦 <b>رقم الطلب:</b> ${escapeHtml(order.orderNumber)}`,
+    order.customerName ? `👤 <b>العميل:</b> ${escapeHtml(order.customerName)}` : null,
+    order.customerPhone ? `📞 <b>الهاتف:</b> ${escapeHtml(order.customerPhone)}` : null,
     order.deliveryType ? `🚚 <b>نوع الاستلام:</b> ${order.deliveryType === "delivery" ? "توصيل" : "استلام شخصي"}` : null,
-    order.province || order.district ? `📍 <b>العنوان:</b> ${[order.province, order.district, order.street, order.landmark].filter(Boolean).join("، ")}` : null,
-    order.customerAddress && !order.province ? `📍 <b>العنوان:</b> ${order.customerAddress}` : null,
+    order.province || order.district ? `📍 <b>العنوان:</b> ${[order.province, order.district, order.street, order.landmark].filter(Boolean).map(s => escapeHtml(s!)).join("، ")}` : null,
+    order.customerAddress && !order.province ? `📍 <b>العنوان:</b> ${escapeHtml(order.customerAddress)}` : null,
     ``,
     `🧾 <b>المنتجات:</b>`,
     itemsList,
     ``,
     order.discount ? `🏷️ <b>الخصم:</b> ${Number(order.discount).toLocaleString("ar-SA")} ر.ي` : null,
-    order.couponCode ? `🎫 <b>كود الخصم:</b> ${order.couponCode}` : null,
+    order.couponCode ? `🎫 <b>كود الخصم:</b> ${escapeHtml(order.couponCode)}` : null,
     `💰 <b>الإجمالي:</b> ${Number(order.total).toLocaleString("ar-SA")} ر.ي`,
     order.paymentMethod ? `💳 <b>طريقة الدفع:</b> ${paymentMethodNames[order.paymentMethod] || order.paymentMethod}` : null,
     ``,

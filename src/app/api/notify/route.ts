@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sendTelegramNotification } from "@/lib/telegram";
 import { verifyAuthToken } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
+import { escapeHtml } from "@/lib/utils";
 
 const EMOJIS: Record<string, string> = {
   visit: "👁️",
@@ -16,23 +17,27 @@ export async function POST(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
   try {
-    // Auth check: only authenticated users can send notifications
-    const { user, error: authError } = await verifyAuthToken(request);
-    if (authError || !user) {
-      return NextResponse.json({ ok: false, error: "غير مصرح به" }, { status: 401 });
-    }
-
     const body = await request.json();
     const { event, data = {} } = body;
 
     if (!event) return NextResponse.json({ ok: false });
 
-    // Sanitize input: strip HTML tags from event and data values
-    const sanitize = (str: string) => str.replace(/<[^>]*>/g, "").trim();
-    const sanitizedEvent = sanitize(event);
+    // Escape HTML in input to prevent injection in Telegram messages (parse_mode: "HTML")
+    const sanitizedEvent = escapeHtml(event).trim();
     const sanitizedData: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
-      sanitizedData[sanitize(key)] = typeof value === "string" ? sanitize(value) : value;
+      sanitizedData[escapeHtml(key).trim()] = typeof value === "string" ? escapeHtml(value) : value;
+    }
+
+    // Only "visit" event is allowed without authentication
+    // (visitors are unauthenticated — layout-client.tsx sends this before login)
+    const PUBLIC_EVENTS = ["visit"];
+
+    if (!PUBLIC_EVENTS.includes(sanitizedEvent)) {
+      const { user, error: authError } = await verifyAuthToken(request);
+      if (authError || !user) {
+        return NextResponse.json({ ok: false, error: "غير مصرح به" }, { status: 401 });
+      }
     }
 
     const emoji = EMOJIS[sanitizedEvent] || "📌";

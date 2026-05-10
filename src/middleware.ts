@@ -146,6 +146,64 @@ export async function middleware(request: NextRequest) {
     return adminResponse;
   }
 
+  // ─── Step 3: Dashboard page protection (admin-only page) ──────────
+  if (pathname.startsWith("/dashboard")) {
+    const authHeader = request.headers.get("authorization");
+    const headerToken =
+      authHeader?.startsWith("Bearer ") && authHeader.split(" ")[1];
+    const cookieToken = request.cookies.get("sb-access-token")?.value;
+    const accessToken = headerToken || cookieToken;
+
+    if (!accessToken) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceKey) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+
+      const { data: { user }, error } = await supabaseAdmin.auth.getUser(accessToken);
+
+      if (error || !user) {
+        return NextResponse.redirect(new URL("/login", request.url));
+      }
+
+      // Check admin role via profiles table first, then legacy users/roles
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("is_admin")
+        .eq("user_id", user.id)
+        .single();
+
+      const isAdmin = profile?.is_admin === true;
+
+      if (!isAdmin) {
+        // Fallback: check legacy users/roles tables
+        const { data: legacyProfile } = await supabaseAdmin
+          .from("users")
+          .select("role_id, roles(role_name)")
+          .eq("email", user.email)
+          .single();
+
+        const roleName = (legacyProfile?.roles as { role_name?: string } | null)?.role_name;
+        if (roleName !== "admin" && roleName !== "owner") {
+          return NextResponse.redirect(new URL("/", request.url));
+        }
+      }
+    } catch {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+  }
+
   // ─── All other routes — return session-refreshed response ─────────
   return supabaseResponse;
 }

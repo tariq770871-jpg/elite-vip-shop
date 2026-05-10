@@ -1,5 +1,18 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
+import { timingSafeEqual } from "crypto";
+
+/**
+ * Constant-time string comparison to prevent timing attacks.
+ */
+function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  } catch {
+    return false;
+  }
+}
 
 /**
  * POST /api/migrate-db
@@ -11,8 +24,8 @@ import { getSupabaseServiceClient } from "@/lib/supabase-server";
  */
 export async function POST(request: Request) {
   const authHeader = request.headers.get("authorization");
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceKey || authHeader !== `Bearer ${serviceKey}`) {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  if (!authHeader || !safeCompare(authHeader, `Bearer ${serviceKey}`)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
