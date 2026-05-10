@@ -88,7 +88,7 @@ export const useCartStore = create<CartStore>()(
     }),
     {
       name: 'elite-cart',
-      partialize: (state) => ({ items: state.items }),
+      partialize: (state) => ({ items: state.items, appliedCoupon: state.appliedCoupon }),
     }
   )
 )

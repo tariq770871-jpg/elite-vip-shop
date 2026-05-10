@@ -37,6 +37,11 @@ export function CartPageSection() {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
+  const [deliveryType, setDeliveryType] = useState<"pickup" | "delivery">("pickup");
+  const [province, setProvince] = useState("");
+  const [district, setDistrict] = useState("");
+  const [street, setStreet] = useState("");
+  const [landmark, setLandmark] = useState("");
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("jeeb");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -96,6 +101,11 @@ export function CartPageSection() {
           customerName: customerName.trim(),
           customerPhone: customerPhone.trim(),
           customerAddress: customerAddress.trim() || undefined,
+          deliveryType,
+          province: deliveryType === "delivery" ? province.trim() || undefined : undefined,
+          district: deliveryType === "delivery" ? district.trim() || undefined : undefined,
+          street: deliveryType === "delivery" ? street.trim() || undefined : undefined,
+          landmark: deliveryType === "delivery" ? landmark.trim() || undefined : undefined,
           notes: notes.trim() || undefined,
           couponCode: appliedCoupon?.code,
           discount,
@@ -232,10 +242,70 @@ export function CartPageSection() {
                   <Input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="+967 XXX XXX XXX" dir="ltr" />
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label className="flex items-center gap-1.5 text-sm"><MapPin className="size-3.5" /> عنوان التوصيل</Label>
-                <Input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="المدينة، الحي، الشارع..." />
+              {/* Delivery Type */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">🚚 طريقة الاستلام</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryType("pickup")}
+                    className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 cursor-pointer transition-all ${
+                      deliveryType === "pickup"
+                        ? "border-amber-500 bg-amber-500/10 shadow-md shadow-amber-500/10"
+                        : "border-border hover:border-muted-foreground/30"
+                    }`}
+                  >
+                    <span className="text-xl">🏪</span>
+                    <span className={`text-xs font-bold ${deliveryType === "pickup" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}>استلام شخصي</span>
+                    {deliveryType === "pickup" && <CheckCircle2 className="size-4 text-amber-500 absolute top-1.5 left-1.5" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryType("delivery")}
+                    className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 cursor-pointer transition-all ${
+                      deliveryType === "delivery"
+                        ? "border-amber-500 bg-amber-500/10 shadow-md shadow-amber-500/10"
+                        : "border-border hover:border-muted-foreground/30"
+                    }`}
+                  >
+                    <span className="text-xl">🚚</span>
+                    <span className={`text-xs font-bold ${deliveryType === "delivery" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}>توصيل للمنزل</span>
+                    {deliveryType === "delivery" && <CheckCircle2 className="size-4 text-amber-500 absolute top-1.5 left-1.5" />}
+                  </button>
+                </div>
               </div>
+
+              {/* Address fields */}
+              {deliveryType === "delivery" && (
+                <div className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label className="flex items-center gap-1.5 text-sm"><MapPin className="size-3.5" /> المحافظة <span className="text-destructive">*</span></Label>
+                      <Input value={province} onChange={(e) => setProvince(e.target.value)} placeholder="مثال: صنعاء" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="flex items-center gap-1.5 text-sm">المديرية <span className="text-destructive">*</span></Label>
+                      <Input value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="مثال: صنعاء القديمة" />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">الشارع</Label>
+                      <Input value={street} onChange={(e) => setStreet(e.target.value)} placeholder="اسم الشارع" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">أقرب معلم</Label>
+                      <Input value={landmark} onChange={(e) => setLandmark(e.target.value)} placeholder="مثال: بجوار مسجد النور" />
+                    </div>
+                  </div>
+                </div>
+              )}
+              {deliveryType === "pickup" && (
+                <div className="space-y-1.5">
+                  <Label className="flex items-center gap-1.5 text-sm"><MapPin className="size-3.5" /> عنوان التوصيل (اختياري)</Label>
+                  <Input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="المدينة، الحي، الشارع..." />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label className="text-sm">ملاحظات إضافية</Label>
                 <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="أي ملاحظات أو طلبات خاصة..." rows={2} className="resize-none" />

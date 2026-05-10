@@ -1,30 +1,8 @@
 import { NextResponse } from "next/server";
-import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
+import { getSupabaseServiceClient } from "@/lib/supabase-server";
+import { verifyAdmin } from "@/lib/admin-auth";
 import { rateLimitResponse } from "@/lib/rate-limit";
 import { sendTelegramNotification } from "@/lib/telegram";
-
-/** Verify the authenticated user has admin role */
-async function verifyAdmin(request: Request) {
-  const { user, error: authError } = await verifyAuthToken(request);
-  if (authError || !user) {
-    return { user: null, errorResponse: NextResponse.json({ error: "غير مصرح به" }, { status: 401 }) };
-  }
-  const serviceClient = getSupabaseServiceClient();
-  if (!serviceClient) {
-    // FAIL CLOSED: deny access when we can't verify the role
-    return { user: null, errorResponse: NextResponse.json({ error: "خدمة المصادقة غير متاحة" }, { status: 503 }) };
-  }
-  const { data: profile } = await serviceClient
-    .from("users")
-    .select("role_id, roles(role_name)")
-    .eq("email", user.email)
-    .single();
-  const roleName = (profile?.roles as { role_name?: string } | null)?.role_name;
-  if (roleName !== "admin") {
-    return { user: null, errorResponse: NextResponse.json({ error: "ممنوع — يتطلب صلاحية المدير" }, { status: 403 }) };
-  }
-  return { user, errorResponse: null };
-}
 
 export async function POST(request: Request) {
   const blocked = rateLimitResponse(request, "contact");

@@ -52,9 +52,6 @@ export async function POST(request: Request) {
       case "register":
         message = [
           `${emoji} <b>مستخدم جديد سجّل في المتجر!</b>`,
-          sanitizedData.name ? `👤 الاسم: ${sanitizedData.name}` : null,
-          sanitizedData.email ? `📧 البريد: ${sanitizedData.email}` : null,
-          sanitizedData.phone ? `📞 الهاتف: ${sanitizedData.phone}` : null,
           `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
         ].filter(Boolean).join("\n");
         break;
@@ -62,8 +59,6 @@ export async function POST(request: Request) {
       case "login":
         message = [
           `${emoji} <b>تسجيل دخول</b>`,
-          sanitizedData.name ? `👤 ${sanitizedData.name}` : null,
-          sanitizedData.email ? `📧 ${sanitizedData.email}` : null,
           `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
         ].filter(Boolean).join("\n");
         break;

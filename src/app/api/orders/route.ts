@@ -137,7 +137,7 @@ export async function POST(request: Request) {
     const orderInsert: Record<string, unknown> = {
       order_number: orderNumber,
       user_id: userId,
-      status: "pending",
+      status: "new",
       total_amount: calculatedTotal,
       notes: notesContent,
       // New chat-based ordering columns
@@ -178,7 +178,7 @@ export async function POST(request: Request) {
       const basicInsert: Record<string, unknown> = {
         order_number: orderNumber,
         user_id: userId,
-        status: "pending",
+        status: "new",
         total_amount: calculatedTotal,
         notes: notesContent,
       };

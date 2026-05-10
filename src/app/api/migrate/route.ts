@@ -1,6 +1,19 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import { Client } from "pg";
+import { timingSafeEqual } from "crypto";
+
+/**
+ * Constant-time string comparison to prevent timing attacks.
+ */
+function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  } catch {
+    return false;
+  }
+}
 
 /**
  * POST /api/migrate
@@ -12,7 +25,8 @@ import { Client } from "pg";
  */
 export async function POST(request: Request) {
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`) {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  if (!authHeader || !safeCompare(authHeader, `Bearer ${serviceKey}`)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -37,7 +51,7 @@ export async function POST(request: Request) {
   // Step 2: Try direct PostgreSQL connection
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
   const projectRef = supabaseUrl.replace("https://", "").replace(".supabase.co", "");
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  const dbPassword = process.env.SUPABASE_DB_PASSWORD || serviceKey;
 
   const sqlStatements = [
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_type VARCHAR(20) DEFAULT 'pickup'",
@@ -67,14 +81,14 @@ export async function POST(request: Request) {
       port: 5432,
       database: "postgres",
       user: `postgres.${projectRef}`,
-      password: serviceKey,
+      password: dbPassword,
     },
     {
       host: "aws-0-us-east-1.pooler.supabase.com",
       port: 6543,
       database: "postgres",
       user: `postgres.${projectRef}`,
-      password: serviceKey,
+      password: dbPassword,
     },
   ];
 

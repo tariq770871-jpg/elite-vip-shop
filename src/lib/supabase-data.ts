@@ -10,7 +10,7 @@ export async function getProducts() {
     if (!supabase) return products
     const { data, error } = await supabase
       .from('products')
-      .select('*')
+      .select('*, categories(name_ar)')
       .eq('availability', true)
       .order('created_at', { ascending: false })
     
@@ -21,7 +21,7 @@ export async function getProducts() {
       description: p.description,
       price: Number(p.price),
       salePrice: p.sale_price ? Number(p.sale_price) : undefined,
-      category: p.category_name || 'أخرى',
+      category: p.categories?.name_ar || 'أخرى',
       images: Array.isArray(p.images) && p.images.length > 0 ? p.images : ['/products/product-1.webp'],
       availability: p.availability,
       seller: 'متجر النخبة',
@@ -142,7 +142,7 @@ export async function getAllProducts() {
     if (!supabase) return []
     const { data, error } = await supabase
       .from('products')
-      .select('*')
+      .select('*, categories(name_ar)')
       .order('created_at', { ascending: false })
       .limit(100)
 
@@ -153,7 +153,7 @@ export async function getAllProducts() {
       description: p.description,
       price: Number(p.price),
       salePrice: p.sale_price ? Number(p.sale_price) : undefined,
-      category: p.category_name || 'أخرى',
+      category: p.categories?.name_ar || 'أخرى',
       images: Array.isArray(p.images) && p.images.length > 0 ? p.images : [],
       availability: p.availability,
       seller: 'متجر النخبة',
