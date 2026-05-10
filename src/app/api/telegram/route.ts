@@ -3,11 +3,15 @@ import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { rateLimitResponse } from "@/lib/rate-limit";
 
-// GET: Check if Telegram bot is configured
+// GET: Check if Telegram bot is configured (admin only — prevents info leak)
 export async function GET(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
   try {
+    // Admin authorization check — consistent with POST and DELETE handlers
+    const { errorResponse } = await verifyAdmin(request);
+    if (errorResponse) return errorResponse;
+
     const serviceClient = getSupabaseServiceClient();
     if (!serviceClient) return NextResponse.json({ configured: false });
 

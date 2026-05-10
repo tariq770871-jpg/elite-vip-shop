@@ -135,9 +135,13 @@ export async function getEarningMethods() {
 
 /* ============================================================
    Fetch All Products (Admin Dashboard)
+   ⚠️ DEPRECATED: Use /api/admin/products GET endpoint instead.
+   This function uses the anon client with no auth checks.
    ============================================================ */
 
+/** @deprecated Use fetch('/api/admin/products') instead — this uses the anon client without auth */
 export async function getAllProducts() {
+  console.warn('[DEPRECATED] getAllProducts() — use /api/admin/products GET endpoint instead');
   try {
     if (!supabase) return []
     const { data, error } = await supabase
@@ -166,90 +170,17 @@ export async function getAllProducts() {
 
 /* ============================================================
    Product Management (Dashboard)
+   ⚠️ REMOVED: These functions were insecure — they used the
+   browser anon client with NO authentication or validation.
+   Use the secure /api/admin/products endpoints instead:
+     - POST /api/admin/products  → addProduct
+     - PUT /api/admin/products   → updateProduct
+     - DELETE /api/admin/products → deleteProduct
    ============================================================ */
-
-export async function addProduct(product: {
-  name: string
-  description: string
-  price: number
-  sale_price?: number
-  category_id?: string
-  availability?: boolean
-}) {
-  if (!supabase) throw new Error('Supabase not configured')
-  const { data, error } = await supabase
-    .from('products')
-    .insert(product)
-    .select()
-    .single()
-  
-  if (error) throw error
-  return data
-}
-
-export async function updateProduct(id: string, updates: Record<string, any>) {
-  if (!supabase) throw new Error('Supabase not configured')
-  const { data, error } = await supabase
-    .from('products')
-    .update(updates)
-    .eq('product_id', id)
-    .select()
-    .single()
-  
-  if (error) throw error
-  return data
-}
-
-export async function deleteProduct(id: string) {
-  if (!supabase) throw new Error('Supabase not configured')
-  const { error } = await supabase
-    .from('products')
-    .delete()
-    .eq('product_id', id)
-  
-  if (error) throw error
-}
 
 /* ============================================================
    App Management (Dashboard)
+   ⚠️ REMOVED: These functions were insecure — they used the
+   browser anon client with NO authentication or validation.
+   Use secure server-side API routes instead.
    ============================================================ */
-
-export async function addApp(app: {
-  title: string
-  description: string
-  link?: string
-  platform?: string
-}) {
-  if (!supabase) throw new Error('Supabase not configured')
-  const { data, error } = await supabase
-    .from('apps')
-    .insert(app)
-    .select()
-    .single()
-  
-  if (error) throw error
-  return data
-}
-
-export async function updateApp(id: string, updates: Record<string, any>) {
-  if (!supabase) throw new Error('Supabase not configured')
-  const { data, error } = await supabase
-    .from('apps')
-    .update(updates)
-    .eq('app_id', id)
-    .select()
-    .single()
-  
-  if (error) throw error
-  return data
-}
-
-export async function deleteApp(id: string) {
-  if (!supabase) throw new Error('Supabase not configured')
-  const { error } = await supabase
-    .from('apps')
-    .delete()
-    .eq('app_id', id)
-  
-  if (error) throw error
-}

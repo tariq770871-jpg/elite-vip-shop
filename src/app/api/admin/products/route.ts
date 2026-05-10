@@ -35,6 +35,46 @@ function validateProductData(data: Record<string, unknown>): string | null {
   return null;
 }
 
+// GET: List all products for admin dashboard (admin only)
+export async function GET(request: Request) {
+  const blocked = rateLimitResponse(request, "api");
+  if (blocked) return blocked;
+  try {
+    const { errorResponse } = await verifyAdmin(request);
+    if (errorResponse) return errorResponse;
+
+    const { searchParams } = new URL(request.url);
+    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "100"), 1), 500);
+    const offset = Math.max(parseInt(searchParams.get("offset") || "0"), 0);
+    const includeCount = searchParams.get("count") === "true";
+
+    const serviceClient = getSupabaseServiceClient();
+    if (!serviceClient) {
+      return NextResponse.json({ products: [], total: 0 });
+    }
+
+    const query = serviceClient
+      .from("products")
+      .select("*", { count: includeCount ? "exact" : undefined })
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error("Admin products fetch error:", error);
+      return NextResponse.json({ error: "فشل في جلب المنتجات" }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      products: data || [],
+      total: count || (data?.length || 0),
+    });
+  } catch {
+    return NextResponse.json({ error: "حدث خطأ في جلب المنتجات" }, { status: 500 });
+  }
+}
+
 // POST: Add a new product (admin only)
 export async function POST(request: Request) {
   const blocked = rateLimitResponse(request, "api");

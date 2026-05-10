@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
+import { getSupabaseServiceClient } from "@/lib/supabase-server";
+import { verifyAdmin } from "@/lib/admin-auth";
 import { rateLimitResponse } from "@/lib/rate-limit";
 
 // GET: Fetch all orders for admin (with user info and items)
@@ -7,6 +8,9 @@ export async function GET(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
   try {
+    // Admin authorization check — only admins can view all orders (PII data)
+    const { errorResponse } = await verifyAdmin(request);
+    if (errorResponse) return errorResponse;
     const { searchParams } = new URL(request.url);
     const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "100"), 1), 200);
     const status = searchParams.get("status");
@@ -151,17 +155,8 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "حالة غير صالحة" }, { status: 400 });
     }
 
-    // Admin auth check
-    const { errorResponse: adminErr } = await (async () => {
-      const { user, error: authError } = await verifyAuthToken(request);
-      if (authError || !user) return { errorResponse: NextResponse.json({ error: "غير مصرح به" }, { status: 401 }) };
-      const sc = getSupabaseServiceClient();
-      if (!sc) return { errorResponse: NextResponse.json({ error: "خدمة المصادقة غير متاحة" }, { status: 503 }) };
-      const { data: profile } = await sc.from("users").select("role_id, roles(role_name)").eq("email", user.email).single();
-      const rn = (profile?.roles as { role_name?: string } | null)?.role_name;
-      if (rn !== "admin") return { errorResponse: NextResponse.json({ error: "ممنوع" }, { status: 403 }) };
-      return { errorResponse: null };
-    })();
+    // Admin auth check — consistent with other admin routes
+    const { errorResponse: adminErr } = await verifyAdmin(request);
     if (adminErr) return adminErr;
 
     const serviceClient = getSupabaseServiceClient();

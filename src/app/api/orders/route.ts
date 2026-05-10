@@ -217,29 +217,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "فشل في حفظ بنود الطلب" }, { status: 500 });
     }
 
-    // Increment coupon used_count if a coupon was applied
+    // Increment coupon used_count atomically (prevents race condition)
     if (couponCode) {
       try {
         const serviceClient = getSupabaseServiceClient();
         if (serviceClient) {
-          const { data: couponData } = await serviceClient
-            .from("coupons")
-            .select("used_count, max_uses")
-            .eq("code", couponCode.toUpperCase())
-            .single();
-
-          if (couponData) {
-            const newCount = (couponData.used_count || 0) + 1;
-            if (!couponData.max_uses || newCount <= couponData.max_uses) {
-              await serviceClient
-                .from("coupons")
-                .update({ used_count: newCount })
-                .eq("code", couponCode.toUpperCase());
-            }
+          const { data: rpcResult } = await serviceClient.rpc("increment_coupon_usage", {
+            p_code: couponCode.toUpperCase(),
+          });
+          // rpcResult returns { success: boolean, new_count: number | null }
+          if (rpcResult && !rpcResult.success) {
+            console.warn("Coupon usage limit reached:", couponCode);
           }
         }
       } catch {
-        // Non-critical
+        // Non-critical — order was already placed
       }
     }
 

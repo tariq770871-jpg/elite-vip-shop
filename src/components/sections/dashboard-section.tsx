@@ -509,26 +509,24 @@ function AdminDashboard() {
 
   const fetchAdminProducts = async () => {
     try {
-      const { supabase } = await import("@/lib/supabase");
-      if (!supabase) return;
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
-      if (!error && data) {
-        setProducts(
-          data.map((p: any) => ({
-            id: p.product_id,
-            name: p.name,
-            description: p.description || "",
-            price: Number(p.price),
-            salePrice: p.sale_price ? Number(p.sale_price) : undefined,
-            category: p.category_name || "أخرى",
-            availability: p.availability,
-            raw: p,
-          }))
-        );
+      const res = await fetch("/api/admin/products?limit=100&count=true", { headers: authHeaders });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.products) {
+          setProducts(
+            data.products.map((p: any) => ({
+              id: p.product_id,
+              name: p.name,
+              description: p.description || "",
+              price: Number(p.price),
+              salePrice: p.sale_price ? Number(p.sale_price) : undefined,
+              category: p.category_name || "أخرى",
+              availability: p.availability,
+              raw: p,
+            }))
+          );
+          setStats((prev) => ({ ...prev, products: data.total || data.products.length }));
+        }
       }
     } catch {
       // fallback to empty
@@ -670,16 +668,8 @@ function AdminDashboard() {
         }
       }
 
-      // Fetch products count from supabase directly
-      try {
-        const { supabase } = await import("@/lib/supabase");
-        if (supabase) {
-          const { count } = await supabase
-            .from("products")
-            .select("*", { count: "exact", head: true });
-          setStats((prev) => ({ ...prev, products: count || 0 }));
-        }
-      } catch { /* ignore */ }
+      // Products count is now fetched via fetchAdminProducts (admin API)
+      // No need for separate anon client query
 
       // Fetch coupons from API
       try {
