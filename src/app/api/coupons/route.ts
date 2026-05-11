@@ -114,6 +114,8 @@ export async function GET(request: Request) {
         isActive: c.is_active,
         expiresAt: c.valid_until,
       })),
+    }, {
+      headers: { 'Cache-Control': 'private, s-maxage=10, stale-while-revalidate=30' },
     });
   } catch {
     return NextResponse.json({ coupons: [] });

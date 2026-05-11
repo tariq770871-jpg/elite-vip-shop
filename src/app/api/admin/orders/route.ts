@@ -41,12 +41,27 @@ export async function GET(request: Request) {
       return NextResponse.json({ orders: [], total: 0 });
     }
 
-    // Fetch order items for all orders at once
+    // Fetch order items, users, and total count IN PARALLEL — they're independent
     const orderIds = orders.map((o) => o.order_id);
-    const { data: allItems } = await serviceClient
-      .from("order_items")
-      .select("order_id, product_name, quantity, price")
-      .in("order_id", orderIds);
+    const userIds = [...new Set(orders.map((o) => o.user_id))];
+
+    const [itemsResult, usersResult, countResult] = await Promise.all([
+      serviceClient
+        .from("order_items")
+        .select("order_id, product_name, quantity, price")
+        .in("order_id", orderIds),
+      serviceClient
+        .from("users")
+        .select("user_id, name, email, phone")
+        .in("user_id", userIds),
+      serviceClient
+        .from("orders")
+        .select("*", { count: "exact", head: true }),
+    ]);
+
+    const allItems = itemsResult.data;
+    const usersData = usersResult.data;
+    const totalCount = countResult.count;
 
     const itemsMap: Record<string, Array<{ name: string; quantity: number; price: number }>> = {};
     if (allItems) {
@@ -59,13 +74,6 @@ export async function GET(request: Request) {
         });
       }
     }
-
-    // Fetch users info
-    const userIds = [...new Set(orders.map((o) => o.user_id))];
-    const { data: usersData } = await serviceClient
-      .from("users")
-      .select("user_id, name, email, phone")
-      .in("user_id", userIds);
 
     const usersMap: Record<string, { name: string; email: string; phone?: string }> = {};
     if (usersData) {
@@ -119,11 +127,7 @@ export async function GET(request: Request) {
       };
     });
 
-    // Get total count for stats
-    const { count: totalCount } = await serviceClient
-      .from("orders")
-      .select("*", { count: "exact", head: true });
-
+    // Total count was already fetched in parallel above (countResult)
     const totalRevenue = enrichedOrders.reduce((sum, o) => sum + o.total_amount, 0);
 
     return NextResponse.json({

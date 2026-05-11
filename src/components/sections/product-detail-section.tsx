@@ -11,7 +11,7 @@ import {
 import { useNavigation } from "@/lib/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { useRecentlyViewedStore } from "@/store/recently-viewed-store";
-import { getProducts } from "@/lib/supabase-data";
+import { getProductById } from "@/lib/supabase-data";
 import { getWhatsAppOrderLink } from "@/lib/mock-data";
 import type { Product } from "@/lib/mock-data";
 import { getCategoryIcon } from "@/components/icons";
@@ -41,8 +41,10 @@ export function ProductDetailSection({ productId: productIdProp }: ProductDetail
     if (!effectiveProductId) return;
     if (fetchedIdRef.current === effectiveProductId) return;
     fetchedIdRef.current = effectiveProductId;
-    getProducts().then((products) => {
-      const found = products.find((p) => p.id === effectiveProductId) || null;
+    // ── Fetch single product by ID (not ALL products) ──
+    // Previously this called getProducts() which fetched the entire table,
+    // then used .find() to pick one — wasting bandwidth and adding latency.
+    getProductById(effectiveProductId).then((found) => {
       setProduct(found);
       if (found) {
         addRecentlyViewed({

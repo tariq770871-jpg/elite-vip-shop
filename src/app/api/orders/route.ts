@@ -282,6 +282,9 @@ export async function GET(request: Request) {
     const userId = user.id;
     const { searchParams } = new URL(request.url);
     const role = searchParams.get("role"); // "seller" to fetch seller orders
+    // ── Pagination: prevent fetching ALL orders for heavy users ──
+    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "50"), 1), 100);
+    const offset = Math.max(parseInt(searchParams.get("offset") || "0"), 0);
 
     // Use service client to fetch orders (after auth verification, bypasses RLS)
     const serviceClient = getSupabaseServiceClient();
@@ -297,14 +300,16 @@ export async function GET(request: Request) {
         .from("orders")
         .select("*")
         .eq("seller_id", userId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
     } else {
       // Regular user: fetch their own orders
       query = serviceClient
         .from("orders")
         .select("*")
         .eq("user_id", userId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
     }
 
     const { data: orders, error } = await query;

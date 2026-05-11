@@ -53,6 +53,8 @@ export async function GET(request: Request) {
       reviews: reviews || [],
       averageRating: avgRating,
       totalCount: count,
+    }, {
+      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
     });
   } catch (error) {
     console.error("Reviews API error:", error);

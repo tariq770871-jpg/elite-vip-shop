@@ -15,6 +15,11 @@ interface SearchBarProps {
 
 export function SearchBar({ isOpen, onClose }: SearchBarProps) {
   const [query, setQuery] = useState("");
+  // ── Debounced query: prevents filtering on every keystroke ──
+  // Without this, every character triggers useMemo to re-filter the entire
+  // products array — wasteful for large catalogs. 200ms delay is imperceptible
+  // to users but eliminates dozens of intermediate computations.
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -23,16 +28,22 @@ export function SearchBar({ isOpen, onClose }: SearchBarProps) {
     getProducts().then(d => setAllProducts(d)).catch(() => {});
   }, []);
 
+  // Debounce: update debouncedQuery 200ms after the last keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), 200);
+    return () => clearTimeout(timer);
+  }, [query]);
+
   const filteredProducts = useMemo(() => {
-    if (!query.trim()) return [];
-    const q = query.trim().toLowerCase();
+    if (!debouncedQuery.trim()) return [];
+    const q = debouncedQuery.trim().toLowerCase();
     return allProducts.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
         p.description.toLowerCase().includes(q) ||
         p.category.toLowerCase().includes(q)
     ).slice(0, 6);
-  }, [query, allProducts]);
+  }, [debouncedQuery, allProducts]);
 
   const focusInput = useCallback(() => {
     setTimeout(() => inputRef.current?.focus(), 100);

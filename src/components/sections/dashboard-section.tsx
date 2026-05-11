@@ -643,9 +643,13 @@ function AdminDashboard() {
   const fetchAdminData = async (signal?: AbortSignal) => {
     setLoading(true);
     try {
-      const [ordersRes, usersRes] = await Promise.all([
+      // ── All 3 API calls are independent — fire in parallel ──
+      // Previously coupons were fetched sequentially after orders+users,
+      // adding unnecessary latency to the admin dashboard load time.
+      const [ordersRes, usersRes, couponsRes] = await Promise.all([
         fetch("/api/admin/orders?limit=100", { headers: authHeaders, signal }),
         fetch("/api/admin/users", { headers: authHeaders, signal }),
+        fetch("/api/coupons", { headers: authHeaders, signal }),
       ]);
 
       if (ordersRes.ok) {
@@ -671,16 +675,15 @@ function AdminDashboard() {
       // Products count is now fetched via fetchAdminProducts (admin API)
       // No need for separate anon client query
 
-      // Fetch coupons from API
-      try {
-        const couponsRes = await fetch("/api/coupons", { headers: authHeaders, signal });
-        if (couponsRes.ok) {
+      // Process coupons response (already fetched in parallel above)
+      if (couponsRes?.ok) {
+        try {
           const couponsData = await couponsRes.json();
           if (couponsData.coupons) {
             setCoupons(couponsData.coupons);
           }
-        }
-      } catch { /* ignore */ }
+        } catch { /* ignore parse error */ }
+      }
       setCouponsLoading(false);
     } catch {
       toast.error("تعذّر تحميل بيانات لوحة التحكم");

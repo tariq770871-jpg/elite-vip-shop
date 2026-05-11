@@ -247,7 +247,7 @@ export function CartDrawer() {
                       placeholder="كود الخصم..."
                       className="h-9 text-sm"
                       dir="ltr"
-                      onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                      onKeyDown={(e) => e.key === "Enter" && !couponLoading && handleApplyCoupon()}
                     />
                     <Button
                       variant="outline"

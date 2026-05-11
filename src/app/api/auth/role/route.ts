@@ -17,25 +17,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ role: "user" });
     }
 
-    // Try profiles table first (new schema)
-    const { data: profile } = await serviceClient
-      .from("profiles")
-      .select("is_admin")
-      .eq("user_id", user.id)
-      .single();
+    // ── Query both tables in parallel instead of sequentially ──
+    // Previously: profiles first, then users only if not admin (2 round-trips for non-admins)
+    // Now: both queries fire simultaneously, cutting latency ~50% for non-admin users
+    const [profileResult, legacyResult] = await Promise.all([
+      serviceClient
+        .from("profiles")
+        .select("is_admin")
+        .eq("user_id", user.id)
+        .single(),
+      serviceClient
+        .from("users")
+        .select("role_id, roles(role_name)")
+        .eq("email", user.email)
+        .single(),
+    ]);
 
-    if (profile?.is_admin === true) {
+    if (profileResult.data?.is_admin === true) {
       return NextResponse.json({ role: "admin" });
     }
 
-    // Fallback: check legacy users/roles tables
-    const { data: legacyProfile } = await serviceClient
-      .from("users")
-      .select("role_id, roles(role_name)")
-      .eq("email", user.email)
-      .single();
-
-    const roleName = (legacyProfile?.roles as { role_name?: string } | null)?.role_name || "user";
+    const roleName = (legacyResult.data?.roles as { role_name?: string } | null)?.role_name || "user";
     return NextResponse.json({ role: roleName });
   } catch {
     return NextResponse.json({ role: "user" });

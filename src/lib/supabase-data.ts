@@ -5,8 +5,21 @@ import { products, categories, appsData, aiToolsData, academyData, earningData }
    Fetch with fallback to mock data
    ============================================================ */
 
+// ── In-memory cache for getProducts() — prevents redundant Supabase calls ──
+// Multiple components (HomeSection, ProductsSection, FlashDealsSection, SearchBar)
+// all call getProducts() on mount. Without caching, the home page alone fires
+// 3+ identical queries. This deduplicates them within a short TTL window.
+let productsCache: any[] | null = null;
+let productsCacheTime = 0;
+const PRODUCTS_CACHE_TTL = 30_000; // 30 seconds — stale data is acceptable for product listings
+
 export async function getProducts() {
   try {
+    // Return cached data if still fresh
+    if (productsCache && (Date.now() - productsCacheTime) < PRODUCTS_CACHE_TTL) {
+      return productsCache;
+    }
+
     if (!supabase) return products
     const { data, error } = await supabase
       .from('products')
@@ -15,7 +28,7 @@ export async function getProducts() {
       .order('created_at', { ascending: false })
     
     if (error || !data || data.length === 0) return products
-    return data.map((p: any) => ({
+    const result = data.map((p: any) => ({
       id: p.product_id,
       name: p.name,
       description: p.description,
@@ -25,9 +38,46 @@ export async function getProducts() {
       images: Array.isArray(p.images) && p.images.length > 0 ? p.images : ['/products/product-1.webp'],
       availability: p.availability,
       seller: 'متجر النخبة',
-    }))
+    }));
+
+    // Update cache
+    productsCache = result;
+    productsCacheTime = Date.now();
+    return result;
   } catch {
     return products
+  }
+}
+
+// ── Fetch a single product by ID — avoids fetching ALL products for detail pages ──
+// Previously, product-detail-section.tsx called getProducts() then .find(),
+// transferring the entire products table to display a single item.
+export async function getProductById(id: string) {
+  try {
+    if (!supabase) {
+      // Fallback: search in mock data
+      return products.find((p) => p.id === id) || null;
+    }
+    const { data, error } = await supabase
+      .from('products')
+      .select('*, categories(name_ar)')
+      .eq('product_id', id)
+      .single();
+
+    if (error || !data) return null;
+    return {
+      id: data.product_id,
+      name: data.name,
+      description: data.description,
+      price: Number(data.price),
+      salePrice: data.sale_price ? Number(data.sale_price) : undefined,
+      category: data.categories?.name_ar || 'أخرى',
+      images: Array.isArray(data.images) && data.images.length > 0 ? data.images : ['/products/product-1.webp'],
+      availability: data.availability,
+      seller: 'متجر النخبة',
+    };
+  } catch {
+    return null;
   }
 }
 

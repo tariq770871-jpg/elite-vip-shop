@@ -313,6 +313,21 @@ CREATE TABLE IF NOT EXISTS public.reviews (
 
 CREATE INDEX IF NOT EXISTS idx_reviews_product ON public.reviews(product_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_approved ON public.reviews(is_approved);
+-- ── Composite index for the most frequent query: approved reviews by product ──
+-- The reviews GET endpoint always queries WHERE product_id = ? AND is_approved = true
+-- A composite index covers both conditions in a single index scan.
+CREATE INDEX IF NOT EXISTS idx_reviews_product_approved ON public.reviews(product_id, is_approved);
+-- ── Index for duplicate review check (user + product) ──
+-- The reviews POST endpoint checks for existing reviews by this user for this product
+CREATE INDEX IF NOT EXISTS idx_reviews_user_product ON public.reviews(user_id, product_id);
+-- ── Index for orders seller_id lookups ──
+-- Seller dashboard queries WHERE seller_id = ? ORDER BY created_at DESC
+CREATE INDEX IF NOT EXISTS idx_orders_seller ON public.orders(seller_id);
+-- ── Index for order_items product_id lookups (used by reviews purchase check) ──
+CREATE INDEX IF NOT EXISTS idx_orderitems_product ON public.order_items(product_id);
+-- ── Index for profiles user_id lookups (used by auth role check) ──
+-- Note: profiles table may be created by Supabase Auth; this index ensures fast lookups
+CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON public.profiles(user_id);
 
 -- ============================================================
 -- 15. TABLE: site_settings (إعدادات الموقع)
