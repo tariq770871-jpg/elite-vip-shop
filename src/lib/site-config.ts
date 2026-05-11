@@ -23,6 +23,21 @@ export const SITE_DESCRIPTION =
 // ─── Contact ───────────────────────────────────────────────────
 export const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "967782138587";
 export const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}`;
+export const TELEGRAM_LINK = process.env.NEXT_PUBLIC_TELEGRAM_LINK || "https://t.me/tariq77087";
+export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "tariq770871@gmail.com";
+export const FACEBOOK_LINK = process.env.NEXT_PUBLIC_FACEBOOK_LINK || "https://www.facebook.com/share/1Gr8vRUE4M/";
+
+// ─── Payment Methods ───────────────────────────────────────────
+export const PAYMENT_METHOD_NAMES: Record<string, string> = {
+  jeeb: "جيب",
+  jawaly: "جوالي",
+  easy_fulusk: "ايزي فلوسك",
+  saltef: "سلطيف",
+  local_transfer: "حوالة شبكة محلية",
+  whatsapp: "واتساب",
+  sms: "رسالة نصية",
+  in_app: "طلب عبر الموقع",
+};
 
 // ─── Helper Functions ──────────────────────────────────────────
 export function getWhatsAppOrderLink(productName: string): string {

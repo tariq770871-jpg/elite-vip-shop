@@ -11,6 +11,7 @@ import {
   EmailBrandIcon,
 } from "@/components/icons";
 import { WhatsAppIcon } from "@/components/whatsapp-icon";
+import { WHATSAPP_LINK, TELEGRAM_LINK, CONTACT_EMAIL, FACEBOOK_LINK } from "@/lib/site-config";
 
 const quickLinks: { label: string; page: PageName }[] = [
   { label: "الرئيسية", page: "home" },
@@ -41,25 +42,25 @@ const quickSectionPages: { label: string; page: PageName; icon: React.ReactNode 
 const socialLinks = [
   {
     icon: <WhatsAppIcon size={20} className="size-5" />,
-    href: "https://wa.me/967782138587",
+    href: WHATSAPP_LINK,
     label: "واتساب",
     hoverClass: "hover:bg-green-600 hover:text-white hover:border-green-600",
   },
   {
     icon: <TelegramBrandIcon className="size-5" />,
-    href: "https://t.me/tariq77087",
+    href: TELEGRAM_LINK,
     label: "تلغرام",
     hoverClass: "hover:bg-sky-500 hover:text-white hover:border-sky-500",
   },
   {
     icon: <EmailBrandIcon className="size-5" />,
-    href: "mailto:tariq770871@gmail.com",
+    href: `mailto:${CONTACT_EMAIL}`,
     label: "البريد الإلكتروني",
     hoverClass: "hover:bg-red-500 hover:text-white hover:border-red-500",
   },
   {
     icon: <FacebookBrandIcon className="size-5" />,
-    href: "https://facebook.com/share/1Gr8vRUE4M/",
+    href: FACEBOOK_LINK,
     label: "فيسبوك",
     hoverClass: "hover:bg-blue-600 hover:text-white hover:border-blue-600",
   },
@@ -137,7 +138,7 @@ export function Footer() {
             <h3 className="text-sm font-bold">تواصل معنا</h3>
             {/* WhatsApp CTA Button */}
             <a
-              href="https://wa.me/967782138587"
+              href={WHATSAPP_LINK}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-3d-whatsapp flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold no-underline"

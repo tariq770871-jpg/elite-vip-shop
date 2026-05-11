@@ -19,12 +19,18 @@ function useCountdown(targetDate: Date) {
   });
 
   useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+
     const tick = () => {
       const now = new Date().getTime();
       const distance = targetDate.getTime() - now;
 
       if (distance <= 0) {
         setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+        if (interval) {
+          clearInterval(interval);
+          interval = null;
+        }
         return;
       }
 
@@ -36,8 +42,10 @@ function useCountdown(targetDate: Date) {
     };
 
     tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
+    interval = setInterval(tick, 1000);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [targetDate]);
 
   return timeLeft;

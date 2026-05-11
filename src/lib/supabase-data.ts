@@ -2,6 +2,77 @@ import { supabase } from '@/lib/supabase'
 import { products, categories, appsData, aiToolsData, academyData, earningData } from '@/lib/mock-data'
 
 /* ============================================================
+   Shared Types — Supabase row mappers
+   ============================================================ */
+
+interface Product {
+  id: string
+  name: string
+  description: string
+  price: number
+  salePrice?: number
+  category: string
+  images: string[]
+  availability: boolean
+  seller: string
+}
+
+interface SupabaseProductRow {
+  product_id: string
+  name: string
+  description: string
+  price: number
+  sale_price: number | null
+  availability: boolean
+  images: string[] | null
+  categories?: { name_ar: string }
+}
+
+function mapProductRow(p: SupabaseProductRow): Product {
+  return {
+    id: p.product_id,
+    name: p.name,
+    description: p.description,
+    price: Number(p.price),
+    salePrice: p.sale_price ? Number(p.sale_price) : undefined,
+    category: p.categories?.name_ar || 'أخرى',
+    images: Array.isArray(p.images) && p.images.length > 0 ? p.images : ['/products/product-1.webp'],
+    availability: p.availability,
+    seller: 'متجر النخبة',
+  }
+}
+
+interface SupabaseCategoryRow {
+  name_ar: string
+}
+
+interface SupabaseAppRow {
+  app_id: string
+  title: string
+  description: string
+  link?: string
+}
+
+interface SupabaseToolRow {
+  tool_id: string
+  title: string
+  description: string
+  link?: string
+}
+
+interface SupabaseCourseRow {
+  course_id: string
+  title: string
+  description: string
+}
+
+interface SupabaseMethodRow {
+  method_id: string
+  title: string
+  description: string
+}
+
+/* ============================================================
    Fetch with fallback to mock data
    ============================================================ */
 
@@ -9,7 +80,7 @@ import { products, categories, appsData, aiToolsData, academyData, earningData }
 // Multiple components (HomeSection, ProductsSection, FlashDealsSection, SearchBar)
 // all call getProducts() on mount. Without caching, the home page alone fires
 // 3+ identical queries. This deduplicates them within a short TTL window.
-let productsCache: any[] | null = null;
+let productsCache: Product[] | null = null;
 let productsCacheTime = 0;
 const PRODUCTS_CACHE_TTL = 30_000; // 30 seconds — stale data is acceptable for product listings
 
@@ -28,17 +99,7 @@ export async function getProducts() {
       .order('created_at', { ascending: false })
     
     if (error || !data || data.length === 0) return products
-    const result = data.map((p: any) => ({
-      id: p.product_id,
-      name: p.name,
-      description: p.description,
-      price: Number(p.price),
-      salePrice: p.sale_price ? Number(p.sale_price) : undefined,
-      category: p.categories?.name_ar || 'أخرى',
-      images: Array.isArray(p.images) && p.images.length > 0 ? p.images : ['/products/product-1.webp'],
-      availability: p.availability,
-      seller: 'متجر النخبة',
-    }));
+    const result = data.map((p: SupabaseProductRow) => mapProductRow(p));
 
     // Update cache
     productsCache = result;
@@ -91,7 +152,7 @@ export async function getCategories() {
       .order('sort_order')
     
     if (error || !data || data.length === 0) return categories
-    return ['الكل', ...data.map((c: any) => c.name_ar)]
+    return ['الكل', ...data.map((c: SupabaseCategoryRow) => c.name_ar)]
   } catch {
     return categories
   }
@@ -107,7 +168,7 @@ export async function getApps() {
       .order('sort_order')
     
     if (error || !data || data.length === 0) return appsData
-    return data.map((a: any) => ({
+    return data.map((a: SupabaseAppRow) => ({
       id: a.app_id,
       title: a.title,
       description: a.description,
@@ -129,7 +190,7 @@ export async function getAiTools() {
       .order('sort_order')
     
     if (error || !data || data.length === 0) return aiToolsData
-    return data.map((t: any) => ({
+    return data.map((t: SupabaseToolRow) => ({
       id: t.tool_id,
       title: t.title,
       description: t.description,
@@ -151,7 +212,7 @@ export async function getAcademyCourses() {
       .order('sort_order')
     
     if (error || !data || data.length === 0) return academyData
-    return data.map((c: any) => ({
+    return data.map((c: SupabaseCourseRow) => ({
       id: c.course_id,
       title: c.title,
       description: c.description,
@@ -172,7 +233,7 @@ export async function getEarningMethods() {
       .order('sort_order')
     
     if (error || !data || data.length === 0) return earningData
-    return data.map((m: any) => ({
+    return data.map((m: SupabaseMethodRow) => ({
       id: m.method_id,
       title: m.title,
       description: m.description,

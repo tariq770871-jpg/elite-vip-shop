@@ -21,6 +21,23 @@ interface WishlistStore {
   totalItems: () => number
 }
 
+/** Validate persisted wishlist data — guard against corrupted localStorage */
+function validateWishlistItems(data: unknown): WishlistItem[] {
+  if (!Array.isArray(data)) return []
+  return data.filter((item): item is WishlistItem => {
+    return (
+      item &&
+      typeof item === 'object' &&
+      typeof item.id === 'string' &&
+      typeof item.name === 'string' &&
+      typeof item.price === 'number' &&
+      typeof item.image === 'string' &&
+      typeof item.category === 'string' &&
+      typeof item.addedAt === 'number'
+    )
+  })
+}
+
 export const useWishlistStore = create<WishlistStore>()(
   persist(
     (set, get) => ({
@@ -56,6 +73,14 @@ export const useWishlistStore = create<WishlistStore>()(
     }),
     {
       name: 'elite-wishlist',
+      merge: (persistedState, currentState) => {
+        const ps = persistedState as { items?: unknown }
+        return {
+          ...currentState,
+          ...(ps && typeof ps === 'object' ? ps : {}),
+          items: validateWishlistItems((ps as Record<string, unknown>)?.items),
+        }
+      },
     }
   )
 )

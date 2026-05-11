@@ -304,7 +304,7 @@ interface ProductRow {
   salePrice?: number;
   category: string;
   availability: boolean;
-  raw?: any;
+  raw?: Record<string, unknown>;
 }
 
 interface AdminUser {
@@ -596,8 +596,9 @@ function AdminDashboard() {
       }
       setProductDialogOpen(false);
       fetchAdminProducts();
-    } catch (err: any) {
-      toast.error(err?.message || "فشل في حفظ المنتج");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "فشل في حفظ المنتج";
+      toast.error(message);
     } finally {
       setProductSaving(false);
     }
@@ -1337,8 +1338,9 @@ function SellerDashboard() {
       }
       setProductDialogOpen(false);
       fetchSellerProducts();
-    } catch (err: any) {
-      toast.error(err?.message || "فشل في حفظ المنتج");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "فشل في حفظ المنتج";
+      toast.error(message);
     } finally {
       setProductSaving(false);
     }

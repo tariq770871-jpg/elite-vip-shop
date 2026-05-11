@@ -1,5 +1,6 @@
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import { escapeHtml } from "@/lib/utils";
+import { PAYMENT_METHOD_NAMES } from "@/lib/site-config";
 
 interface TelegramConfig {
   botToken: string;
@@ -53,17 +54,6 @@ export async function sendTelegramNotification(message: string): Promise<boolean
   }
 }
 
-const paymentMethodNames: Record<string, string> = {
-  jeeb: "جيب",
-  jawaly: "جوالي",
-  easy_fulusk: "ايزي فلوسك",
-  saltef: "سلطيف",
-  local_transfer: "حوالة شبكة محلية",
-  whatsapp: "واتساب",
-  sms: "رسالة نصية",
-  in_app: "طلب عبر الموقع",
-};
-
 export async function sendOrderNotification(order: {
   orderNumber: string;
   customerName?: string;
@@ -100,7 +90,7 @@ export async function sendOrderNotification(order: {
     order.discount ? `🏷️ <b>الخصم:</b> ${Number(order.discount).toLocaleString("ar-SA")} ر.ي` : null,
     order.couponCode ? `🎫 <b>كود الخصم:</b> ${escapeHtml(order.couponCode)}` : null,
     `💰 <b>الإجمالي:</b> ${Number(order.total).toLocaleString("ar-SA")} ر.ي`,
-    order.paymentMethod ? `💳 <b>طريقة الدفع:</b> ${paymentMethodNames[order.paymentMethod] || order.paymentMethod}` : null,
+    order.paymentMethod ? `💳 <b>طريقة الدفع:</b> ${PAYMENT_METHOD_NAMES[order.paymentMethod] || order.paymentMethod}` : null,
     ``,
     `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
     ``,

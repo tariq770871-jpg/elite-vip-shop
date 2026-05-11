@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sendOrderNotification } from "@/lib/telegram";
 import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
+import { PAYMENT_METHOD_NAMES } from "@/lib/site-config";
 
 // POST: Save a new order to Supabase
 export async function POST(request: Request) {
@@ -101,11 +102,7 @@ export async function POST(request: Request) {
 
     // Build notes with delivery info
     const sanitize = (val: string | undefined | null) => (val || "").replace(/\|/g, "│");
-    const paymentNames: Record<string, string> = {
-      jeeb: "جيب", jawaly: "جوالي", easy_fulusk: "ايزي فلوسك", saltef: "سلطيف",
-      local_transfer: "حوالة شبكة محلية", whatsapp: "واتساب", sms: "رسالة نصية", in_app: "طلب عبر الموقع",
-    };
-    const pmLabel = paymentNames[paymentMethod] || paymentMethod || "غير محدد";
+    const pmLabel = PAYMENT_METHOD_NAMES[paymentMethod] || paymentMethod || "غير محدد";
 
     let notesContent = notes || "";
     if (!notesContent) {

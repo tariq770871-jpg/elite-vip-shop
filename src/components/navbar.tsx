@@ -54,7 +54,7 @@ import { useTheme } from "@/components/theme-provider";
 import { useNavigation, type PageName, PAGE_PATHS } from "@/lib/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { useNotificationStore } from "@/store/notification-store";
-import { WHATSAPP_LINK } from "@/lib/site-config";
+import { WHATSAPP_LINK, TELEGRAM_LINK, CONTACT_EMAIL, FACEBOOK_LINK } from "@/lib/site-config";
 import { Logo } from "@/components/logo";
 import {
   WhatsAppBrandIcon,
@@ -101,19 +101,19 @@ const socialLinks = [
   {
     label: "تيليجرام",
     icon: <TelegramBrandIcon className="size-5" />,
-    href: "https://t.me/tariq77087",
+    href: TELEGRAM_LINK,
     hoverClass: "hover:bg-sky-500/10 hover:text-sky-500 hover:border-sky-500/30",
   },
   {
     label: "بريد",
     icon: <EmailBrandIcon className="size-5" />,
-    href: "mailto:tariq770871@gmail.com",
+    href: `mailto:${CONTACT_EMAIL}`,
     hoverClass: "hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30",
   },
   {
     label: "فيسبوك",
     icon: <FacebookBrandIcon className="size-5" />,
-    href: "https://www.facebook.com/share/1Gr8vRUE4M/",
+    href: FACEBOOK_LINK,
     hoverClass: "hover:bg-blue-600/10 hover:text-blue-600 hover:border-blue-600/30",
   },
 ];
