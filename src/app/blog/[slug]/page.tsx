@@ -9,12 +9,11 @@ import { RelatedPosts } from "./related-posts";
 import { BlogCTA } from "./blog-cta";
 import DOMPurify from "isomorphic-dompurify";
 import { safeJsonLd } from "@/lib/utils";
+import { SITE_URL, SITE_NAME, WHATSAPP_LINK } from "@/lib/site-config";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
 }
-
-const SITE_URL = "https://elite-vip-shop.vercel.app";
 
 export async function generateMetadata({ params }: BlogPostPageProps) {
   const { slug } = await params;
@@ -31,8 +30,8 @@ export async function generateMetadata({ params }: BlogPostPageProps) {
       title: `${post.title} | مدونة النخبة`,
       description: post.excerpt,
       url: `${SITE_URL}/blog/${post.slug}`,
-      siteName: "Elite VIP Shop",
-      locale: "ar_YE",
+      siteName: SITE_NAME,
+      locale: "ar_AR",
       type: "article",
       publishedTime: post.date,
       authors: [post.author],
@@ -91,11 +90,11 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       url: SITE_URL,
       logo: {
         "@type": "ImageObject",
-        url: `${SITE_URL}/logo.png`,
+        url: `${SITE_URL}/logo.svg`,
       },
     },
     datePublished: post.date,
-    dateModified: post.date,
+    dateModified: undefined,
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id": `${SITE_URL}/blog/${post.slug}`,
@@ -127,9 +126,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     <main className="min-h-screen">
       <BreadcrumbSchema
         items={[
-          { name: "الرئيسية", url: `${SITE_URL}/` },
-          { name: "المدونة", url: `${SITE_URL}/blog` },
-          { name: post.title, url: `${SITE_URL}/blog/${post.slug}` },
+          { name: "الرئيسية", url: "/" },
+          { name: "المدونة", url: "/blog" },
+          { name: post.title, url: `/blog/${post.slug}` },
         ]}
       />
 
@@ -270,7 +269,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                     تواصل معنا عبر واتساب للحصول على استشارة مجانية
                   </p>
                   <a
-                    href="https://wa.me/967782138587"
+                    href={WHATSAPP_LINK}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn-3d-whatsapp flex w-full items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold no-underline"

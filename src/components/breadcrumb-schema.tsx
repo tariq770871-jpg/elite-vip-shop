@@ -1,4 +1,5 @@
 import { safeJsonLd } from "@/lib/utils";
+import { SITE_URL } from "@/lib/site-config";
 
 interface BreadcrumbItem {
   name: string;
@@ -8,8 +9,6 @@ interface BreadcrumbItem {
 interface BreadcrumbSchemaProps {
   items: BreadcrumbItem[];
 }
-
-const SITE_URL = "https://elite-vip-shop.vercel.app";
 
 export function BreadcrumbSchema({ items }: BreadcrumbSchemaProps) {
   const breadcrumbList = {

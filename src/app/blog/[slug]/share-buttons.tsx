@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { BlogPost } from "@/lib/blog-data";
+import { SITE_URL } from "@/lib/site-config";
 
 interface BlogShareButtonsProps {
   post: BlogPost;
@@ -11,7 +12,7 @@ interface BlogShareButtonsProps {
 
 export function BlogShareButtons({ post }: BlogShareButtonsProps) {
   const [copied, setCopied] = useState(false);
-  const postUrl = `https://elite-vip-shop.vercel.app/blog/${post.slug}`;
+  const postUrl = `${SITE_URL}/blog/${post.slug}`;
   const shareText = `${post.title} - مدونة النخبة`;
 
   const handleCopyLink = async () => {
@@ -20,9 +21,11 @@ export function BlogShareButtons({ post }: BlogShareButtonsProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback
+      // Fallback using hidden input selection
       const textArea = document.createElement("textarea");
       textArea.value = postUrl;
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
       document.body.appendChild(textArea);
       textArea.select();
       document.execCommand("copy");

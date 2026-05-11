@@ -3,9 +3,7 @@ import { FaqSection } from "@/components/sections/faq-section";
 import { BreadcrumbSchema } from "@/components/breadcrumb-schema";
 import { faqData } from "@/lib/mock-data";
 import { safeJsonLd } from "@/lib/utils";
-
-const SITE_URL = "https://elite-vip-shop.vercel.app";
-const SITE_NAME = "Elite VIP Shop - متجر النخبة";
+import { SITE_URL, SITE_NAME } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "الأسئلة الشائعة",

@@ -1,39 +1,41 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Calendar, Clock, BookOpen } from "lucide-react";
 import { getAllPosts } from "@/lib/blog-data";
 import { BreadcrumbSchema } from "@/components/breadcrumb-schema";
 import { BlogImage } from "@/components/blog-image";
+import { SITE_URL, SITE_NAME } from "@/lib/site-config";
 
-export const metadata = {
-  title: "المدونة | Elite VIP Shop - متجر النخبة",
+export const metadata: Metadata = {
+  title: `المدونة | ${SITE_NAME}`,
   description:
     "مقالات ونصائح متخصصة في التسويق الرقمي، الربح من الإنترنت، التجارة الإلكترونية، الذكاء الاصطناعي، تصميم المواقع والتداول. محتوى عربي حصري ومفيد.",
   openGraph: {
-    title: "المدونة | Elite VIP Shop - متجر النخبة",
+    title: `المدونة | ${SITE_NAME}`,
     description:
       "مقالات ونصائح متخصصة في التسويق الرقمي، الربح من الإنترنت، التجارة الإلكترونية، الذكاء الاصطناعي، تصميم المواقع والتداول.",
-    url: "https://elite-vip-shop.vercel.app/blog",
-    siteName: "Elite VIP Shop",
-    locale: "ar_YE",
+    url: `${SITE_URL}/blog`,
+    siteName: SITE_NAME,
+    locale: "ar_AR",
     type: "website",
     images: [
       {
-        url: "https://elite-vip-shop.vercel.app/og-blog.png",
-        width: 1200,
-        height: 630,
-        alt: "مدونة Elite VIP Shop",
+        url: "/icons/icon-512.png",
+        width: 512,
+        height: 512,
+        alt: `مدونة ${SITE_NAME}`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "المدونة | Elite VIP Shop - متجر النخبة",
+    title: `المدونة | ${SITE_NAME}`,
     description:
       "مقالات ونصائح متخصصة في التسويق الرقمي، الربح من الإنترنت، التجارة الإلكترونية، الذكاء الاصطناعي، تصميم المواقع والتداول.",
-    images: ["https://elite-vip-shop.vercel.app/og-blog.png"],
+    images: ["/icons/icon-512.png"],
   },
   alternates: {
-    canonical: "https://elite-vip-shop.vercel.app/blog",
+    canonical: `${SITE_URL}/blog`,
   },
 };
 
@@ -44,8 +46,8 @@ export default function BlogPage() {
     <main className="min-h-screen">
       <BreadcrumbSchema
         items={[
-          { name: "الرئيسية", url: "https://elite-vip-shop.vercel.app/" },
-          { name: "المدونة", url: "https://elite-vip-shop.vercel.app/blog" },
+          { name: "الرئيسية", url: "/" },
+          { name: "المدونة", url: "/blog" },
         ]}
       />
 

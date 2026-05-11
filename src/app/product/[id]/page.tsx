@@ -3,9 +3,7 @@ import { ProductDetailSection } from "@/components/sections/product-detail-secti
 import { BreadcrumbSchema } from "@/components/breadcrumb-schema";
 import { products } from "@/lib/mock-data";
 import { safeJsonLd } from "@/lib/utils";
-
-const SITE_URL = "https://elite-vip-shop.vercel.app";
-const SITE_NAME = "Elite VIP Shop - متجر النخبة";
+import { SITE_URL, SITE_NAME } from "@/lib/site-config";
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
@@ -57,6 +55,11 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
       images: product.images[0] ? [product.images[0]] : ["/icons/icon-512.png"],
     },
   };
+}
+
+// Enable static generation for product pages (ISR-friendly)
+export async function generateStaticParams() {
+  return products.map((product) => ({ id: product.id }));
 }
 
 export default async function ProductDetailPage({ params }: ProductPageProps) {

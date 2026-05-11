@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { ShippingSection } from "@/components/sections/shipping-section";
 import { BreadcrumbSchema } from "@/components/breadcrumb-schema";
-
-const SITE_URL = "https://elite-vip-shop.vercel.app";
-const SITE_NAME = "Elite VIP Shop - متجر النخبة";
+import { SITE_URL, SITE_NAME } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "سياسة الشحن والتوصيل",

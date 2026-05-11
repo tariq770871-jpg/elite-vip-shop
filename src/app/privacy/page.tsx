@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { PrivacySection } from "@/components/sections/privacy-section";
 import { BreadcrumbSchema } from "@/components/breadcrumb-schema";
 import { safeJsonLd } from "@/lib/utils";
-
-const SITE_URL = "https://elite-vip-shop.vercel.app";
-const SITE_NAME = "Elite VIP Shop - متجر النخبة";
+import { SITE_URL, SITE_NAME, WHATSAPP_NUMBER } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "سياسة الخصوصية",
@@ -42,22 +40,22 @@ export const metadata: Metadata = {
 const privacySchema = {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  name: "سياسة الخصوصية | Elite VIP Shop",
+  name: `سياسة الخصوصية | ${SITE_NAME}`,
   description:
     "سياسة الخصوصية الخاصة بمتجر النخبة — Elite VIP Shop. تعرّف على كيفية جمع واستخدام وحماية بياناتك الشخصية.",
-  url: "https://elite-vip-shop.vercel.app/privacy",
+  url: `${SITE_URL}/privacy`,
   isPartOf: {
     "@type": "WebSite",
-    name: "Elite VIP Shop - متجر النخبة",
-    url: "https://elite-vip-shop.vercel.app",
+    name: SITE_NAME,
+    url: SITE_URL,
   },
   about: {
     "@type": "Organization",
     name: "Elite VIP Shop",
-    url: "https://elite-vip-shop.vercel.app",
+    url: SITE_URL,
     contactPoint: {
       "@type": "ContactPoint",
-      telephone: "+967-782-138-587",
+      telephone: `+${WHATSAPP_NUMBER.replace(/(\d{3})(\d{3})(\d{3})(\d{3})/, "$1-$2-$3-$4")}`,
       contactType: "customer service",
       availableLanguage: "Arabic",
     },
