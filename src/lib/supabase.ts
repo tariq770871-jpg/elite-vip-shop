@@ -16,6 +16,14 @@ import { createBrowserClient } from '@supabase/ssr'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn(
+    '⚠️ [Supabase Browser] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. ' +
+    'The Supabase client will be null — features relying on Supabase will use fallback data. ' +
+    'Please set these environment variables. See .env.example for reference.'
+  )
+}
+
 export const supabase = supabaseUrl && supabaseAnonKey
   ? createBrowserClient(supabaseUrl, supabaseAnonKey)
   : null

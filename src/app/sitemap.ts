@@ -1,8 +1,7 @@
 import type { MetadataRoute } from "next";
 import { products } from "@/lib/mock-data";
 import { getAllPosts } from "@/lib/blog-data";
-
-const BASE_URL = "https://elite-vip-shop.vercel.app";
+import { SITE_URL } from "@/lib/site-config";
 
 // Static page definitions with realistic lastModified dates and priorities
 const staticPages: {
@@ -42,13 +41,13 @@ const staticPages: {
 export default function sitemap(): MetadataRoute.Sitemap {
   // Static pages
   const staticEntries: MetadataRoute.Sitemap = staticPages.map((page) => ({
-    url: `${BASE_URL}${page.path}`,
+    url: `${SITE_URL}${page.path}`,
     lastModified: new Date(page.lastModified),
     changeFrequency: page.changeFrequency,
     priority: page.priority,
     alternates: {
       languages: {
-        ar: `${BASE_URL}${page.path}`,
+        ar: `${SITE_URL}${page.path}`,
       },
     },
   }));
@@ -57,13 +56,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const productEntries: MetadataRoute.Sitemap = products
     .filter((product) => product.availability)
     .map((product) => ({
-      url: `${BASE_URL}/product/${product.id}`,
+      url: `${SITE_URL}/product/${product.id}`,
       lastModified: new Date("2025-01-20"),
       changeFrequency: "weekly" as const,
       priority: 0.7,
       alternates: {
         languages: {
-          ar: `${BASE_URL}/product/${product.id}`,
+          ar: `${SITE_URL}/product/${product.id}`,
         },
       },
     }));
@@ -71,13 +70,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Blog post pages
   const blogPosts = getAllPosts();
   const blogEntries: MetadataRoute.Sitemap = blogPosts.map((post) => ({
-    url: `${BASE_URL}/blog/${post.slug}`,
+    url: `${SITE_URL}/blog/${post.slug}`,
     lastModified: new Date(post.date),
     changeFrequency: "monthly" as const,
     priority: 0.6,
     alternates: {
       languages: {
-        ar: `${BASE_URL}/blog/${post.slug}`,
+        ar: `${SITE_URL}/blog/${post.slug}`,
       },
     },
   }));

@@ -8,17 +8,13 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { LayoutClient } from "@/components/layout-client";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { safeJsonLd } from "@/lib/utils";
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, WHATSAPP_NUMBER } from "@/lib/site-config";
 
 const cairo = Cairo({
   variable: "--font-cairo",
   subsets: ["arabic", "latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
 });
-
-const SITE_URL = "https://elite-vip-shop.vercel.app";
-const SITE_NAME = "Elite VIP Shop - متجر النخبة";
-const SITE_DESCRIPTION =
-  "منصة النخبة المتكاملة — متجر، تطبيقات وأدوات، خدمات رقمية، تداول، وربح من الإنترنت. أفضل المنتجات بأسعار تنافسية مع ضمان الجودة."
 
 export const metadata: Metadata = {
   title: {
@@ -104,7 +100,7 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="alternate" hrefLang="ar" href="https://elite-vip-shop.vercel.app/" />
+        <link rel="alternate" hrefLang="ar" href={`${SITE_URL}/`} />
         <meta name="theme-color" content="#d4a843" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -116,14 +112,18 @@ export default function RootLayout({
         <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
         {/* Google Search Console Verification */}
         <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GSC_VERIFICATION || ""} />
-        {/* Google Analytics GA4 - Elite VIP Shop */}
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-GB8NMT2G45'}`}
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-GB8NMT2G45'}');`}
-        </Script>
+        {/* Google Analytics GA4 — only rendered when measurement ID is configured */}
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');`}
+            </Script>
+          </>
+        )}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -136,11 +136,11 @@ export default function RootLayout({
                 logo: `${SITE_URL}/icons/icon-512.png`,
                 contactPoint: {
                   "@type": "ContactPoint",
-                  telephone: "+967-782-138-587",
+                  telephone: `+${WHATSAPP_NUMBER.replace(/(\d{3})(\d{3})(\d{3})(\d{3})/, "$1-$2-$3-$4")}`,
                   contactType: "customer service",
                   availableLanguage: "Arabic",
                 },
-                sameAs: ["https://wa.me/967782138587"],
+                sameAs: [`https://wa.me/${WHATSAPP_NUMBER}`],
               },
               {
                 "@context": "https://schema.org",

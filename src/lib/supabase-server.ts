@@ -27,6 +27,18 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn(
+    '⚠️ [Supabase Server] Missing required environment variables:',
+    [
+      !SUPABASE_URL && 'NEXT_PUBLIC_SUPABASE_URL',
+      !SUPABASE_ANON_KEY && 'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+      !SUPABASE_SERVICE_ROLE_KEY && 'SUPABASE_SERVICE_ROLE_KEY',
+    ].filter(Boolean).join(', '),
+    '— Supabase server clients will return null. See .env.example for reference.'
+  );
+}
+
 // ─── Service Role Client ────────────────────────────────────────
 // Bypasses Row Level Security — use ONLY for admin operations
 // (e.g., in middleware, admin API routes with auth checks already done)

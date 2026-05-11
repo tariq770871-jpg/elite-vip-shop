@@ -535,16 +535,5 @@ export const faqData: FaqItem[] = [
 ]
 
 // ── WhatsApp Config ──────────────────────────────────────────
-
-export const WHATSAPP_NUMBER = '967782138587'
-export const WHATSAPP_LINK = 'https://wa.me/967782138587'
-
-export function getWhatsAppOrderLink(productName: string): string {
-  const message = `مرحباً، أريد طلب المنتج التالي:\n*${productName}*\nمن موقع Elite VIP Shop`
-  return `${WHATSAPP_LINK}?text=${encodeURIComponent(message)}`
-}
-
-export function getWhatsAppServiceLink(serviceName: string): string {
-  const message = `مرحباً، أريد الاستفسار عن الخدمة التالية:\n*${serviceName}*\nمن موقع Elite VIP Shop`
-  return `${WHATSAPP_LINK}?text=${encodeURIComponent(message)}`
-}
+// Re-export from site-config (single source of truth)
+export { WHATSAPP_NUMBER, WHATSAPP_LINK, getWhatsAppOrderLink, getWhatsAppServiceLink } from './site-config'

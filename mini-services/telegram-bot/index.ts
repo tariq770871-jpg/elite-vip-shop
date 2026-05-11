@@ -10,6 +10,9 @@ const CONFIG_FILE = join(__dirname, 'config.json')
 let TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 let TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || ''
 
+// Allowed origins for CORS — defaults to Next.js app URL
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,https://elite-vip-shop.vercel.app').split(',').map(o => o.trim())
+
 function loadConfig() {
   if (existsSync(CONFIG_FILE)) {
     try {
@@ -112,11 +115,14 @@ const server = Bun.serve({
   async fetch(req) {
     const url = new URL(req.url)
 
+    const origin = req.headers.get('origin') || ''
+    const corsOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+
     const headers = {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': corsOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     }
 
     if (req.method === 'OPTIONS') {
@@ -133,6 +139,12 @@ const server = Bun.serve({
     }
 
     if (url.pathname === '/configure' && req.method === 'POST') {
+      // Require a shared secret for configuration changes
+      const configSecret = process.env.TELEGRAM_CONFIG_SECRET || ''
+      const authHeader = req.headers.get('authorization')
+      if (configSecret && (!authHeader || authHeader !== `Bearer ${configSecret}`)) {
+        return new Response(JSON.stringify({ error: 'غير مصرح' }), { status: 401, headers })
+      }
       try {
         const body = await req.json()
         const { botToken, chatId } = body

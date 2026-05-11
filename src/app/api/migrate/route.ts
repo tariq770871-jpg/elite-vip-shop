@@ -24,6 +24,14 @@ function safeCompare(a: string, b: string): boolean {
  * Security: only allow with service role key as Bearer token.
  */
 export async function POST(request: Request) {
+  // Block migration endpoints in production
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { error: 'Migration endpoints are disabled in production. Use Supabase Dashboard → SQL Editor instead.' },
+      { status: 403 }
+    );
+  }
+
   const authHeader = request.headers.get("authorization");
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
   if (!authHeader || !safeCompare(authHeader, `Bearer ${serviceKey}`)) {
@@ -95,7 +103,7 @@ export async function POST(request: Request) {
   for (const config of connectionConfigs) {
     const client = new Client({
       ...config,
-      ssl: { rejectUnauthorized: false },
+      ssl: { rejectUnauthorized: true },
       connectionTimeoutMillis: 8000,
     });
 
