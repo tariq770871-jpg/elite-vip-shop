@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       });
 
       if (error) {
-        console.log("Contact save (table may not exist):", error.message);
+        console.warn("Contact save (table may not exist):", error.message);
       }
     }
 

@@ -1,6 +1,6 @@
 import { Shield, Lock, Eye, Cookie, UserCheck, Phone, Scale, Database, Globe, MessageCircle } from "lucide-react";
+import { WHATSAPP_LINK, CONTACT_EMAIL, TELEGRAM_LINK } from "@/lib/site-config";
 
-const WHATSAPP_URL = "https://wa.me/967782138587";
 const LAST_UPDATED = "7 يوليو 2025";
 
 function SectionCard({
@@ -197,7 +197,7 @@ export function PrivacySection() {
               <li className="leading-7">
                 واتساب (الطريقة الأساسية للتواصل):{" "}
                 <a
-                  href={WHATSAPP_URL}
+                  href={WHATSAPP_LINK}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 font-semibold text-green-600 transition-colors hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
@@ -208,11 +208,11 @@ export function PrivacySection() {
               </li>
               <li className="leading-7">
                 البريد الإلكتروني:{" "}
-                <span className="font-semibold text-foreground" dir="ltr">tariq770871@gmail.com</span>
+                <span className="font-semibold text-foreground" dir="ltr">{CONTACT_EMAIL}</span>
               </li>
               <li className="leading-7">
                 تيليجرام:{" "}
-                <span className="font-semibold text-foreground" dir="ltr">@tariq77087</span>
+                <a href={TELEGRAM_LINK} target="_blank" rel="noopener noreferrer" className="font-semibold text-foreground" dir="ltr">tariq77087</a>
               </li>
             </ul>
           </SectionCard>
@@ -224,7 +224,7 @@ export function PrivacySection() {
             هل لديك استفسار حول خصوصيتك؟ تواصل معنا مباشرة عبر واتساب وسنرد عليك في أسرع وقت.
           </p>
           <a
-            href={WHATSAPP_URL}
+            href={WHATSAPP_LINK}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-3d-whatsapp inline-flex items-center gap-2"

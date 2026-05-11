@@ -1,19 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import { Client } from "pg";
-import { timingSafeEqual } from "crypto";
-
-/**
- * Constant-time string comparison to prevent timing attacks.
- */
-function safeCompare(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  try {
-    return timingSafeEqual(Buffer.from(a), Buffer.from(b));
-  } catch {
-    return false;
-  }
-}
+import { safeCompare } from "@/lib/utils";
 
 /**
  * POST /api/migrate
@@ -115,8 +103,9 @@ export async function POST(request: Request) {
         try {
           await client.query(sql);
           results.push({ sql: sql.substring(0, 60), ok: true });
-        } catch (e: any) {
-          results.push({ sql: sql.substring(0, 60), ok: false, detail: e.message?.substring(0, 80) });
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message?.substring(0, 80) : String(e).substring(0, 80);
+          results.push({ sql: sql.substring(0, 60), ok: false, detail: msg });
         }
       }
 

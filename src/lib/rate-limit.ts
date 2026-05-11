@@ -23,6 +23,7 @@ interface RateLimitConfig {
 export const RATE_LIMIT_PRESETS: Record<string, RateLimitConfig> = {
   api: { limit: 10, windowMs: 60_000 },       // 10 req / 60s
   contact: { limit: 5, windowMs: 60_000 },     // 5 req / 60s
+  coupon: { limit: 5, windowMs: 60_000 },       // 5 req / 60s (prevents brute-force coupon guessing)
 };
 
 class RateLimiter {

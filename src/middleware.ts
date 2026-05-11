@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { extractAccessToken } from "@/lib/supabase-server";
 
 /**
  * Middleware: Session refresh + Admin API Authentication
@@ -64,15 +65,8 @@ export async function middleware(request: NextRequest) {
 
   // ─── Step 2: Admin API route protection ──────────────────────────
   if (pathname.startsWith("/api/admin")) {
-    // Try Authorization header first (set by client-side API calls)
-    const authHeader = request.headers.get("authorization");
-    const headerToken =
-      authHeader?.startsWith("Bearer ") && authHeader.split(" ")[1];
-
-    // Fallback: check for sb-access-token cookie (set by @supabase/ssr browser client)
-    const cookieToken = request.cookies.get("sb-access-token")?.value;
-
-    const accessToken = headerToken || cookieToken;
+    // Extract access token using shared utility (Authorization header + cookie fallback)
+    const accessToken = extractAccessToken(request);
 
     if (!accessToken) {
       return NextResponse.json(
@@ -120,18 +114,18 @@ export async function middleware(request: NextRequest) {
     const roleName = (userProfile?.roles as { role_name?: string } | null)
       ?.role_name;
 
-    if (roleName !== "admin") {
+    if (roleName !== "admin" && roleName !== "owner") {
       return NextResponse.json(
         { error: "Forbidden — admin access required" },
         { status: 403 }
       );
     }
 
-    // Token is valid and user is admin — add user info to request headers for downstream use
+    // Token is valid and user is admin/owner — add user info to request headers for downstream use
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-user-id", user.id);
     requestHeaders.set("x-user-email", user.email || "");
-    requestHeaders.set("x-user-role", "admin");
+    requestHeaders.set("x-user-role", roleName || "admin");
 
     // Merge with any cookie updates from Step 1
     const adminResponse = NextResponse.next({
@@ -148,11 +142,7 @@ export async function middleware(request: NextRequest) {
 
   // ─── Step 3: Dashboard page protection (admin-only page) ──────────
   if (pathname.startsWith("/dashboard")) {
-    const authHeader = request.headers.get("authorization");
-    const headerToken =
-      authHeader?.startsWith("Bearer ") && authHeader.split(" ")[1];
-    const cookieToken = request.cookies.get("sb-access-token")?.value;
-    const accessToken = headerToken || cookieToken;
+    const accessToken = extractAccessToken(request);
 
     if (!accessToken) {
       return NextResponse.redirect(new URL("/login", request.url));

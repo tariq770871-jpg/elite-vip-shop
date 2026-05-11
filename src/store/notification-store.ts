@@ -22,6 +22,11 @@ interface NotificationStore {
   clearAll: () => void
 }
 
+/** Time constants for seed notification offsets */
+const DAY_MS = 86_400_000;     // 24 hours
+const HALF_DAY_MS = 43_200_000; // 12 hours
+const QUARTER_DAY_MS = 21_600_000; // 6 hours
+
 /** Default seed notifications — shown once on first visit only */
 const SEED_NOTIFICATIONS: Notification[] = [
   {
@@ -30,7 +35,7 @@ const SEED_NOTIFICATIONS: Notification[] = [
     message: 'استمتع بتجربة تسوق فاخرة مع أفضل المنتجات بأسعار لا تُقاوم.',
     type: 'system',
     read: false,
-    createdAt: Date.now() - 86400000,
+    createdAt: Date.now() - DAY_MS,
   },
   {
     id: 'n2',
@@ -38,7 +43,7 @@ const SEED_NOTIFICATIONS: Notification[] = [
     message: 'لا تفوت فرصة الحصول على أفضل الإلكترونيات بخصم استثنائي. العرض ينتهي قريباً!',
     type: 'promo',
     read: false,
-    createdAt: Date.now() - 43200000,
+    createdAt: Date.now() - HALF_DAY_MS,
   },
   {
     id: 'n3',
@@ -46,7 +51,7 @@ const SEED_NOTIFICATIONS: Notification[] = [
     message: 'الشحن مجاني لجميع الطلبات فوق 5000 ر.ي. استمتع بالتسوق بدون رسوم إضافية!',
     type: 'shipping',
     read: false,
-    createdAt: Date.now() - 21600000,
+    createdAt: Date.now() - QUARTER_DAY_MS,
   },
 ];
 

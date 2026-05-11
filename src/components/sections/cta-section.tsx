@@ -2,6 +2,7 @@
 
 import { ArrowLeft } from "lucide-react";
 import { WhatsAppIcon } from "@/components/whatsapp-icon";
+import { WHATSAPP_LINK } from "@/lib/site-config";
 
 interface CTASectionProps {
   title?: string;
@@ -16,7 +17,7 @@ export function CTASection({
   buttonText = "تواصل معنا الآن",
   whatsappMessage = "مرحباً، أريد الاستفسار عن خدماتكم ومنتجاتكم",
 }: CTASectionProps) {
-  const whatsappUrl = `https://wa.me/967782138587?text=${encodeURIComponent(whatsappMessage)}`;
+  const whatsappUrl = `${WHATSAPP_LINK}?text=${encodeURIComponent(whatsappMessage)}`;
 
   return (
     <section className="relative overflow-hidden py-12 md:py-16 px-4 md:px-8">

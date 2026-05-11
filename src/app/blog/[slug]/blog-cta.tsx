@@ -1,4 +1,5 @@
 import { MessageCircle } from "lucide-react";
+import { WHATSAPP_LINK } from "@/lib/site-config";
 
 export function BlogCTA() {
   return (
@@ -18,7 +19,7 @@ export function BlogCTA() {
           تواصل معنا عبر واتساب للحصول على استشارة مجانية. فريقنا جاهز لمساعدتك في أي استفسار.
         </p>
         <a
-          href="https://wa.me/967782138587?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D8%8C%20%D8%A3%D8%AD%D8%AA%D8%A7%D8%AC%20%D9%85%D8%B3%D8%A7%D8%B9%D8%AF%D8%A9"
+          href={`${WHATSAPP_LINK}?text=${encodeURIComponent("مرحباً، أحتاج مساعدة")}`}
           target="_blank"
           rel="noopener noreferrer"
           className="btn-3d-whatsapp inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3 text-sm font-bold no-underline"

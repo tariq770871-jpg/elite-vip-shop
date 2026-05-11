@@ -20,6 +20,37 @@ import { createServerClient as createSsrServerClient } from "@supabase/ssr";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
+// ─── Shared Auth Token Extraction ───────────────────────────────
+// Used by createRouteHandlerClient(), verifyAuthToken(), and middleware.
+// Extracts the access token from the Authorization header first,
+// then falls back to the sb-access-token cookie.
+
+/**
+ * Extract the Supabase access token from a Request object.
+ * Checks the `Authorization: Bearer <token>` header first,
+ * then falls back to the `sb-access-token` cookie.
+ *
+ * @param request - The incoming Request (or NextRequest)
+ * @returns The access token string, or null if not found
+ */
+export function extractAccessToken(request: Request): string | null {
+  // 1. Authorization header (set by client-side API calls)
+  const authHeader = request.headers.get("authorization");
+  const headerToken =
+    authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
+  if (headerToken) return headerToken;
+
+  // 2. Cookie: try structured API first (NextRequest), then raw header parsing
+  //    NextRequest has request.cookies.get(), generic Request does not.
+  const cookieHeader = request.headers.get("cookie");
+  if (cookieHeader) {
+    const match = cookieHeader.match(/sb-access-token=([^;]+)/);
+    if (match) return match[1];
+  }
+
+  return null;
+}
+
 // ─── Environment variables ──────────────────────────────────────
 // NEXT_PUBLIC_SUPABASE_URL is safe to use server-side (it's just a URL)
 // SUPABASE_SERVICE_ROLE_KEY must NEVER be prefixed with NEXT_PUBLIC_
@@ -129,20 +160,7 @@ export function createRouteHandlerClient(
 ): SupabaseClient | null {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
 
-  // Extract token from Authorization header (Bearer token)
-  const authHeader = request.headers.get("authorization");
-  const headerToken =
-    authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
-
-  // Fallback: read from cookie header
-  let cookieToken: string | null = null;
-  const cookieHeader = request.headers.get("cookie");
-  if (cookieHeader) {
-    const match = cookieHeader.match(/sb-access-token=([^;]+)/);
-    cookieToken = match ? match[1] : null;
-  }
-
-  const accessToken = headerToken || cookieToken;
+  const accessToken = extractAccessToken(request);
 
   return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
@@ -176,19 +194,7 @@ export async function verifyAuthToken(request: Request): Promise<{
     return { user: null, error: "Authentication service unavailable" };
   }
 
-  // Extract token
-  const authHeader = request.headers.get("authorization");
-  const headerToken =
-    authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
-
-  let cookieToken: string | null = null;
-  const cookieHeader = request.headers.get("cookie");
-  if (cookieHeader) {
-    const match = cookieHeader.match(/sb-access-token=([^;]+)/);
-    cookieToken = match ? match[1] : null;
-  }
-
-  const accessToken = headerToken || cookieToken;
+  const accessToken = extractAccessToken(request);
 
   if (!accessToken) {
     return { user: null, error: "No authentication token provided" };

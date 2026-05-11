@@ -1,21 +1,10 @@
 import { supabase } from '@/lib/supabase'
 import { products, categories, appsData, aiToolsData, academyData, earningData } from '@/lib/mock-data'
+import type { Product } from '@/lib/mock-data'
 
 /* ============================================================
    Shared Types — Supabase row mappers
    ============================================================ */
-
-interface Product {
-  id: string
-  name: string
-  description: string
-  price: number
-  salePrice?: number
-  category: string
-  images: string[]
-  availability: boolean
-  seller: string
-}
 
 interface SupabaseProductRow {
   product_id: string
@@ -245,49 +234,16 @@ export async function getEarningMethods() {
 }
 
 /* ============================================================
-   Fetch All Products (Admin Dashboard)
-   ⚠️ DEPRECATED: Use /api/admin/products GET endpoint instead.
-   This function uses the anon client with no auth checks.
+   DEPRECATED: getAllProducts() has been removed.
+   Use /api/admin/products GET endpoint instead — the old
+   function used the browser anon client without auth checks.
    ============================================================ */
 
-/** @deprecated Use fetch('/api/admin/products') instead — this uses the anon client without auth */
-export async function getAllProducts() {
-  console.warn('[DEPRECATED] getAllProducts() — use /api/admin/products GET endpoint instead');
-  try {
-    if (!supabase) return []
-    const { data, error } = await supabase
-      .from('products')
-      .select('*, categories(name_ar)')
-      .order('created_at', { ascending: false })
-      .limit(100)
-
-    if (error || !data) return []
-    return data.map((p: any) => ({
-      id: p.product_id,
-      name: p.name,
-      description: p.description,
-      price: Number(p.price),
-      salePrice: p.sale_price ? Number(p.sale_price) : undefined,
-      category: p.categories?.name_ar || 'أخرى',
-      images: Array.isArray(p.images) && p.images.length > 0 ? p.images : [],
-      availability: p.availability,
-      seller: 'متجر النخبة',
-      raw: p,
-    }))
-  } catch {
-    return []
-  }
+/** Invalidate the products cache — call after admin product CRUD operations */
+export function invalidateProductsCache(): void {
+  productsCache = null;
+  productsCacheTime = 0;
 }
-
-/* ============================================================
-   Product Management (Dashboard)
-   ⚠️ REMOVED: These functions were insecure — they used the
-   browser anon client with NO authentication or validation.
-   Use the secure /api/admin/products endpoints instead:
-     - POST /api/admin/products  → addProduct
-     - PUT /api/admin/products   → updateProduct
-     - DELETE /api/admin/products → deleteProduct
-   ============================================================ */
 
 /* ============================================================
    App Management (Dashboard)

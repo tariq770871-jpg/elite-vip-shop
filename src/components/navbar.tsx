@@ -120,7 +120,7 @@ const socialLinks = [
 
 export function Navbar({ onToggleSearch }: NavbarProps) {
   const { theme, toggleTheme } = useTheme();
-  const { currentPage, isActive, navigateTo, goBack, getPath } = useNavigation();
+  const { isActive, navigateTo, getPath } = useNavigation();
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, user, logout } = useAuthStore();

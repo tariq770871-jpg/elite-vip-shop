@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServiceClient, verifyAuthToken } from "@/lib/supabase-server";
 import { verifyAdmin } from "@/lib/admin-auth";
-import { rateLimitResponse, RATE_LIMIT_PRESETS } from "@/lib/rate-limit";
-
-// Add a stricter rate limit preset for coupon validation (prevents brute-force coupon guessing)
-RATE_LIMIT_PRESETS.coupon = { limit: 5, windowMs: 60_000 };
+import { rateLimitResponse } from "@/lib/rate-limit";
 
 // POST: Validate a coupon code (authenticated users only)
 export async function POST(request: Request) {

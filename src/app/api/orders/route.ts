@@ -3,6 +3,7 @@ import { sendOrderNotification } from "@/lib/telegram";
 import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
 import { PAYMENT_METHOD_NAMES } from "@/lib/site-config";
+import { getEffectivePrice } from "@/lib/utils";
 
 // POST: Save a new order to Supabase
 export async function POST(request: Request) {
@@ -86,9 +87,7 @@ export async function POST(request: Request) {
       if (!dbProduct.availability) {
         return NextResponse.json({ error: `المنتج غير متوفر: ${dbProduct.name}` }, { status: 400 });
       }
-      const effectivePrice = dbProduct.sale_price != null && dbProduct.sale_price < dbProduct.price
-        ? Number(dbProduct.sale_price)
-        : Number(dbProduct.price);
+      const effectivePrice = getEffectivePrice(Number(dbProduct.price), dbProduct.sale_price != null ? Number(dbProduct.sale_price) : null);
 
       calculatedTotal += effectivePrice * item.quantity;
       validatedItems.push({
@@ -156,8 +155,8 @@ export async function POST(request: Request) {
     };
 
     // Try extended insert first, fallback to basic if migration not run yet
-    let order: any = null;
-    let orderError: any = null;
+    let order: Record<string, unknown> | null = null;
+    let orderError: { message?: string } | null = null;
 
     const extendedResult = await serviceClient
       .from("orders")
@@ -191,14 +190,16 @@ export async function POST(request: Request) {
       orderError = extendedResult.error;
     }
 
-    if (orderError) {
+    if (orderError || !order) {
       console.error("Order insert error:", orderError);
       return NextResponse.json({ error: "فشل في حفظ الطلب" }, { status: 500 });
     }
 
     // Insert order items with server-verified prices only
+    const orderId = order.order_id as string;
+    const insertedOrderNumber = order.order_number as string;
     const orderItems = validatedItems.map((vi) => ({
-      order_id: order.order_id,
+      order_id: orderId,
       product_id: vi.productId,
       product_name: vi.productName,
       quantity: vi.quantity,
@@ -234,7 +235,7 @@ export async function POST(request: Request) {
 
     // Send Telegram notification (non-blocking)
     sendOrderNotification({
-      orderNumber: order.order_number,
+      orderNumber: insertedOrderNumber,
       customerName: customerName || undefined,
       customerPhone: customerPhone || undefined,
       customerAddress: customerAddress || undefined,
@@ -252,12 +253,12 @@ export async function POST(request: Request) {
       district: district || undefined,
       street: street || undefined,
       landmark: landmark || undefined,
-    }).catch(() => {});
+    }).catch((err) => { console.warn("Telegram notification failed:", err instanceof Error ? err.message : String(err)); });
 
     return NextResponse.json({
       success: true,
-      orderId: order.order_id,
-      orderNumber: order.order_number,
+      orderId: orderId,
+      orderNumber: insertedOrderNumber,
     });
   } catch (error) {
     console.error("Order API error:", error);

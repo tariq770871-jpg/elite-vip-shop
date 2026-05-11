@@ -1,6 +1,7 @@
 "use client";
 
 import { SpeechBubbleIcon } from "@/components/icons";
+import { WHATSAPP_LINK } from "@/lib/site-config";
 
 export function CriticismSection() {
   return (
@@ -56,7 +57,7 @@ export function CriticismSection() {
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
-              href="https://wa.me/967782138587"
+              href={WHATSAPP_LINK}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-3d-whatsapp flex items-center justify-center gap-3 px-8 py-4 text-base"

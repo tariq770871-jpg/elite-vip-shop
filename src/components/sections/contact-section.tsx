@@ -22,47 +22,48 @@ import {
   FacebookBrandIcon,
   SpeechBubbleIcon,
 } from "@/components/icons";
+import { WHATSAPP_LINK, TELEGRAM_LINK, CONTACT_EMAIL, FACEBOOK_LINK } from "@/lib/site-config";
 
 const contactCards = [
   {
     icon: <WhatsAppBrandIcon className="size-6" />,
     label: "واتساب",
     value: "967782138587",
-    href: "https://wa.me/967782138587",
+    href: WHATSAPP_LINK,
     color: "text-green-500",
     borderColor: "border-green-500/20",
     iconBg: "bg-green-500/10",
-    quickLink: "https://wa.me/967782138587?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D8%8C%20%D8%A3%D8%B1%D9%8A%D8%AF%20%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D9%81%D8%B3%D8%A7%D8%B1",
+    quickLink: `${WHATSAPP_LINK}?text=${encodeURIComponent("مرحباً، أريد الاستفسار")}`,
   },
   {
     icon: <TelegramBrandIcon className="size-6" />,
     label: "تيليجرام",
     value: "@tariq77087",
-    href: "https://t.me/tariq77087",
+    href: TELEGRAM_LINK,
     color: "text-sky-500",
     borderColor: "border-sky-500/20",
     iconBg: "bg-sky-500/10",
-    quickLink: "https://t.me/tariq77087",
+    quickLink: TELEGRAM_LINK,
   },
   {
     icon: <EmailBrandIcon className="size-6" />,
     label: "البريد الإلكتروني",
-    value: "tariq770871@gmail.com",
-    href: "mailto:tariq770871@gmail.com",
+    value: CONTACT_EMAIL,
+    href: `mailto:${CONTACT_EMAIL}`,
     color: "text-red-500",
     borderColor: "border-red-500/20",
     iconBg: "bg-red-500/10",
-    quickLink: "mailto:tariq770871@gmail.com?subject=%D8%A7%D8%B3%D8%AA%D9%81%D8%B3%D8%A7%D8%B1",
+    quickLink: `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("استفسار")}`,
   },
   {
     icon: <FacebookBrandIcon className="size-6" />,
     label: "فيسبوك",
     value: "صفحتنا على فيسبوك",
-    href: "https://facebook.com/share/1Gr8vRUE4M/",
+    href: FACEBOOK_LINK,
     color: "text-blue-600",
     borderColor: "border-blue-600/20",
     iconBg: "bg-blue-600/10",
-    quickLink: "https://facebook.com/share/1Gr8vRUE4M/",
+    quickLink: FACEBOOK_LINK,
   },
 ];
 
@@ -237,7 +238,7 @@ export function ContactSection() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
                 <Mail className="size-4 text-muted-foreground" />
-                <span className="text-muted-foreground" dir="ltr">tariq770871@gmail.com</span>
+                <span className="text-muted-foreground" dir="ltr">{CONTACT_EMAIL}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <MessageCircle className="size-4 text-green-500" />
@@ -255,25 +256,25 @@ export function ContactSection() {
               {[
                 {
                   label: "واتساب",
-                  href: "https://wa.me/967782138587",
+                  href: WHATSAPP_LINK,
                   icon: <WhatsAppBrandIcon className="size-6" />,
                   color: "hover:bg-green-500/15 border-green-500/20 text-green-500",
                 },
                 {
                   label: "تيليجرام",
-                  href: "https://t.me/tariq77087",
+                  href: TELEGRAM_LINK,
                   icon: <TelegramBrandIcon className="size-6" />,
                   color: "hover:bg-sky-500/15 border-sky-500/20 text-sky-500",
                 },
                 {
                   label: "فيسبوك",
-                  href: "https://facebook.com/share/1Gr8vRUE4M/",
+                  href: FACEBOOK_LINK,
                   icon: <FacebookBrandIcon className="size-6" />,
                   color: "hover:bg-blue-600/15 border-blue-600/20 text-blue-600",
                 },
                 {
                   label: "البريد",
-                  href: "mailto:tariq770871@gmail.com",
+                  href: `mailto:${CONTACT_EMAIL}`,
                   icon: <EmailBrandIcon className="size-6" />,
                   color: "hover:bg-red-500/15 border-red-500/20 text-red-500",
                 },

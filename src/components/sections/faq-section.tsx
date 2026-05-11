@@ -10,6 +10,7 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { WhatsAppIcon } from "@/components/whatsapp-icon";
+import { WHATSAPP_LINK } from "@/lib/site-config";
 
 const faqCategories = [
   { id: "الكل", label: "الكل", icon: "📋" },
@@ -159,7 +160,7 @@ export function FaqSection() {
               فريقنا جاهز للإجابة على جميع استفساراتك عبر واتساب في أقرب وقت
             </p>
             <a
-              href="https://wa.me/967782138587?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D8%8C%20%D9%84%D8%AF%D9%8A%20%D8%B3%D8%A4%D8%A7%D9%84%20%D8%AD%D9%88%D9%84"
+              href={`${WHATSAPP_LINK}?text=${encodeURIComponent("مرحباً، لدي سؤال حول")}`}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-3d-whatsapp inline-flex items-center justify-center gap-2 no-underline"

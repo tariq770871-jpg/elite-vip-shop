@@ -35,6 +35,7 @@ import { useNavigation } from "@/lib/navigation";
 import { getCategoryIcon } from "@/components/icons";
 import { WhatsAppIcon } from "@/components/whatsapp-icon";
 import { OrderModal } from "@/components/order-modal";
+import { WHATSAPP_LINK } from "@/lib/site-config";
 
 const mainSections = [
   {
@@ -98,7 +99,6 @@ function ScrollSection({
   children,
 }: {
   children: React.ReactNode;
-  viewAllPage?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -185,7 +185,7 @@ export function HomeSection() {
             <p className="mb-6 max-w-xl text-sm md:text-xl" style={{ color: "rgba(240, 208, 120, 0.8)" }}>
               منصة تجمع بين متجر المنتجات، التطبيقات والأدوات، والخدمات الرقمية. الطلب يتم عبر واتساب والتطبيقات تُحمّل من مصادرها الرسمية.
             </p>
-            <a href="https://wa.me/967782138587" target="_blank" rel="noopener noreferrer" className="btn-3d-whatsapp flex items-center justify-center gap-3 px-8 py-4 text-base sm:px-10 sm:py-5 no-underline">
+            <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="btn-3d-whatsapp flex items-center justify-center gap-3 px-8 py-4 text-base sm:px-10 sm:py-5 no-underline">
               <WhatsAppIcon size={24} className="size-6" />
               تواصل معنا عبر واتساب
             </a>

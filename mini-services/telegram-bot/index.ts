@@ -35,7 +35,12 @@ function saveConfig(token: string, chatId: string) {
 
 loadConfig()
 
-const notificationQueue: any[] = []
+interface QueuedNotification {
+  text: string
+  timestamp: string
+}
+
+const notificationQueue: QueuedNotification[] = []
 
 async function sendTelegramMessage(text: string): Promise<boolean> {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {

@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { timingSafeEqual } from "crypto"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -29,4 +30,38 @@ export function safeJsonLd(data: unknown): string {
     .replace(/</g, "\\u003c")
     .replace(/>/g, "\\u003e")
     .replace(/\//g, "\\u002f");
+}
+
+/**
+ * Constant-time string comparison to prevent timing attacks.
+ * Shared utility used by migration routes.
+ */
+export function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Calculate the effective price considering sale price.
+ * Returns salePrice if it exists and is lower than the regular price, otherwise returns price.
+ */
+export function getEffectivePrice(price: number, salePrice?: number | null): number {
+  return salePrice != null && salePrice < price ? salePrice : price;
+}
+
+/**
+ * Safely parse request body as JSON with error handling.
+ * Returns parsed body or null if parsing fails.
+ */
+export async function safeParseJson(request: Request): Promise<{ data: unknown | null; error: string | null }> {
+  try {
+    const data = await request.json();
+    return { data, error: null };
+  } catch {
+    return { data: null, error: "صيغة البيانات غير صالحة" };
+  }
 }

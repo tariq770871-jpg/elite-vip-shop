@@ -4,6 +4,7 @@ import { useState } from "react";
 import { TrendingUp, ArrowLeft } from "lucide-react";
 import { tradingData } from "@/lib/mock-data";
 import { TradingBasicsIcon, RiskShieldIcon, BrainIcon, CryptoIcon, FreelancingIcon } from "@/components/icons";
+import { WHATSAPP_LINK } from "@/lib/site-config";
 
 const tradingIcons: Record<string, React.FC<{ className?: string }>> = {
   "تعليم": TradingBasicsIcon,
@@ -68,7 +69,7 @@ export function TradingSection() {
                 <h3 className="mb-2 text-lg font-bold">{item.title}</h3>
                 <p className="mb-5 flex-1 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
                 <a
-                  href={`https://wa.me/967782138587?text=${encodeURIComponent(`مرحباً، أرغب بالاستفسار عن: ${item.title}`)}`}
+                  href={`${WHATSAPP_LINK}?text=${encodeURIComponent(`مرحباً، أرغب بالاستفسار عن: ${item.title}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-3d-whatsapp w-full flex items-center justify-center gap-2 no-underline"

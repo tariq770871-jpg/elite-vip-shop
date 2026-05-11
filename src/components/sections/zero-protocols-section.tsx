@@ -12,6 +12,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useNavigation } from "@/lib/navigation";
+import { WHATSAPP_LINK } from "@/lib/site-config";
 
 export function ZeroProtocolsSection() {
   const { navigateTo } = useNavigation();
@@ -210,7 +211,7 @@ export function ZeroProtocolsSection() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <a
-                href="https://wa.me/967782138587"
+                href={WHATSAPP_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-3d-whatsapp flex items-center justify-center gap-2 px-6 py-3 text-sm"

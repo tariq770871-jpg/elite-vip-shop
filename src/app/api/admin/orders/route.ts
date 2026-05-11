@@ -3,6 +3,32 @@ import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { rateLimitResponse } from "@/lib/rate-limit";
 
+/** Shape of an order row including chat-based ordering migration columns */
+interface AdminOrderRow {
+  order_id: string;
+  order_number: string;
+  user_id: string;
+  status: string;
+  total_amount: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string | null;
+  delivery_type?: string | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  customer_address?: string | null;
+  province?: string | null;
+  district?: string | null;
+  street?: string | null;
+  landmark?: string | null;
+  seller_id?: string | null;
+  product_id?: string | null;
+  product_name_snapshot?: string | null;
+  unit_price?: number | null;
+  quantity?: number | null;
+  total_price?: number | null;
+}
+
 // GET: Fetch all orders for admin (with user info and items)
 export async function GET(request: Request) {
   const blocked = rateLimitResponse(request, "api");
@@ -82,11 +108,11 @@ export async function GET(request: Request) {
       }
     }
 
-    const enrichedOrders = orders.map((o) => {
+    const enrichedOrders = orders.map((o: AdminOrderRow) => {
       const user = usersMap[o.user_id];
       // Use dedicated columns first, fallback to notes parsing
-      let customerName = (o as any).customer_name || user?.name || "عميل";
-      let customerPhone = (o as any).customer_phone || user?.phone || "";
+      let customerName = o.customer_name || user?.name || "عميل";
+      let customerPhone = o.customer_phone || user?.phone || "";
 
       // If still no data, try parsing from notes
       if ((!customerName || customerName === "عميل") && o.notes) {
@@ -111,17 +137,17 @@ export async function GET(request: Request) {
         created_at: o.created_at,
         updated_at: o.updated_at,
         // New fields from chat-based ordering
-        delivery_type: (o as any).delivery_type || null,
-        province: (o as any).province || null,
-        district: (o as any).district || null,
-        street: (o as any).street || null,
-        landmark: (o as any).landmark || null,
-        seller_id: (o as any).seller_id || null,
-        product_id: (o as any).product_id || null,
-        product_name_snapshot: (o as any).product_name_snapshot || null,
-        unit_price: (o as any).unit_price || null,
-        quantity: (o as any).quantity || null,
-        total_price: (o as any).total_price || null,
+        delivery_type: o.delivery_type || null,
+        province: o.province || null,
+        district: o.district || null,
+        street: o.street || null,
+        landmark: o.landmark || null,
+        seller_id: o.seller_id || null,
+        product_id: o.product_id || null,
+        product_name_snapshot: o.product_name_snapshot || null,
+        unit_price: o.unit_price || null,
+        quantity: o.quantity || null,
+        total_price: o.total_price || null,
         items: itemsMap[o.order_id] || [],
         items_count: (itemsMap[o.order_id] || []).length,
       };
