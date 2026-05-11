@@ -192,7 +192,7 @@ export function Footer() {
         {/* Copyright */}
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Elite VIP Shop - متجر النخبة. جميع الحقوق محفوظة.
+            © {new Date().getFullYear()} <span lang="en">Elite VIP Shop</span> - متجر النخبة. جميع الحقوق محفوظة.
           </p>
           <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
             <Link

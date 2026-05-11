@@ -74,6 +74,7 @@ export function SearchBar({ isOpen, onClose }: SearchBarProps) {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="ابحث عن منتجات، تطبيقات، أدوات..."
             className="ps-10 pe-10 h-11 text-base"
+            aria-label="البحث عن منتجات"
             onKeyDown={(e) => {
               if (e.key === "Escape") {
                 onClose();

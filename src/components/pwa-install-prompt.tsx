@@ -82,7 +82,7 @@ export function PWAInstallPrompt() {
         <div className="flex items-center gap-3">
           {/* App Icon */}
           <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 shadow-lg">
-            <img src="/icons/icon-192.png" alt="VIP Shop" className="size-10 rounded-xl" />
+            <img src="/icons/icon-192.png" alt="متجر النخبة" className="size-10 rounded-xl" />
           </div>
 
           {/* Content */}

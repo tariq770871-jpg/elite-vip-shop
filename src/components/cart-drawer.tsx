@@ -124,6 +124,11 @@ export function CartDrawer() {
           </SheetTitle>
         </SheetHeader>
 
+        {/* Screen reader announcement for cart updates */}
+        <div aria-live="polite" aria-atomic="true" className="sr-only">
+          {itemCount} عنصر في السلة. المجموع: {total.toLocaleString("ar-SA")} ر.ي
+        </div>
+
         {items.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 py-16">
             <div className="flex size-20 items-center justify-center rounded-full bg-muted">

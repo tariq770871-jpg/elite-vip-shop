@@ -141,7 +141,7 @@ export function LoginSection() {
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                tabIndex={-1}
+                aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
               >
                 {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </button>

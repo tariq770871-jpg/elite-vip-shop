@@ -44,7 +44,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               نعتذر عن هذا الخطأ. يرجى المحاولة مرة أخرى أو العودة للرئيسية.
             </p>
             {this.state.error && (
-              <p className="mt-2 text-xs text-muted-foreground/60 font-mono" dir="ltr">
+              <p className="mt-2 text-xs text-muted-foreground font-mono" dir="ltr">
                 {this.state.error.message}
               </p>
             )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageCircle, X, Send, Package, Truck, AlertCircle, Lightbulb } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { WhatsAppIcon } from "@/components/whatsapp-icon";
 
 const quickActions = [
@@ -38,6 +38,7 @@ export function FloatingWhatsApp() {
   const [message, setMessage] = useState("");
   const [showTooltip, setShowTooltip] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   // Check localStorage for tooltip dismiss preference
   useEffect(() => {
@@ -67,6 +68,49 @@ export function FloatingWhatsApp() {
   const handleAnimationEnd = useCallback(() => {
     setIsAnimating(false);
   }, []);
+
+  // Focus trap: move focus into panel when opened, trap Tab key
+  useEffect(() => {
+    if (!isOpen || !panelRef.current) return;
+
+    const panel = panelRef.current;
+    const focusableSelector = 'button, input, [tabindex]:not([tabindex="-1"])';
+
+    // Auto-focus the input when panel opens
+    const inputEl = panel.querySelector<HTMLInputElement>('input');
+    if (inputEl) inputEl.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+
+      const focusables = panel.querySelectorAll<HTMLElement>(focusableSelector);
+      if (focusables.length === 0) return;
+
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
+
+  // Close on Escape when panel is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closePanel();
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isOpen, closePanel]);
 
   const handleSend = () => {
     if (message.trim()) {
@@ -112,6 +156,10 @@ export function FloatingWhatsApp() {
       {/* Chat Panel */}
       {isOpen && (
         <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="محادثة واتساب"
           className={`mb-3 w-72 overflow-hidden rounded-2xl border border-border bg-card shadow-2xl animate-in fade-in-0 slide-in-from-bottom-4 duration-300 ${isAnimating ? "animate-out fade-out-0 slide-out-to-bottom-4" : ""}`}
           onAnimationEnd={handleAnimationEnd}
         >
@@ -126,6 +174,7 @@ export function FloatingWhatsApp() {
             </div>
             <button
               onClick={closePanel}
+              aria-label="إغلاق المحادثة"
               className="rounded-full p-1 transition-colors hover:bg-white/20"
             >
               <X className="size-4" />
@@ -163,10 +212,12 @@ export function FloatingWhatsApp() {
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder="اكتب رسالتك..."
+                aria-label="رسالة واتساب"
                 className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500/30"
               />
               <button
                 onClick={handleSend}
+                aria-label="إرسال الرسالة"
                 className="flex size-9 items-center justify-center rounded-xl bg-green-500 text-white transition-all hover:bg-green-600 hover:scale-105 active:scale-95"
               >
                 <Send className="size-4" />

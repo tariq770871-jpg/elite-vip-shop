@@ -210,17 +210,17 @@ export function CartPageSection() {
                       )}
                     </div>
                     <div className="flex items-center justify-center gap-3">
-                      <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="flex size-8 items-center justify-center rounded-lg border transition-colors hover:bg-accent">
-                        <Minus className="size-3" />
+                      <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="flex size-11 items-center justify-center rounded-lg border transition-colors hover:bg-accent" aria-label="تقليل الكمية">
+                        <Minus className="size-4" />
                       </button>
                       <span className="w-8 text-center font-semibold">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="flex size-8 items-center justify-center rounded-lg border transition-colors hover:bg-accent">
-                        <Plus className="size-3" />
+                      <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="flex size-11 items-center justify-center rounded-lg border transition-colors hover:bg-accent" aria-label="زيادة الكمية">
+                        <Plus className="size-4" />
                       </button>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="font-bold text-gold-gradient">{lineTotal.toLocaleString("ar-SA")} ر.ي</span>
-                      <button onClick={() => removeItem(item.id)} className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-500/10 hover:text-destructive">
+                      <button onClick={() => removeItem(item.id)} className="flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-500/10 hover:text-destructive" aria-label="حذف المنتج">
                         <Trash2 className="size-4" />
                       </button>
                     </div>

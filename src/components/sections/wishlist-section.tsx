@@ -7,6 +7,7 @@ import { useNavigation } from "@/lib/navigation";
 import { getCategoryIcon } from "@/components/icons";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
 
 export function WishlistSection() {
   const { items, removeItem, toggleItem, isInWishlist } = useWishlistStore();
@@ -99,7 +100,11 @@ export function WishlistSection() {
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
               >
-                {getCategoryIcon(item.category, "size-14 text-muted-foreground/40")}
+                {item.image ? (
+                  <Image src={item.image} alt={item.name} fill className="object-cover" sizes="300px" />
+                ) : (
+                  getCategoryIcon(item.category, "size-14 text-muted-foreground/40")
+                )}
                 {item.salePrice && (
                   <Badge className="absolute top-3 right-3 z-10 bg-red-500 text-white hover:bg-red-500 shadow-lg">
                     خصم{" "}

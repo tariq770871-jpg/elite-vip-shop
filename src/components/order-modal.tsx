@@ -455,18 +455,18 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="flex size-8 items-center justify-center rounded-lg border transition-colors hover:bg-accent"
+                className="flex size-11 items-center justify-center rounded-lg border transition-colors hover:bg-accent"
                 aria-label="تقليل الكمية"
               >
-                <Minus className="size-3.5" />
+                <Minus className="size-4" />
               </button>
               <span className="w-8 text-center font-bold text-lg">{quantity}</span>
               <button
                 onClick={() => setQuantity(Math.min(99, quantity + 1))}
-                className="flex size-8 items-center justify-center rounded-lg border transition-colors hover:bg-accent"
+                className="flex size-11 items-center justify-center rounded-lg border transition-colors hover:bg-accent"
                 aria-label="زيادة الكمية"
               >
-                <Plus className="size-3.5" />
+                <Plus className="size-4" />
               </button>
             </div>
             <span className="font-bold text-gold-gradient text-sm">
@@ -550,9 +550,11 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
                               {...deliveryForm.register("customerName")}
                               placeholder="أدخل اسمك الكامل"
                               className="h-9 text-sm"
+                              aria-invalid={!!deliveryForm.formState.errors.customerName}
+                              aria-errormessage={deliveryForm.formState.errors.customerName ? "delivery-name-error" : undefined}
                             />
                             {deliveryForm.formState.errors.customerName && (
-                              <p className="text-[10px] text-destructive">
+                              <p id="delivery-name-error" className="text-[10px] text-destructive" role="alert">
                                 {deliveryForm.formState.errors.customerName.message}
                               </p>
                             )}
@@ -566,9 +568,11 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
                               placeholder="+967 XXX XXX XXX"
                               dir="ltr"
                               className="h-9 text-sm"
+                              aria-invalid={!!deliveryForm.formState.errors.customerPhone}
+                              aria-errormessage={deliveryForm.formState.errors.customerPhone ? "delivery-phone-error" : undefined}
                             />
                             {deliveryForm.formState.errors.customerPhone && (
-                              <p className="text-[10px] text-destructive">
+                              <p id="delivery-phone-error" className="text-[10px] text-destructive" role="alert">
                                 {deliveryForm.formState.errors.customerPhone.message}
                               </p>
                             )}
@@ -583,9 +587,11 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
                               {...deliveryForm.register("province")}
                               placeholder="مثال: صنعاء"
                               className="h-9 text-sm"
+                              aria-invalid={!!deliveryForm.formState.errors.province}
+                              aria-errormessage={deliveryForm.formState.errors.province ? "delivery-province-error" : undefined}
                             />
                             {deliveryForm.formState.errors.province && (
-                              <p className="text-[10px] text-destructive">
+                              <p id="delivery-province-error" className="text-[10px] text-destructive" role="alert">
                                 {deliveryForm.formState.errors.province.message}
                               </p>
                             )}
@@ -598,9 +604,11 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
                               {...deliveryForm.register("district")}
                               placeholder="مثال: بني الحارث"
                               className="h-9 text-sm"
+                              aria-invalid={!!deliveryForm.formState.errors.district}
+                              aria-errormessage={deliveryForm.formState.errors.district ? "delivery-district-error" : undefined}
                             />
                             {deliveryForm.formState.errors.district && (
-                              <p className="text-[10px] text-destructive">
+                              <p id="delivery-district-error" className="text-[10px] text-destructive" role="alert">
                                 {deliveryForm.formState.errors.district.message}
                               </p>
                             )}
@@ -615,9 +623,11 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
                               {...deliveryForm.register("street")}
                               placeholder="اسم الشارع"
                               className="h-9 text-sm"
+                              aria-invalid={!!deliveryForm.formState.errors.street}
+                              aria-errormessage={deliveryForm.formState.errors.street ? "delivery-street-error" : undefined}
                             />
                             {deliveryForm.formState.errors.street && (
-                              <p className="text-[10px] text-destructive">
+                              <p id="delivery-street-error" className="text-[10px] text-destructive" role="alert">
                                 {deliveryForm.formState.errors.street.message}
                               </p>
                             )}
@@ -630,9 +640,11 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
                               {...deliveryForm.register("landmark")}
                               placeholder="أقرب معلم بارز"
                               className="h-9 text-sm"
+                              aria-invalid={!!deliveryForm.formState.errors.landmark}
+                              aria-errormessage={deliveryForm.formState.errors.landmark ? "delivery-landmark-error" : undefined}
                             />
                             {deliveryForm.formState.errors.landmark && (
-                              <p className="text-[10px] text-destructive">
+                              <p id="delivery-landmark-error" className="text-[10px] text-destructive" role="alert">
                                 {deliveryForm.formState.errors.landmark.message}
                               </p>
                             )}
@@ -676,9 +688,11 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
                               {...pickupForm.register("customerName")}
                               placeholder="أدخل اسمك الكامل"
                               className="h-9 text-sm"
+                              aria-invalid={!!pickupForm.formState.errors.customerName}
+                              aria-errormessage={pickupForm.formState.errors.customerName ? "pickup-name-error" : undefined}
                             />
                             {pickupForm.formState.errors.customerName && (
-                              <p className="text-[10px] text-destructive">
+                              <p id="pickup-name-error" className="text-[10px] text-destructive" role="alert">
                                 {pickupForm.formState.errors.customerName.message}
                               </p>
                             )}
@@ -692,9 +706,11 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
                               placeholder="+967 XXX XXX XXX"
                               dir="ltr"
                               className="h-9 text-sm"
+                              aria-invalid={!!pickupForm.formState.errors.customerPhone}
+                              aria-errormessage={pickupForm.formState.errors.customerPhone ? "pickup-phone-error" : undefined}
                             />
                             {pickupForm.formState.errors.customerPhone && (
-                              <p className="text-[10px] text-destructive">
+                              <p id="pickup-phone-error" className="text-[10px] text-destructive" role="alert">
                                 {pickupForm.formState.errors.customerPhone.message}
                               </p>
                             )}

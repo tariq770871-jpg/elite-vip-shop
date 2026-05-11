@@ -16,8 +16,8 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
-        <div className="size-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      <div role="status" aria-live="polite" className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
+        <div className="size-10 animate-spin rounded-full border-4 border-primary border-t-transparent" aria-hidden="true" />
         <p className="text-sm text-muted-foreground">جارٍ التحقق من الصلاحيات...</p>
       </div>
     );

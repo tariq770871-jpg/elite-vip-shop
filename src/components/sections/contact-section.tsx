@@ -226,11 +226,11 @@ export function ContactSection() {
               <h3 className="text-base font-bold">العنوان والموقع</h3>
             </div>
             <div className="mb-4 rounded-xl bg-muted/50 p-4 text-center">
-              <MapPin className="mx-auto mb-2 size-8 text-muted-foreground/40" />
+              <MapPin className="mx-auto mb-2 size-8 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
                 اليمن - متجر إلكتروني
               </p>
-              <p className="text-xs text-muted-foreground/70">
+              <p className="text-xs text-muted-foreground">
                 جميع التعاملات تتم إلكترونياً عبر واتساب
               </p>
             </div>
