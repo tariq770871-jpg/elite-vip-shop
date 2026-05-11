@@ -28,13 +28,17 @@ const announcements = [
 
 export function AnnouncementBanner() {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isVisible, setIsVisible] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return !sessionStorage.getItem("announcement-dismissed");
-    }
-    return true;
-  });
+  const [isVisible, setIsVisible] = useState(true); // Fix: avoid hydration mismatch — check sessionStorage in useEffect
+  const [mounted, setMounted] = useState(false);
   const { navigateTo } = useNavigation();
+
+  // Check dismissed state on mount (client-only)
+  useEffect(() => {
+    setMounted(true);
+    if (sessionStorage.getItem("announcement-dismissed")) {
+      setIsVisible(false);
+    }
+  }, []);
 
   const goNext = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % announcements.length);

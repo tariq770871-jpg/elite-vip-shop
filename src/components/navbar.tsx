@@ -54,6 +54,7 @@ import { useTheme } from "@/components/theme-provider";
 import { useNavigation, type PageName, PAGE_PATHS } from "@/lib/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { useNotificationStore } from "@/store/notification-store";
+import { WHATSAPP_LINK } from "@/lib/site-config";
 import { Logo } from "@/components/logo";
 import {
   WhatsAppBrandIcon,
@@ -94,7 +95,7 @@ const socialLinks = [
   {
     label: "واتساب",
     icon: <WhatsAppBrandIcon className="size-5" />,
-    href: "https://wa.me/967782138587",
+    href: WHATSAPP_LINK,
     hoverClass: "hover:bg-green-600/10 hover:text-green-500 hover:border-green-500/30",
   },
   {

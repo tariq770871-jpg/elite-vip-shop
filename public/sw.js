@@ -1,18 +1,27 @@
-const CACHE_NAME = 'elite-vip-shop-v2';
-const OFFLINE_URL = '/';
+const CACHE_NAME = 'elite-vip-shop-v3';
+const OFFLINE_URL = '/offline';
 
 const PRECACHE_URLS = [
   '/',
+  '/offline',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/icons/favicon-32.png',
 ];
 
 // Install: precache essential assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_URLS);
+      // Use addAll for required assets, but catch failures for non-critical ones
+      return cache.addAll(PRECACHE_URLS).catch((err) => {
+        console.warn('[SW] Some precache URLs failed:', err);
+        // Try caching what we can
+        return Promise.allSettled(
+          PRECACHE_URLS.map(url => cache.add(url).catch(() => {}))
+        );
+      });
     }).then(() => self.skipWaiting())
   );
 });
@@ -44,12 +53,14 @@ self.addEventListener('fetch', (event) => {
   // For navigation requests (HTML pages): Network first, fallback to cache
   if (request.mode === 'navigate') {
     // Never cache authenticated/private pages — expose user data if cached
-    const privatePaths = ['/dashboard', '/profile', '/orders', '/cart', '/wishlist', '/settings'];
+    const privatePaths = ['/dashboard', '/profile', '/orders', '/cart', '/wishlist', '/settings', '/checkout', '/login', '/register'];
     const isPrivate = privatePaths.some(p => url.pathname.startsWith(p));
 
     if (isPrivate) {
-      // Network-only for private pages — never cache
-      event.respondWith(fetch(request));
+      // Network-only for private pages — never cache, show offline page on failure
+      event.respondWith(
+        fetch(request).catch(() => caches.match(OFFLINE_URL))
+      );
       return;
     }
 
@@ -105,7 +116,8 @@ self.addEventListener('fetch', (event) => {
     url.pathname.endsWith('.svg') ||
     url.pathname.endsWith('.woff2') ||
     url.pathname.endsWith('.woff') ||
-    url.pathname.endsWith('.ico')
+    url.pathname.endsWith('.ico') ||
+    url.pathname.endsWith('.json')
   ) {
     event.respondWith(
       caches.match(request).then((cachedResponse) => {
@@ -130,7 +142,7 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request, { signal: AbortSignal.timeout(8000) }).catch(() => {
-        return new Response(JSON.stringify({ error: 'Network error' }), {
+        return new Response(JSON.stringify({ error: 'Network error', offline: true }), {
           status: 503,
           headers: { 'Content-Type': 'application/json' },
         });

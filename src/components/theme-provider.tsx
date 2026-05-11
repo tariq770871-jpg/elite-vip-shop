@@ -20,8 +20,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
+
+    // Priority: saved preference > system preference > default light
     const stored = localStorage.getItem("theme") as Theme | null;
-    const initial = stored || "light";
+    let initial: Theme;
+
+    if (stored === "dark" || stored === "light") {
+      initial = stored;
+    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      initial = "dark";
+    } else {
+      initial = "light";
+    }
+
     setTheme(initial);
     document.documentElement.classList.toggle("dark", initial === "dark");
   }, []);
@@ -41,6 +52,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     };
     window.addEventListener("storage", handler);
     return () => window.removeEventListener("storage", handler);
+  }, []);
+
+  // Listen for system theme changes (when no explicit preference is saved)
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e: MediaQueryListEvent) => {
+      // Only auto-switch if user hasn't set an explicit preference
+      if (!localStorage.getItem("theme")) {
+        setTheme(e.matches ? "dark" : "light");
+      }
+    };
+    mediaQuery.addEventListener("change", handler);
+    return () => mediaQuery.removeEventListener("change", handler);
   }, []);
 
   const toggleTheme = useCallback(() => {

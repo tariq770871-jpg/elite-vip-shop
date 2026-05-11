@@ -66,13 +66,30 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
     }).catch(() => {});
   }, []);
 
-  // Register Service Worker
+  // Register Service Worker with update handling
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
-        .register("/sw.js")
-        .then(() => {
-          // Service Worker registered successfully
+        .register("/sw.js", { scope: "/" })
+        .then((registration) => {
+          // Check for updates periodically (every 60 minutes)
+          setInterval(() => registration.update(), 60 * 60 * 1000);
+
+          // Notify user when a new version is available
+          registration.addEventListener("updatefound", () => {
+            const newWorker = registration.installing;
+            if (!newWorker) return;
+
+            newWorker.addEventListener("statechange", () => {
+              if (
+                newWorker.state === "activated" &&
+                navigator.serviceWorker.controller
+              ) {
+                // New version activated — optionally notify user
+                console.info("[SW] New version activated. Reload for latest changes.");
+              }
+            });
+          });
         })
         .catch(() => {
           // Service Worker registration failed — non-critical

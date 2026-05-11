@@ -3,6 +3,7 @@
 import { MessageCircle, X, Send, Package, Truck, AlertCircle, Lightbulb } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { WhatsAppIcon } from "@/components/whatsapp-icon";
+import { WHATSAPP_NUMBER } from "@/lib/site-config";
 
 const quickActions = [
   {
@@ -115,11 +116,11 @@ export function FloatingWhatsApp() {
   const handleSend = () => {
     if (message.trim()) {
       const encoded = encodeURIComponent(message);
-      const w = window.open(`https://wa.me/967782138587?text=${encoded}`, "_blank");
+      const w = window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`, "_blank");
       if (w) w.opener = null;
       setMessage("");
     } else {
-      const w = window.open("https://wa.me/967782138587", "_blank");
+      const w = window.open(`https://wa.me/${WHATSAPP_NUMBER}`, "_blank");
       if (w) w.opener = null;
     }
   };
