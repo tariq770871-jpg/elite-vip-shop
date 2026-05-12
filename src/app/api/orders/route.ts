@@ -1,9 +1,13 @@
+import { verifyAuthToken } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { sendOrderNotification } from "@/lib/telegram";
 
 // POST: Save a new order to Supabase
-export async function POST(request: Request) {
+export async function POST(request: Request) {const { user, error } = await verifyAuthToken(request);
+if (error || !user) {
+  return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
+}
   try {
     const body = await request.json();
     const { userId, items, total, notes, paymentMethod, customerName, customerPhone, customerAddress, discount, couponCode } = body;
@@ -87,7 +91,10 @@ export async function POST(request: Request) {
 }
 
 // GET: Fetch orders for a user
-export async function GET(request: Request) {
+export async function GET(request: Request) {const { user, error } = await verifyAuthToken(request);
+if (error || !user) {
+  return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
+}
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
