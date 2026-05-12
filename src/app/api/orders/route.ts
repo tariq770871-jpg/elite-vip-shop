@@ -1,13 +1,14 @@
 import { verifyAuthToken } from "@/lib/supabase-server";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { sendOrderNotification } from "@/lib/telegram";
 
 // POST: Save a new order to Supabase
-export async function POST(request: Request) {const { user, error } = await verifyAuthToken(request);
-if (error || !user) {
-  return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
-}
+export async function POST(request: NextRequest) {
+  const { user, error } = await verifyAuthToken(request);
+  if (error || !user) {
+    return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const { userId, items, total, notes, paymentMethod, customerName, customerPhone, customerAddress, discount, couponCode } = body;
@@ -20,10 +21,8 @@ if (error || !user) {
       return NextResponse.json({ success: true, orderId: "local", orderNumber: "N/A" });
     }
 
-    // Generate order number
     const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
-    // Insert order
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
@@ -41,7 +40,6 @@ if (error || !user) {
       return NextResponse.json({ error: "فشل في حفظ الطلب" }, { status: 500 });
     }
 
-    // Insert order items
     const orderItems = items.map((item: { id: string; name: string; quantity: number; price: number; salePrice?: number }) => {
       const effectivePrice = item.salePrice && item.salePrice < item.price ? item.salePrice : item.price;
       return {
@@ -62,7 +60,6 @@ if (error || !user) {
       return NextResponse.json({ error: "فشل في حفظ بنود الطلب" }, { status: 500 });
     }
 
-    // Send Telegram notification (non-blocking)
     sendOrderNotification({
       orderNumber: order.order_number,
       customerName: customerName || undefined,
@@ -91,10 +88,11 @@ if (error || !user) {
 }
 
 // GET: Fetch orders for a user
-export async function GET(request: Request) {const { user, error } = await verifyAuthToken(request);
-if (error || !user) {
-  return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
-}
+export async function GET(request: NextRequest) {
+  const { user, error } = await verifyAuthToken(request);
+  if (error || !user) {
+    return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
+  }
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
@@ -107,18 +105,17 @@ if (error || !user) {
       return NextResponse.json({ orders: [] });
     }
 
-    const { data: orders, error } = await supabase
+    const { data: orders, error: ordersError } = await supabase
       .from("orders")
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Orders fetch error:", error);
+    if (ordersError) {
+      console.error("Orders fetch error:", ordersError);
       return NextResponse.json({ error: "فشل في جلب الطلبات" }, { status: 500 });
     }
 
-    // Fetch order items for each order
     if (orders && orders.length > 0) {
       const orderIds = orders.map((o) => o.order_id);
       const { data: allItems, error: itemsError } = await supabase
@@ -138,7 +135,6 @@ if (error || !user) {
             price: item.price,
           });
         }
-        // Attach items to orders
         for (const order of orders) {
           (order as Record<string, unknown>).items = itemsMap[order.order_id] || [];
         }
