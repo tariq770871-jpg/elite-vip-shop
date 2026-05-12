@@ -1,5 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
 export async function verifyAuthToken(request: NextRequest) {
   const supabase = createServerClient(
@@ -10,10 +10,10 @@ export async function verifyAuthToken(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
+        setAll(cookiesToSet: { name: string; value: string }[]) {
+          cookiesToSet.forEach(({ name, value }) => {
+            request.cookies.set(name, value);
+          });
         },
       },
     }
