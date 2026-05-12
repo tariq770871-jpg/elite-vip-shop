@@ -1,7 +1,11 @@
+// src/store/cart-store.ts
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-interface CartItemType {
+const isDev = process.env.NODE_ENV === 'development'
+const log = (...args: any[]) => isDev && console.log('[CART]', ...args)
+
+export interface CartItem {
   id: string
   name: string
   price: number
@@ -9,30 +13,29 @@ interface CartItemType {
   image: string
   quantity: number
   category: string
+  description?: string
+  stock?: number
 }
 
-interface AppliedCoupon {
+export interface Coupon {
   code: string
   discount: number
-  discountAmount: number
-  finalTotal: number
+  type: 'percentage' | 'fixed'
 }
 
 interface CartStore {
-  items: CartItemType[]
+  items: CartItem[]
   isOpen: boolean
-  appliedCoupon: AppliedCoupon | null
-  addItem: (item: Omit<CartItemType, 'quantity'>) => void
+  appliedCoupon: Coupon | null
+  addItem: (item: Omit<CartItem, 'quantity'>) => void
   removeItem: (id: string) => void
   updateQuantity: (id: string, quantity: number) => void
   clearCart: () => void
   toggleCart: () => void
-  openCart: () => void
-  closeCart: () => void
-  totalItems: () => number
   totalPrice: () => number
-  applyCoupon: (coupon: AppliedCoupon) => void
+  applyCoupon: (coupon: Coupon) => void
   removeCoupon: () => void
+  getItemCount: () => number
 }
 
 export const useCartStore = create<CartStore>()(
@@ -43,52 +46,69 @@ export const useCartStore = create<CartStore>()(
       appliedCoupon: null,
 
       addItem: (item) => {
-        const items = get().items
-        const existing = items.find((i) => i.id === item.id)
-        if (existing) {
-          set({
-            items: items.map((i) =>
-              i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-            ),
-          })
-        } else {
-          set({ items: [...items, { ...item, quantity: 1 }] })
-        }
-      },
-
-      removeItem: (id) => {
-        set({ items: get().items.filter((i) => i.id !== id) })
-      },
-
-      updateQuantity: (id, quantity) => {
-        if (quantity <= 0) {
-          get().removeItem(id)
-          return
-        }
-        set({
-          items: get().items.map((i) => (i.id === id ? { ...i, quantity } : i)),
+        log('Adding:', item.name)
+        set((state) => {
+          const exists = state.items.find((i) => i.id === item.id)
+          if (exists) {
+            return {
+              items: state.items.map((i) =>
+                i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+              ),
+            }
+          }
+          return { items: [...state.items, { ...item, quantity: 1 }] }
         })
       },
 
-      clearCart: () => set({ items: [], appliedCoupon: null }),
-      toggleCart: () => set({ isOpen: !get().isOpen }),
-      openCart: () => set({ isOpen: true }),
-      closeCart: () => set({ isOpen: false }),
+      removeItem: (id) => {
+        log('Removing:', id)
+        set((state) => ({ items: state.items.filter((i) => i.id !== id) }))
+      },
 
-      totalItems: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
+      updateQuantity: (id, quantity) => {
+        if (quantity < 1) return get().removeItem(id)
+        set((state) => ({
+          items: state.items.map((i) => (i.id === id ? { ...i, quantity } : i)),
+        }))
+      },
 
-      totalPrice: () =>
-        get().items.reduce((sum, i) => {
+      clearCart: () => {
+        log('Cart cleared')
+        set({ items: [], appliedCoupon: null })
+      },
+
+      toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
+
+      totalPrice: () => {
+        const { items, appliedCoupon } = get()
+        const subtotal = items.reduce((sum, i) => {
           const price = i.salePrice && i.salePrice < i.price ? i.salePrice : i.price
-          return sum + price * i.quantity
-        }, 0),
+          return sum + (price ?? 0) * (i.quantity ?? 1)
+        }, 0)
+        
+        if (!appliedCoupon) return subtotal
+        
+        if (appliedCoupon.type === 'percentage') {
+          return subtotal * (1 - appliedCoupon.discount / 100)
+        }
+        return Math.max(0, subtotal - appliedCoupon.discount)
+      },
 
-      applyCoupon: (coupon) => set({ appliedCoupon: coupon }),
-      removeCoupon: () => set({ appliedCoupon: null }),
+      applyCoupon: (coupon) => {
+        log('Coupon applied:', coupon.code)
+        set({ appliedCoupon: coupon })
+      },
+
+      removeCoupon: () => {
+        log('Coupon removed')
+        set({ appliedCoupon: null })
+      },
+
+      getItemCount: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
     }),
     {
-      name: 'elite-cart',
-      partialize: (state) => ({ items: state.items }),
+      name: 'elite-cart-storage',
+      partialize: (state) => ({ items: state.items, appliedCoupon: state.appliedCoupon }),
     }
   )
 )
