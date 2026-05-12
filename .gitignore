@@ -75,3 +75,6 @@ elite-vip-shop/
 
 # Lock files (keep bun.lock only)
 package-lock.json
+.env
+bun.lock
+Caddyfile
