@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { getProducts } from "@/lib/supabase-data";
 import type { Product } from "@/lib/mock-data";
 import { useRouter } from "next/navigation";
+import { SEARCH_DEBOUNCE_MS, SEARCH_MAX_RESULTS } from "@/lib/constants";
 
 interface SearchBarProps {
   isOpen: boolean;
@@ -25,12 +26,17 @@ export function SearchBar({ isOpen, onClose }: SearchBarProps) {
   const router = useRouter();
 
   useEffect(() => {
-    getProducts().then(d => setAllProducts(d)).catch(() => {});
+    getProducts()
+      .then(d => setAllProducts(d))
+      .catch((err) => {
+        // Non-fatal — search still works with empty results; log for monitoring
+        console.warn("Failed to load products for search:", err instanceof Error ? err.message : String(err));
+      });
   }, []);
 
-  // Debounce: update debouncedQuery 200ms after the last keystroke
+  // Debounce: update debouncedQuery after the configured delay
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query), 200);
+    const timer = setTimeout(() => setDebouncedQuery(query), SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [query]);
 
@@ -42,7 +48,7 @@ export function SearchBar({ isOpen, onClose }: SearchBarProps) {
         p.name.toLowerCase().includes(q) ||
         p.description.toLowerCase().includes(q) ||
         p.category.toLowerCase().includes(q)
-    ).slice(0, 6);
+    ).slice(0, SEARCH_MAX_RESULTS);
   }, [debouncedQuery, allProducts]);
 
   const focusInput = useCallback(() => {
@@ -91,8 +97,8 @@ export function SearchBar({ isOpen, onClose }: SearchBarProps) {
             <X className="size-4" />
           </Button>
 
-          {/* Search results dropdown */}
-          {query.trim().length > 0 && (
+          {/* Search results dropdown — uses debouncedQuery to avoid showing stale state */}
+          {debouncedQuery.trim().length > 0 && (
             <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-80 overflow-y-auto rounded-lg border bg-popover shadow-lg">
               {filteredProducts.length > 0 ? (
                 <div className="py-1">
@@ -137,7 +143,7 @@ export function SearchBar({ isOpen, onClose }: SearchBarProps) {
                 <div className="py-8 text-center">
                   <Search className="mx-auto mb-2 size-8 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
-                    لا توجد نتائج لـ &quot;{query}&quot;
+                    لا توجد نتائج لـ &quot;{debouncedQuery}&quot;
                   </p>
                 </div>
               )}

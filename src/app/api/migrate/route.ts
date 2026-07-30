@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import { Client } from "pg";
 import { safeCompare } from "@/lib/utils";
+import { ORDERS_MIGRATION_COLUMNS } from "@/lib/constants";
 
 /**
  * POST /api/migrate
@@ -49,23 +50,7 @@ export async function POST(request: Request) {
   const projectRef = supabaseUrl.replace("https://", "").replace(".supabase.co", "");
   const dbPassword = process.env.SUPABASE_DB_PASSWORD || serviceKey;
 
-  const sqlStatements = [
-    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_type VARCHAR(20) DEFAULT 'pickup'",
-    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255)",
-    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_phone VARCHAR(50)",
-    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_address TEXT",
-    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS province VARCHAR(100)",
-    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS district VARCHAR(100)",
-    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS street VARCHAR(255)",
-    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS landmark VARCHAR(255)",
-    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS seller_id UUID",
-    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS product_id UUID",
-    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS product_name_snapshot VARCHAR(500)",
-    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS unit_price NUMERIC(12,2)",
-    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1",
-    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_price NUMERIC(12,2)",
-    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()",
-  ];
+  const sqlStatements = ORDERS_MIGRATION_COLUMNS;
 
   const results: Array<{ sql: string; ok: boolean; detail?: string }> = [];
   let pgConnected = false;

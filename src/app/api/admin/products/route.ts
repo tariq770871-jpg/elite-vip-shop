@@ -50,7 +50,7 @@ export async function GET(request: Request) {
 
     const serviceClient = getSupabaseServiceClient();
     if (!serviceClient) {
-      return NextResponse.json({ products: [], total: 0 });
+      return NextResponse.json({ error: "خدمة قاعدة البيانات غير متاحة" }, { status: 503 });
     }
 
     const query = serviceClient

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { extractAccessToken } from "@/lib/supabase-server";
+import { extractRoleName } from "@/types/db";
 
 /**
  * Middleware: Session refresh + Admin API Authentication
@@ -111,8 +112,7 @@ export async function middleware(request: NextRequest) {
       .eq("email", user.email)
       .single();
 
-    const roleName = (userProfile?.roles as { role_name?: string } | null)
-      ?.role_name;
+    const roleName = extractRoleName(userProfile?.roles);
 
     if (roleName !== "admin" && roleName !== "owner") {
       return NextResponse.json(
@@ -184,7 +184,7 @@ export async function middleware(request: NextRequest) {
           .eq("email", user.email)
           .single();
 
-        const roleName = (legacyProfile?.roles as { role_name?: string } | null)?.role_name;
+        const roleName = extractRoleName(legacyProfile?.roles);
         if (roleName !== "admin" && roleName !== "owner") {
           return NextResponse.redirect(new URL("/", request.url));
         }

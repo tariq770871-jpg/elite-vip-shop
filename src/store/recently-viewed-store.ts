@@ -50,12 +50,12 @@ export const useRecentlyViewedStore = create<RecentlyViewedStore>()(
     {
       name: 'elite-recently-viewed',
       merge: (persistedState, currentState) => {
-        const ps = persistedState as { items?: unknown }
+        const ps = (persistedState || {}) as { items?: unknown };
         return {
           ...currentState,
-          ...(ps && typeof ps === 'object' ? ps : {}),
-          items: validateRecentlyViewedItems((ps as Record<string, unknown>)?.items),
-        }
+          ...(typeof ps === 'object' && ps ? ps : {}),
+          items: validateRecentlyViewedItems(ps?.items),
+        };
       },
     }
   )

@@ -74,12 +74,12 @@ export const useWishlistStore = create<WishlistStore>()(
     {
       name: 'elite-wishlist',
       merge: (persistedState, currentState) => {
-        const ps = persistedState as { items?: unknown }
+        const ps = (persistedState || {}) as { items?: unknown };
         return {
           ...currentState,
-          ...(ps && typeof ps === 'object' ? ps : {}),
-          items: validateWishlistItems((ps as Record<string, unknown>)?.items),
-        }
+          ...(typeof ps === 'object' && ps ? ps : {}),
+          items: validateWishlistItems(ps?.items),
+        };
       },
     }
   )

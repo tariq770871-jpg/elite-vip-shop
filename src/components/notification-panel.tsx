@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Bell, Package, Tag, Truck, Check, X, Trash2 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Bell, Package, Tag, Truck, Check, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -55,13 +55,15 @@ interface NotificationPanelProps {
 export function NotificationPanel({ open, onClose }: NotificationPanelProps) {
   const {
     notifications,
-    unreadCount,
     markAsRead,
     markAllAsRead,
     removeNotification,
   } = useNotificationStore();
 
-  const unread = unreadCount();
+  const unread = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications]
+  );
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
@@ -147,7 +149,13 @@ export function NotificationPanel({ open, onClose }: NotificationPanelProps) {
 // Bell button with dropdown trigger
 export function NotificationButton() {
   const [open, setOpen] = useState(false);
-  const unread = useNotificationStore((s) => s.unreadCount());
+  // Select notifications array and compute unread count via useMemo —
+  // avoids re-rendering on every store update by only depending on notifications.
+  const notifications = useNotificationStore((s) => s.notifications);
+  const unread = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications]
+  );
 
   return (
     <>

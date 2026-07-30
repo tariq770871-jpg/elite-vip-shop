@@ -2,32 +2,8 @@ import { NextResponse } from "next/server";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { rateLimitResponse } from "@/lib/rate-limit";
-
-/** Shape of an order row including chat-based ordering migration columns */
-interface AdminOrderRow {
-  order_id: string;
-  order_number: string;
-  user_id: string;
-  status: string;
-  total_amount: number;
-  notes: string | null;
-  created_at: string;
-  updated_at: string | null;
-  delivery_type?: string | null;
-  customer_name?: string | null;
-  customer_phone?: string | null;
-  customer_address?: string | null;
-  province?: string | null;
-  district?: string | null;
-  street?: string | null;
-  landmark?: string | null;
-  seller_id?: string | null;
-  product_id?: string | null;
-  product_name_snapshot?: string | null;
-  unit_price?: number | null;
-  quantity?: number | null;
-  total_price?: number | null;
-}
+import { ADMIN_ORDERS_DEFAULT_LIMIT, ADMIN_ORDERS_MAX_LIMIT, ORDER_STATUSES } from "@/lib/constants";
+import type { AdminEnrichedOrder, SupabaseOrderRow } from "@/types/db";
 
 // GET: Fetch all orders for admin (with user info and items)
 export async function GET(request: Request) {
@@ -38,12 +14,12 @@ export async function GET(request: Request) {
     const { errorResponse } = await verifyAdmin(request);
     if (errorResponse) return errorResponse;
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "100"), 1), 200);
+    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || String(ADMIN_ORDERS_DEFAULT_LIMIT), 10), 1), ADMIN_ORDERS_MAX_LIMIT);
     const status = searchParams.get("status");
 
     const serviceClient = getSupabaseServiceClient();
     if (!serviceClient) {
-      return NextResponse.json({ orders: [], total: 0 });
+      return NextResponse.json({ error: "خدمة قاعدة البيانات غير متاحة" }, { status: 503 });
     }
 
     let query = serviceClient
@@ -108,7 +84,7 @@ export async function GET(request: Request) {
       }
     }
 
-    const enrichedOrders = orders.map((o: AdminOrderRow) => {
+    const enrichedOrders: AdminEnrichedOrder[] = orders.map((o: SupabaseOrderRow) => {
       const user = usersMap[o.user_id];
       // Use dedicated columns first, fallback to notes parsing
       let customerName = o.customer_name || user?.name || "عميل";
@@ -172,6 +148,10 @@ export async function PATCH(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
   try {
+    // Admin auth check FIRST — before reading body (security: avoid body parsing on unauthorized requests)
+    const { errorResponse: adminErr } = await verifyAdmin(request);
+    if (adminErr) return adminErr;
+
     const body = await request.json();
     const { orderId, status } = body;
 
@@ -179,19 +159,14 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "معرف الطلب والحالة مطلوبان" }, { status: 400 });
     }
 
-    // Updated valid statuses for chat-based ordering system
-    const validStatuses = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
-    if (!validStatuses.includes(status)) {
+    // Validate status against the canonical status enum
+    if (!ORDER_STATUSES.includes(status as typeof ORDER_STATUSES[number])) {
       return NextResponse.json({ error: "حالة غير صالحة" }, { status: 400 });
     }
 
-    // Admin auth check — consistent with other admin routes
-    const { errorResponse: adminErr } = await verifyAdmin(request);
-    if (adminErr) return adminErr;
-
     const serviceClient = getSupabaseServiceClient();
     if (!serviceClient) {
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ error: "خدمة قاعدة البيانات غير متاحة" }, { status: 503 });
     }
 
     const { data, error } = await serviceClient

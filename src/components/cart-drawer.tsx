@@ -17,6 +17,7 @@ import { useCartStore } from "@/store/cart-store";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { getAuthHeaders } from "@/lib/api-auth";
+import { getEffectivePrice, safeReadJson } from "@/lib/utils";
 import { toast } from "sonner";
 
 export function CartDrawer() {
@@ -67,14 +68,15 @@ export function CartDrawer() {
           discount,
         }),
       });
-      const data = await res.json();
+      // Safely parse response — server may return non-JSON on 5xx
+      const data = await safeReadJson<{ success?: boolean; error?: string }>(res);
 
-      if (res.ok && data.success) {
+      if (res.ok && data?.success) {
         clearCart();
         toast.success("تم إرسال طلبك بنجاح! 🎉");
         closeCart();
       } else {
-        toast.error(data.error || "حدث خطأ أثناء إرسال الطلب");
+        toast.error(data?.error || "حدث خطأ أثناء إرسال الطلب");
       }
     } catch {
       toast.error("حدث خطأ في الاتصال بالخادم");
@@ -92,17 +94,17 @@ export function CartDrawer() {
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ code: couponCode.toUpperCase(), orderTotal: subtotal }),
       });
-      const data = await res.json();
-      if (data.valid) {
+      const data = await safeReadJson<{ valid?: boolean; code?: string; discount?: number; discountAmount?: number; finalTotal?: number; error?: string }>(res);
+      if (data?.valid) {
         applyCoupon({
-          code: data.code,
-          discount: data.discount,
-          discountAmount: data.discountAmount,
-          finalTotal: data.finalTotal,
+          code: data.code!,
+          discount: data.discount!,
+          discountAmount: data.discountAmount!,
+          finalTotal: data.finalTotal!,
         });
         toast.success(`تم تطبيق كود الخصم! خصم ${data.discount}% 🎉`);
       } else {
-        toast.error(data.error || "كود الخصم غير صالح");
+        toast.error(data?.error || "كود الخصم غير صالح");
       }
     } catch {
       toast.error("خطأ في التحقق من كود الخصم");
@@ -147,10 +149,7 @@ export function CartDrawer() {
             <div className="flex-1 overflow-y-auto">
               <div className="flex flex-col gap-1 px-1">
                 {items.map((item) => {
-                  const effectivePrice =
-                    item.salePrice && item.salePrice < item.price
-                      ? item.salePrice
-                      : item.price;
+                  const effectivePrice = getEffectivePrice(item.price, item.salePrice);
 
                   return (
                     <div

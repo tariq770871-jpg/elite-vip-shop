@@ -33,6 +33,8 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { getEffectivePrice, safeReadJson } from "@/lib/utils";
+import { MAX_QUANTITY_PER_ITEM, ORDER_MODAL_CLOSE_DELAY_MS, ORDER_MODAL_DELIVERY_FORM_DELAY_MS, ORDER_MODAL_OPTIONS_DELAY_MS } from "@/lib/constants";
 
 /* ================================================================== */
 /*  Zod Schemas                                                        */
@@ -182,10 +184,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
     if (!product) return;
     setCurrentStep("PRODUCT_INFO");
 
-    const effectivePrice =
-      product.salePrice && product.salePrice < product.price
-        ? product.salePrice
-        : product.price;
+    const effectivePrice = getEffectivePrice(product.price, product.salePrice);
 
     addMessage({
       type: "bot",
@@ -204,16 +203,13 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
           { label: "❓ استعلام عن المنتج", value: "inquiry" },
         ],
       });
-    }, 700);
+    }, ORDER_MODAL_OPTIONS_DELAY_MS);
   }, [product, quantity, addMessage]);
 
   // Update product info message when quantity changes
   useEffect(() => {
     if ((currentStep === "PRODUCT_INFO" || currentStep === "CHOOSE_OPTION") && product && messages.length > 0) {
-      const effectivePrice =
-        product.salePrice && product.salePrice < product.price
-          ? product.salePrice
-          : product.price;
+      const effectivePrice = getEffectivePrice(product.price, product.salePrice);
       setMessages((prev) =>
         prev.map((msg, idx) => {
           if (idx === 0 && msg.type === "bot") {
@@ -271,7 +267,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
               content: "يرجى إدخال بيانات التوصيل كاملة:",
               formData: "delivery",
             });
-          }, 400);
+          }, ORDER_MODAL_DELIVERY_FORM_DELAY_MS);
           break;
         case "pickup":
           setDeliveryType("pickup");
@@ -282,7 +278,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
               content: "يرجى إدخال بياناتك:",
               formData: "pickup",
             });
-          }, 400);
+          }, ORDER_MODAL_DELIVERY_FORM_DELAY_MS);
           break;
       }
     },
@@ -354,10 +350,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
       setIsSubmitting(true);
       setCurrentStep("SUBMITTING");
 
-      const effectivePrice =
-        product.salePrice && product.salePrice < product.price
-          ? product.salePrice
-          : product.price;
+      const effectivePrice = getEffectivePrice(product.price, product.salePrice);
       const totalPrice = effectivePrice * quantity;
 
       try {
@@ -378,9 +371,9 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
           }),
         });
 
-        const data = await res.json();
+        const data = await safeReadJson<{ success?: boolean; orderNumber?: string; error?: string }>(res);
 
-        if (res.ok && data.success) {
+        if (res.ok && data?.success) {
           const ordNum = data.orderNumber || "N/A";
           setOrderNumber(ordNum);
           setCurrentStep("SUCCESS");
@@ -394,13 +387,13 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
 
           setTimeout(() => {
             onOpenChange(false);
-          }, 5000);
+          }, ORDER_MODAL_CLOSE_DELAY_MS);
         } else {
           addMessage({
             type: "system",
-            content: `❌ ${data.error || "حدث خطأ أثناء إرسال الطلب"}`,
+            content: `❌ ${data?.error || "حدث خطأ أثناء إرسال الطلب"}`,
           });
-          toast.error(data.error || "حدث خطأ أثناء إرسال الطلب");
+          toast.error(data?.error || "حدث خطأ أثناء إرسال الطلب");
           setCurrentStep("CHOOSE_OPTION");
         }
       } catch {
@@ -423,10 +416,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
 
   if (!product) return null;
 
-  const effectivePrice =
-    product.salePrice && product.salePrice < product.price
-      ? product.salePrice
-      : product.price;
+  const effectivePrice = getEffectivePrice(product.price, product.salePrice);
   const totalPrice = effectivePrice * quantity;
 
   return (
@@ -462,7 +452,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
               </button>
               <span className="w-8 text-center font-bold text-lg">{quantity}</span>
               <button
-                onClick={() => setQuantity(Math.min(99, quantity + 1))}
+                onClick={() => setQuantity(Math.min(MAX_QUANTITY_PER_ITEM, quantity + 1))}
                 className="flex size-11 items-center justify-center rounded-lg border transition-colors hover:bg-accent"
                 aria-label="زيادة الكمية"
               >

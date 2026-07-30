@@ -62,21 +62,15 @@ import { toast } from "sonner";
 /*  Mock data (fallback)                                                */
 /* ------------------------------------------------------------------ */
 
-const ORDER_STATUS_LABELS: Record<string, string> = {
-  pending: "قيد الانتظار",
-  confirmed: "مؤكد",
-  processing: "قيد المعالجة",
-  shipped: "مشحون",
-  delivered: "تم التوصيل",
-  cancelled: "ملغى",
-};
+// Status labels — imported from centralized constants to ensure consistency across the app.
+// Kept here as a local alias for backward compatibility with the existing component code.
+import { ORDER_STATUS_LABELS as CENTRAL_STATUS_LABELS, LEGACY_STATUS_LABELS as CENTRAL_LEGACY_LABELS } from "@/lib/constants";
+import type { SupabaseOrderRow, SupabaseProductRow } from "@/types/db";
+
+const ORDER_STATUS_LABELS = CENTRAL_STATUS_LABELS;
 
 // Legacy status labels (for orders with old statuses)
-const LEGACY_STATUS_LABELS: Record<string, string> = {
-  new: "جديد",
-  reviewing: "قيد المراجعة",
-  refunded: "مسترجع",
-};
+const LEGACY_STATUS_LABELS = CENTRAL_LEGACY_LABELS;
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -304,7 +298,7 @@ interface ProductRow {
   salePrice?: number;
   category: string;
   availability: boolean;
-  raw?: Record<string, unknown>;
+  raw?: unknown;
 }
 
 interface AdminUser {
@@ -389,8 +383,19 @@ function DatabaseMigration({ authHeaders }: { authHeaders: Record<string, string
     }
   };
 
-  const copySQL = () => {
-    navigator.clipboard.writeText(migrateSQL);
+  const copySQL = async () => {
+    // clipboard API may be unavailable (non-HTTPS, denied permissions, etc.)
+    if (!navigator.clipboard) {
+      toast.error("المتصفح لا يدعم النسخ التلقائي — انسخ الإدخال يدوياً");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(migrateSQL);
+      toast.success("تم نسخ كود SQL");
+    } catch (err) {
+      toast.error("فشل النسخ — انسخ الإدخال يدوياً");
+      console.warn("Clipboard write failed:", err instanceof Error ? err.message : String(err));
+    }
   };
 
   return (
@@ -514,7 +519,7 @@ function AdminDashboard() {
         const data = await res.json();
         if (data.products) {
           setProducts(
-            data.products.map((p: any) => ({
+            data.products.map((p: SupabaseProductRow) => ({
               id: p.product_id,
               name: p.name,
               description: p.description || "",
@@ -1241,7 +1246,7 @@ function SellerDashboard() {
         .limit(100);
       if (!error && data) {
         setProducts(
-          data.map((p: any) => ({
+          data.map((p: SupabaseProductRow) => ({
             id: p.product_id,
             name: p.name,
             description: p.description || "",
@@ -1265,7 +1270,7 @@ function SellerDashboard() {
         const data = await res.json();
         const orderList = data.orders || [];
         setOrders(orderList);
-        const totalRevenue = orderList.reduce((sum: number, o: any) => sum + Number(o.total_amount || 0), 0);
+        const totalRevenue = orderList.reduce((sum: number, o: SupabaseOrderRow) => sum + Number(o.total_amount || 0), 0);
         setStats((prev) => ({ ...prev, orders: orderList.length, revenue: totalRevenue }));
       }
     } catch { /* fallback */ }

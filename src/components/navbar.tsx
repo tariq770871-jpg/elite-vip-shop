@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import {
@@ -55,6 +55,7 @@ import { useNavigation, type PageName, PAGE_PATHS } from "@/lib/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { useNotificationStore } from "@/store/notification-store";
 import { WHATSAPP_LINK, TELEGRAM_LINK, CONTACT_EMAIL, FACEBOOK_LINK } from "@/lib/site-config";
+import { GOLD_GRADIENT_CSS, GOLD_GRADIENT_VERTICAL_CSS } from "@/lib/constants";
 import { Logo } from "@/components/logo";
 import {
   WhatsAppBrandIcon,
@@ -124,7 +125,12 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, user, logout } = useAuthStore();
-  const unreadCount = useNotificationStore((s) => s.unreadCount());
+  // Compute unread count from notifications array — avoids calling unreadCount() on every store update.
+  const notifications = useNotificationStore((s) => s.notifications);
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications]
+  );
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
 
@@ -154,7 +160,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
             >
               {link.label}
               {isActive(link.page) && (
-                <span className="absolute bottom-0 right-2 left-2 h-[2px] rounded-full" style={{ background: "linear-gradient(to left, #d4a843, #f0d078, #d4a843)" }} />
+                <span className="absolute bottom-0 right-2 left-2 h-[2px] rounded-full" style={{ background: GOLD_GRADIENT_CSS }} />
               )}
             </Link>
           ))}
@@ -392,7 +398,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
                       >
                         {/* Active indicator - gold bar on the right (RTL) */}
                         {active && (
-                          <span className="absolute right-0 top-2 bottom-2 w-[3px] rounded-l-full" style={{ background: "linear-gradient(to bottom, #d4a843, #f0d078, #d4a843)" }} />
+                          <span className="absolute right-0 top-2 bottom-2 w-[3px] rounded-l-full" style={{ background: GOLD_GRADIENT_VERTICAL_CSS }} />
                         )}
                         <span className="shrink-0">{link.icon}</span>
                         <span className="truncate">{link.label}</span>
@@ -426,7 +432,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
                       >
                         {/* Active indicator - gold bar on the right (RTL) */}
                         {active && (
-                          <span className="absolute right-0 top-2 bottom-2 w-[3px] rounded-l-full" style={{ background: "linear-gradient(to bottom, #d4a843, #f0d078, #d4a843)" }} />
+                          <span className="absolute right-0 top-2 bottom-2 w-[3px] rounded-l-full" style={{ background: GOLD_GRADIENT_VERTICAL_CSS }} />
                         )}
                         <span className="shrink-0">{link.icon}</span>
                         <span className="truncate">{link.label}</span>

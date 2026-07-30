@@ -14,6 +14,7 @@ import {
   MapPin, User, Phone, Store, Hash,
   FileText, ArrowRight,
 } from "lucide-react";
+import type { SupabaseOrderRow } from "@/types/db";
 
 /* ================================================================== */
 /*  Status Configuration                                               */
@@ -373,28 +374,28 @@ export function OrdersSection() {
           setIsLoading(false);
           return;
         }
-        const mappedOrders: Order[] = data.orders.map((o: Record<string, unknown>) => ({
-          id: (o.order_id as string) || "",
-          order_number: (o.order_number as string) || "",
-          date: (o.created_at as string) || "",
-          status: (o.status as string) || "pending",
+        const mappedOrders: Order[] = data.orders.map((o: SupabaseOrderRow) => ({
+          id: o.order_id || "",
+          order_number: o.order_number || "",
+          date: o.created_at || "",
+          status: o.status || "pending",
           total: Number(o.total_amount || 0),
-          items: (Array.isArray(o.items) ? o.items : []).map((item: Record<string, unknown>) => ({
-            name: (item.product_name as string) || (item.name as string) || "",
+          items: (Array.isArray(o.items) ? o.items : []).map((item: { name?: string; product_name?: string; quantity?: number; price?: number }) => ({
+            name: item.product_name || item.name || "",
             quantity: Number(item.quantity || 1),
             price: Number(item.price || 0),
           })),
-          notes: (o.notes as string) || undefined,
+          notes: o.notes || undefined,
           discount: undefined,
           // New chat-based ordering fields
           delivery_type: (o.delivery_type as "delivery" | "pickup" | null) || null,
-          customer_name: (o.customer_name as string) || null,
-          customer_phone: (o.customer_phone as string) || null,
-          province: (o.province as string) || null,
-          district: (o.district as string) || null,
-          street: (o.street as string) || null,
-          landmark: (o.landmark as string) || null,
-          product_name_snapshot: (o.product_name_snapshot as string) || null,
+          customer_name: o.customer_name || null,
+          customer_phone: o.customer_phone || null,
+          province: o.province || null,
+          district: o.district || null,
+          street: o.street || null,
+          landmark: o.landmark || null,
+          product_name_snapshot: o.product_name_snapshot || null,
           unit_price: o.unit_price != null ? Number(o.unit_price) : null,
           quantity_ordered: o.quantity != null ? Number(o.quantity) : null,
           total_price: o.total_price != null ? Number(o.total_price) : null,

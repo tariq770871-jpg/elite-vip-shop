@@ -4,6 +4,7 @@ import { MessageCircle, X, Send, Package, Truck, AlertCircle, Lightbulb } from "
 import { useState, useEffect, useCallback, useRef } from "react";
 import { WhatsAppIcon } from "@/components/whatsapp-icon";
 import { WHATSAPP_NUMBER } from "@/lib/site-config";
+import { TOOLTIP_SHOW_DELAY_MS } from "@/lib/constants";
 
 const quickActions = [
   {
@@ -45,7 +46,7 @@ export function FloatingWhatsApp() {
   useEffect(() => {
     const wasDismissed = localStorage.getItem(TOOLTIP_DISMISSED_KEY);
     if (!wasDismissed) {
-      const timer = setTimeout(() => setShowTooltip(true), 3000);
+      const timer = setTimeout(() => setShowTooltip(true), TOOLTIP_SHOW_DELAY_MS);
       return () => clearTimeout(timer);
     }
   }, []);

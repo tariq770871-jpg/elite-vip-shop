@@ -72,7 +72,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           const data = await res.json()
           return data.role
         }
-      } catch { /* fallback to default role */ }
+      } catch (err) {
+        // Non-critical — fallback to default role 'user'; log for monitoring
+        console.warn('Failed to fetch user role:', err instanceof Error ? err.message : String(err))
+      }
       return undefined
     }
 

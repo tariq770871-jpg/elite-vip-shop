@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { X, Truck, Zap, Gift, Megaphone } from "lucide-react";
 import { useNavigation } from "@/lib/navigation";
 import type { PageName } from "@/lib/navigation";
+import { ANNOUNCEMENT_ROTATION_MS } from "@/lib/constants";
 
 const announcements = [
   {
@@ -29,12 +30,10 @@ const announcements = [
 export function AnnouncementBanner() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true); // Fix: avoid hydration mismatch — check sessionStorage in useEffect
-  const [mounted, setMounted] = useState(false);
   const { navigateTo } = useNavigation();
 
   // Check dismissed state on mount (client-only)
   useEffect(() => {
-    setMounted(true);
     if (sessionStorage.getItem("announcement-dismissed")) {
       setIsVisible(false);
     }
@@ -45,7 +44,7 @@ export function AnnouncementBanner() {
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(goNext, 4000);
+    const interval = setInterval(goNext, ANNOUNCEMENT_ROTATION_MS);
     return () => clearInterval(interval);
   }, [goNext]);
 

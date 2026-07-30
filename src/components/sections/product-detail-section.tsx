@@ -57,6 +57,11 @@ export function ProductDetailSection({ productId: productIdProp }: ProductDetail
         });
       }
       setLoading(false);
+    }).catch((err) => {
+      // Critical — without the product the page can't render; show fallback
+      console.error("Failed to load product:", err instanceof Error ? err.message : String(err));
+      setProduct(null);
+      setLoading(false);
     });
 
     fetch(`/api/reviews?product_id=${encodeURIComponent(effectiveProductId)}`)
@@ -66,7 +71,10 @@ export function ProductDetailSection({ productId: productIdProp }: ProductDetail
           setProductRating({ avg: json.averageRating, count: json.totalCount });
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        // Non-critical — reviews are optional; log for monitoring
+        console.warn("Failed to load product reviews:", err instanceof Error ? err.message : String(err));
+      });
   }, [effectiveProductId, addRecentlyViewed]);
 
   const handleGoBack = () => {

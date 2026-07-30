@@ -1,5 +1,5 @@
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
-import { escapeHtml } from "@/lib/utils";
+import { escapeHtml, formatAdenTimestamp } from "@/lib/utils";
 import { PAYMENT_METHOD_NAMES } from "@/lib/site-config";
 
 interface TelegramConfig {
@@ -92,7 +92,7 @@ export async function sendOrderNotification(order: {
     `💰 <b>الإجمالي:</b> ${Number(order.total).toLocaleString("ar-SA")} ر.ي`,
     order.paymentMethod ? `💳 <b>طريقة الدفع:</b> ${PAYMENT_METHOD_NAMES[order.paymentMethod] || order.paymentMethod}` : null,
     ``,
-    `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
+    `🕐 ${formatAdenTimestamp()}`,
     ``,
     `━━━━━━━━━━━━━━`,
     `📋 <b>الرد التلقائي للعميل:</b>`,

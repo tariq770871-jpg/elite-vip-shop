@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Star, ChevronRight, ChevronLeft, Quote, BadgeCheck, ExternalLink } from "lucide-react";
+import type { SupabaseReviewRow } from "@/types/db";
+import { safeReadJson } from "@/lib/utils";
 
 interface Testimonial {
   id: number;
@@ -27,12 +29,12 @@ export function TestimonialsSection() {
   useEffect(() => {
     let cancelled = false;
     fetch("/api/reviews?limit=10")
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => (res.ok ? safeReadJson<{ reviews?: SupabaseReviewRow[] }>(res) : null))
       .then((data) => {
         if (cancelled) return;
         if (data?.reviews && data.reviews.length > 0) {
-          const mapped: Testimonial[] = data.reviews.map((r: any, i: number) => ({
-            id: r.review_id || i,
+          const mapped: Testimonial[] = data.reviews.map((r: SupabaseReviewRow, i: number) => ({
+            id: r.review_id ? Number(r.review_id) : i,
             name: r.customer_name || r.user_name || "عميل",
             location: r.location || "",
             rating: Math.min(5, Math.max(1, Number(r.rating) || 5)),
@@ -48,8 +50,11 @@ export function TestimonialsSection() {
         }
         setLoading(false);
       })
-      .catch(() => {
-        if (!cancelled) setLoading(false);
+      .catch((err) => {
+        if (!cancelled) {
+          setLoading(false);
+          console.warn("Failed to load testimonials:", err instanceof Error ? err.message : String(err));
+        }
       });
     return () => { cancelled = true; };
   }, []);

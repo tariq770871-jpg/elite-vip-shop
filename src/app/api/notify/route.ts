@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { sendTelegramNotification } from "@/lib/telegram";
 import { verifyAuthToken } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
-import { escapeHtml } from "@/lib/utils";
+import { escapeHtml, formatAdenTimestamp } from "@/lib/utils";
 
 const EMOJIS: Record<string, string> = {
   visit: "👁️",
@@ -50,21 +50,21 @@ export async function POST(request: Request) {
           sanitizedData.page ? `📄 الصفحة: ${sanitizedData.page}` : null,
           sanitizedData.referrer ? `🔗 المصدر: ${sanitizedData.referrer}` : null,
           sanitizedData.device ? `📱 الجهاز: ${sanitizedData.device}` : null,
-          `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
+          `🕐 ${formatAdenTimestamp()}`,
         ].filter(Boolean).join("\n");
         break;
 
       case "register":
         message = [
           `${emoji} <b>مستخدم جديد سجّل في المتجر!</b>`,
-          `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
+          `🕐 ${formatAdenTimestamp()}`,
         ].filter(Boolean).join("\n");
         break;
 
       case "login":
         message = [
           `${emoji} <b>تسجيل دخول</b>`,
-          `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
+          `🕐 ${formatAdenTimestamp()}`,
         ].filter(Boolean).join("\n");
         break;
 
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
           sanitizedData.productName ? `📦 المنتج: ${sanitizedData.productName}` : null,
           sanitizedData.price ? `💰 السعر: ${Number(sanitizedData.price).toLocaleString("ar-SA")} ر.ي` : null,
           sanitizedData.userName ? `👤 العميل: ${sanitizedData.userName}` : null,
-          `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
+          `🕐 ${formatAdenTimestamp()}`,
         ].filter(Boolean).join("\n");
         break;
 
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
           `${emoji} <b>عميل نقر على واتساب</b>`,
           sanitizedData.productName ? `📦 المنتج: ${sanitizedData.productName}` : null,
           sanitizedData.userName ? `👤 العميل: ${sanitizedData.userName}` : null,
-          `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
+          `🕐 ${formatAdenTimestamp()}`,
         ].filter(Boolean).join("\n");
         break;
 

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { rateLimitResponse } from "@/lib/rate-limit";
+import { ADMIN_USERS_LIMIT } from "@/lib/constants";
+import { extractRoleName, type SupabaseUserRow } from "@/types/db";
 
 // GET: Fetch all users with their roles (admin only)
 export async function GET(request: Request) {
@@ -14,14 +16,14 @@ export async function GET(request: Request) {
 
     const serviceClient = getSupabaseServiceClient();
     if (!serviceClient) {
-      return NextResponse.json({ users: [], total: 0 });
+      return NextResponse.json({ error: "خدمة قاعدة البيانات غير متاحة" }, { status: 503 });
     }
 
     const { data: users, error, count } = await serviceClient
       .from("users")
       .select("user_id, name, email, phone, is_active, created_at, role_id, roles(role_name)", { count: "exact" })
       .order("created_at", { ascending: false })
-      .limit(200);
+      .limit(ADMIN_USERS_LIMIT);
 
     if (error) {
       // Fallback without join if roles table doesn't exist as expected
@@ -29,7 +31,7 @@ export async function GET(request: Request) {
         .from("users")
         .select("user_id, name, email, phone, is_active, created_at", { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(ADMIN_USERS_LIMIT);
 
       if (e2) {
         console.error("Users fetch error:", e2);
@@ -37,7 +39,7 @@ export async function GET(request: Request) {
       }
 
       return NextResponse.json({
-        users: (usersSimple || []).map((u: Record<string, unknown>) => ({
+        users: (usersSimple || []).map((u: SupabaseUserRow) => ({
           id: u.user_id,
           name: u.name || "مستخدم",
           email: u.email || "",
@@ -50,14 +52,14 @@ export async function GET(request: Request) {
       });
     }
 
-    const mappedUsers = (users || []).map((u: Record<string, unknown>) => {
-      const rolesData = u.roles as { role_name?: string } | null;
+    const mappedUsers = (users || []).map((u: SupabaseUserRow) => {
+      const roleName = extractRoleName(u.roles);
       return {
         id: u.user_id,
         name: u.name || "مستخدم",
         email: u.email || "",
         phone: u.phone || "",
-        role: rolesData?.role_name || "user",
+        role: roleName || "user",
         status: u.is_active ? "نشط" : "معلق",
         created_at: u.created_at,
       };
@@ -88,7 +90,7 @@ export async function PATCH(request: Request) {
 
     const sc = getSupabaseServiceClient();
     if (!sc) {
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ error: "خدمة قاعدة البيانات غير متاحة" }, { status: 503 });
     }
 
     const { error } = await sc
@@ -126,7 +128,7 @@ export async function DELETE(request: Request) {
 
     const sc = getSupabaseServiceClient();
     if (!sc) {
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ error: "خدمة قاعدة البيانات غير متاحة" }, { status: 503 });
     }
 
     // Soft delete: deactivate instead of removing to preserve data integrity

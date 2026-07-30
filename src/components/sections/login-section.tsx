@@ -66,7 +66,10 @@ export function LoginSection() {
           event: "login",
           data: { email: email.trim() },
         }),
-      }).catch(() => {});
+      }).catch((err) => {
+        // Non-critical — notification is best-effort; log for monitoring
+        console.warn("Login notification failed:", err instanceof Error ? err.message : String(err));
+      });
       setTimeout(() => navigateTo("home"), 800);
     }
   };

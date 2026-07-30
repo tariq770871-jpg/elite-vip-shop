@@ -2,6 +2,16 @@ import { NextResponse } from "next/server";
 import { getSupabaseServiceClient, verifyAuthToken } from "@/lib/supabase-server";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { rateLimitResponse } from "@/lib/rate-limit";
+import type { SupabaseCouponRow } from "@/types/db";
+
+/** Payload for updating a coupon — only provided fields are sent to the DB */
+interface CouponUpdatePayload {
+  discount_value?: number;
+  min_order_amount?: number;
+  max_uses?: number;
+  is_active?: boolean;
+  valid_until?: string | null;
+}
 
 // POST: Validate a coupon code (authenticated users only)
 export async function POST(request: Request) {
@@ -104,7 +114,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
-      coupons: coupons.map((c) => ({
+      coupons: (coupons as SupabaseCouponRow[]).map((c) => ({
         code: c.code,
         discount: Number(c.discount_value),
         minOrder: Number(c.min_order_amount),
@@ -141,7 +151,7 @@ export async function PUT(request: Request) {
     }
 
     // Build update object from provided fields — map to DB column names
-    const updateData: Record<string, unknown> = {};
+    const updateData: CouponUpdatePayload = {};
     if (discount !== undefined) updateData.discount_value = discount;
     if (minOrder !== undefined) updateData.min_order_amount = minOrder;
     if (maxUses !== undefined) updateData.max_uses = maxUses;
@@ -163,14 +173,15 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "كود الخصم غير موجود أو فشل التحديث" }, { status: 404 });
     }
 
+    const updatedRow = updated as SupabaseCouponRow;
     return NextResponse.json({
       success: true,
       coupon: {
-        code: updated.code,
-        discount: Number(updated.discount_value),
-        minOrder: Number(updated.min_order_amount),
-        isActive: updated.is_active,
-        expiresAt: updated.valid_until,
+        code: updatedRow.code,
+        discount: Number(updatedRow.discount_value),
+        minOrder: Number(updatedRow.min_order_amount),
+        isActive: updatedRow.is_active,
+        expiresAt: updatedRow.valid_until,
       },
     });
   } catch {

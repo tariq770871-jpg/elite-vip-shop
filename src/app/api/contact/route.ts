@@ -3,7 +3,7 @@ import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { rateLimitResponse } from "@/lib/rate-limit";
 import { sendTelegramNotification } from "@/lib/telegram";
-import { escapeHtml } from "@/lib/utils";
+import { escapeHtml, formatAdenTimestamp } from "@/lib/utils";
 
 export async function POST(request: Request) {
   const blocked = rateLimitResponse(request, "contact");
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
         phone ? `📞 الهاتف: ${escapeHtml(phone)}` : null,
         subject ? `📋 الموضوع: ${escapeHtml(subject)}` : null,
         `💬 الرسالة: ${escapeHtml(message)}`,
-        `🕐 ${new Date().toLocaleString("ar-YE", { timeZone: "Asia/Aden", dateStyle: "short", timeStyle: "short" })}`,
+        `🕐 ${formatAdenTimestamp()}`,
       ].filter(Boolean).join("\n");
 
       await sendTelegramNotification(tgMessage);
@@ -63,14 +63,14 @@ export async function GET(request: Request) {
     if (errorResponse) return errorResponse;
 
     const serviceClient = getSupabaseServiceClient();
-    if (!serviceClient) return NextResponse.json({ messages: [] });
+    if (!serviceClient) return NextResponse.json({ error: "خدمة قاعدة البيانات غير متاحة" }, { status: 503 });
     const { data, error } = await serviceClient
       .from("contact_messages")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(50);
 
-    if (error) return NextResponse.json({ messages: [] });
+    if (error) return NextResponse.json({ error: "فشل في جلب الرسائل" }, { status: 500 });
     return NextResponse.json({ messages: data });
   } catch {
     return NextResponse.json({ messages: [] });

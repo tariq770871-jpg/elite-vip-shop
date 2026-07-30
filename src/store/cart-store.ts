@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { MAX_QUANTITY_PER_ITEM } from '@/lib/constants'
 
 interface CartItemType {
   id: string
@@ -17,8 +18,6 @@ interface AppliedCoupon {
   discountAmount: number
   finalTotal: number
 }
-
-const MAX_QUANTITY_PER_ITEM = 99; // Prevent unrealistic order quantities
 
 interface CartStore {
   items: CartItemType[]
@@ -81,7 +80,7 @@ function validateCartItems(items: unknown): CartItemType[] {
 // ── Validate applied coupon loaded from localStorage ──
 function validateAppliedCoupon(coupon: unknown): AppliedCoupon | null {
   if (!coupon || typeof coupon !== 'object') return null
-  const c = coupon as Record<string, unknown>
+  const c = coupon as { code?: unknown; discount?: unknown; discountAmount?: unknown; finalTotal?: unknown }
   if (
     typeof c.code === 'string' &&
     typeof c.discount === 'number' && Number.isFinite(c.discount) &&
@@ -155,7 +154,7 @@ export const useCartStore = create<CartStore>()(
       partialize: (state) => ({ items: state.items, appliedCoupon: state.appliedCoupon }),
       // ── Validate persisted data on hydration ──
       merge: (persistedState, currentState) => {
-        const ps = persistedState as Record<string, unknown>
+        const ps = (persistedState || {}) as { items?: unknown; appliedCoupon?: unknown }
         const items = ps.items !== undefined ? validateCartItems(ps.items) : currentState.items;
         const appliedCoupon = ps.appliedCoupon !== undefined ? validateAppliedCoupon(ps.appliedCoupon) : currentState.appliedCoupon;
         const totals = computeTotals(items);

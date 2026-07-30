@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
+import { extractRoleName } from "@/types/db";
 
 export async function POST(request: Request) {
   const blocked = rateLimitResponse(request, "api");
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ role: "admin" });
     }
 
-    const roleName = (legacyResult.data?.roles as { role_name?: string } | null)?.role_name || "user";
+    const roleName = extractRoleName(legacyResult.data?.roles) || "user";
     return NextResponse.json({ role: roleName });
   } catch {
     return NextResponse.json({ role: "user" });

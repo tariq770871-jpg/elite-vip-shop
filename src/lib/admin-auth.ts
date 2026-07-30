@@ -14,6 +14,7 @@
 
 import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
+import { extractRoleName } from "@/types/db";
 
 /**
  * Verify that the request comes from an authenticated admin user.
@@ -56,7 +57,7 @@ export async function verifyAdmin(request: Request): Promise<{
     .eq("email", user.email)
     .single();
 
-  const roleName = (legacyProfile?.roles as { role_name?: string } | null)?.role_name;
+  const roleName = extractRoleName(legacyProfile?.roles);
   if (roleName === "admin" || roleName === "owner") {
     return { user, errorResponse: null };
   }

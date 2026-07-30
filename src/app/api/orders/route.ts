@@ -4,6 +4,8 @@ import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server
 import { rateLimitResponse } from "@/lib/rate-limit";
 import { PAYMENT_METHOD_NAMES } from "@/lib/site-config";
 import { getEffectivePrice } from "@/lib/utils";
+import { MAX_QUANTITY_PER_ITEM, ORDERS_DEFAULT_LIMIT, ORDERS_MAX_LIMIT, generateOrderNumber } from "@/lib/constants";
+import type { SupabaseProductRow, SupabaseOrderRow, OrderInsertPayload } from "@/types/db";
 
 // POST: Save a new order to Supabase
 export async function POST(request: Request) {
@@ -39,11 +41,15 @@ export async function POST(request: Request) {
     const serviceClient = getSupabaseServiceClient();
 
     if (!serviceClient) {
-      return NextResponse.json({ success: true, orderId: "local", orderNumber: "N/A" });
+      // Database unavailable — return explicit error instead of fake success
+      return NextResponse.json(
+        { error: "خدمة قاعدة البيانات غير متاحة حالياً" },
+        { status: 503 }
+      );
     }
 
     // Generate order number
-    const orderNumber = `ORD-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
+    const orderNumber = generateOrderNumber();
 
     // ── Server-side price verification ──
     const productIds = items.map((item: { id: string }) => item.id);
@@ -51,7 +57,7 @@ export async function POST(request: Request) {
     // Validate quantities
     for (const item of items) {
       const qty = Number(item.quantity);
-      if (!Number.isInteger(qty) || qty < 1 || qty > 100) {
+      if (!Number.isInteger(qty) || qty < 1 || qty > MAX_QUANTITY_PER_ITEM) {
         return NextResponse.json(
           { error: `كمية غير صالحة للمنتج: ${item.name || item.id}` },
           { status: 400 }
@@ -71,8 +77,8 @@ export async function POST(request: Request) {
     }
 
     // Build a lookup map
-    const productMap = new Map(
-      (dbProducts || []).map((p: { product_id: string; price: number; sale_price: number | null; name: string; availability: boolean; seller_id: string | null }) => [p.product_id, p])
+    const productMap = new Map<string, SupabaseProductRow>(
+      (dbProducts || []).map((p: SupabaseProductRow) => [p.product_id, p])
     );
 
     // Validate all products exist and are available, then calculate total from DB prices
@@ -130,7 +136,7 @@ export async function POST(request: Request) {
     const primaryProduct = validatedItems.length > 0 ? validatedItems[0] : null;
 
     // Insert order with ALL new columns
-    const orderInsert: Record<string, unknown> = {
+    const orderInsert: OrderInsertPayload = {
       order_number: orderNumber,
       user_id: userId,
       status: "new",
@@ -155,7 +161,7 @@ export async function POST(request: Request) {
     };
 
     // Try extended insert first, fallback to basic if migration not run yet
-    let order: Record<string, unknown> | null = null;
+    let order: SupabaseOrderRow | null = null;
     let orderError: { message?: string } | null = null;
 
     const extendedResult = await serviceClient
@@ -171,7 +177,7 @@ export async function POST(request: Request) {
       // Fallback: new columns don't exist yet, insert without them
       // All delivery/customer info is already captured in notesContent
       console.warn("Extended columns not yet migrated, using basic insert with notes fallback");
-      const basicInsert: Record<string, unknown> = {
+      const basicInsert: Partial<OrderInsertPayload> = {
         order_number: orderNumber,
         user_id: userId,
         status: "new",
@@ -196,8 +202,8 @@ export async function POST(request: Request) {
     }
 
     // Insert order items with server-verified prices only
-    const orderId = order.order_id as string;
-    const insertedOrderNumber = order.order_number as string;
+    const orderId = order.order_id;
+    const insertedOrderNumber = order.order_number;
     const orderItems = validatedItems.map((vi) => ({
       order_id: orderId,
       product_id: vi.productId,
@@ -216,20 +222,19 @@ export async function POST(request: Request) {
     }
 
     // Increment coupon used_count atomically (prevents race condition)
+    // Reuses the already-instantiated serviceClient — no need to fetch a new one
     if (couponCode) {
       try {
-        const serviceClient = getSupabaseServiceClient();
-        if (serviceClient) {
-          const { data: rpcResult } = await serviceClient.rpc("increment_coupon_usage", {
-            p_code: couponCode.toUpperCase(),
-          });
-          // rpcResult returns { success: boolean, new_count: number | null }
-          if (rpcResult && !rpcResult.success) {
-            console.warn("Coupon usage limit reached:", couponCode);
-          }
+        const { data: rpcResult } = await serviceClient.rpc("increment_coupon_usage", {
+          p_code: couponCode.toUpperCase(),
+        });
+        // rpcResult returns { success: boolean, new_count: number | null }
+        if (rpcResult && !rpcResult.success) {
+          console.warn("Coupon usage limit reached:", couponCode);
         }
-      } catch {
-        // Non-critical — order was already placed
+      } catch (couponErr) {
+        // Non-critical — order was already placed, but log for monitoring
+        console.warn("Coupon usage increment failed:", couponErr instanceof Error ? couponErr.message : String(couponErr));
       }
     }
 
@@ -281,13 +286,16 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const role = searchParams.get("role"); // "seller" to fetch seller orders
     // ── Pagination: prevent fetching ALL orders for heavy users ──
-    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "50"), 1), 100);
-    const offset = Math.max(parseInt(searchParams.get("offset") || "0"), 0);
+    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || String(ORDERS_DEFAULT_LIMIT), 10), 1), ORDERS_MAX_LIMIT);
+    const offset = Math.max(parseInt(searchParams.get("offset") || "0", 10), 0);
 
     // Use service client to fetch orders (after auth verification, bypasses RLS)
     const serviceClient = getSupabaseServiceClient();
     if (!serviceClient) {
-      return NextResponse.json({ orders: [] });
+      return NextResponse.json(
+        { error: "خدمة قاعدة البيانات غير متاحة حالياً" },
+        { status: 503 }
+      );
     }
 
     let query;
@@ -337,9 +345,9 @@ export async function GET(request: Request) {
             price: Number(item.price),
           });
         }
-        // Attach items to orders
+        // Attach items to orders — mutate via Map lookup to keep types clean
         for (const order of orders) {
-          (order as Record<string, unknown>).items = itemsMap[order.order_id] || [];
+          (order as SupabaseOrderRow & { items: Array<{ name: string; quantity: number; price: number }> }).items = itemsMap[order.order_id] || [];
         }
       }
     }

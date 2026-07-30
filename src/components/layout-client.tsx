@@ -12,12 +12,14 @@ import { FloatingWhatsApp } from "@/components/floating-whatsapp";
 import { CookieConsent } from "@/components/cookie-consent";
 import { useAuthStore } from "@/store/auth-store";
 import { useCartStore } from "@/store/cart-store";
+import { SCROLL_TO_TOP_THRESHOLD, SW_UPDATE_INTERVAL_MS } from "@/lib/constants";
+import { safeParseUrl } from "@/lib/utils";
 
 function ScrollToTopButton() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 400);
+    const onScroll = () => setVisible(window.scrollY > SCROLL_TO_TOP_THRESHOLD);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -52,9 +54,9 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
     sessionStorage.setItem(key, "1");
 
     const device = /Mobi|Android/i.test(navigator.userAgent) ? "جوال" : "كمبيوتر";
-    const referrer = document.referrer
-      ? new URL(document.referrer).hostname
-      : "مباشر";
+    // Safely parse referrer URL — document.referrer may be an invalid URL string
+    const referrerUrl = document.referrer ? safeParseUrl(document.referrer) : null;
+    const referrer = referrerUrl?.hostname || (document.referrer ? "مباشر" : "مباشر");
 
     fetch("/api/notify", {
       method: "POST",
@@ -63,7 +65,10 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
         event: "visit",
         data: { device, referrer },
       }),
-    }).catch(() => {});
+    }).catch((err) => {
+      // Non-critical — visitor tracking is best-effort; log for monitoring
+      console.warn("Visitor tracking failed:", err instanceof Error ? err.message : String(err));
+    });
   }, []);
 
   // Register Service Worker with update handling
@@ -74,8 +79,8 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
       navigator.serviceWorker
         .register("/sw.js", { scope: "/" })
         .then((registration) => {
-          // Check for updates periodically (every 60 minutes)
-          updateInterval = setInterval(() => registration.update(), 60 * 60 * 1000);
+          // Check for updates periodically
+          updateInterval = setInterval(() => registration.update(), SW_UPDATE_INTERVAL_MS);
 
           // Notify user when a new version is available
           registration.addEventListener("updatefound", () => {
@@ -87,13 +92,16 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
                 newWorker.state === "activated" &&
                 navigator.serviceWorker.controller
               ) {
-                // New version activated — optionally notify user
+                // New version activated — could prompt user to reload, but for now
+                // we rely on the browser's default behavior of using the new SW on next navigation.
+                console.info("[SW] New service worker activated.");
               }
             });
           });
         })
-        .catch(() => {
-          // Service Worker registration failed — non-critical
+        .catch((err) => {
+          // Service Worker registration failed — non-critical, but log for monitoring
+          console.warn("Service Worker registration failed:", err instanceof Error ? err.message : String(err));
         });
 
       return () => {

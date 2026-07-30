@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyAuthToken, getSupabaseServiceClient } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
+import type { SupabaseReviewRow } from "@/types/db";
 
 // GET: Fetch reviews for a product (query param: product_id)
 export async function GET(request: Request) {
@@ -19,7 +20,10 @@ export async function GET(request: Request) {
 
     const serviceClient = getSupabaseServiceClient();
     if (!serviceClient) {
-      return NextResponse.json({ reviews: [], averageRating: 0, totalCount: 0 });
+      return NextResponse.json(
+        { error: "خدمة قاعدة البيانات غير متاحة" },
+        { status: 503 }
+      );
     }
 
     const { data: reviews, error } = await serviceClient
@@ -37,20 +41,20 @@ export async function GET(request: Request) {
       );
     }
 
-    // Calculate average rating and count
-    const count = reviews?.length || 0;
+    // Calculate average rating and count — safe against null/undefined
+    const reviewList = (reviews || []) as SupabaseReviewRow[];
+    const count = reviewList.length;
     const avgRating =
       count > 0
         ? Number(
             (
-              reviews!.reduce((sum: number, r: any) => sum + Number(r.rating), 0) /
-              count
+              reviewList.reduce((sum, r) => sum + Number(r.rating), 0) / count
             ).toFixed(1)
           )
         : 0;
 
     return NextResponse.json({
-      reviews: reviews || [],
+      reviews: reviewList,
       averageRating: avgRating,
       totalCount: count,
     }, {

@@ -123,7 +123,10 @@ export function RegisterSection() {
           event: "register",
           data: { name: name.trim(), email: email.trim(), phone: phone.trim() || "" },
         }),
-      }).catch(() => {});
+      }).catch((err) => {
+        // Non-critical — notification is best-effort; log for monitoring
+        console.warn("Register notification failed:", err instanceof Error ? err.message : String(err));
+      });
     }
 
     if (success && needsEmailConfirmation) {
