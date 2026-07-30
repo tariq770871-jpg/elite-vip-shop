@@ -380,16 +380,18 @@ def callout(title, body, kind="info"):
 
 
 def code_block(code_str, language=""):
-    """Dark code block with monospace text."""
+    """Dark code block with monospace text.
+    Splits long code into multiple blocks to fit page height."""
     # Escape XML special chars
     safe = code_str.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
     # Preserve line breaks
     safe = safe.replace('\n', '<br/>')
-    # Preserve spaces
+    # Preserve spaces (multiple spaces → &nbsp;)
     safe = safe.replace('  ', '&nbsp;&nbsp;')
     p = Paragraph(safe, STYLES["code"])
-    # Wrap in a table for proper background fill
-    t = Table([[p]], colWidths=[CONTENT_W])
+
+    # Try to build single table; if it's too tall, split into chunks
+    t = Table([[p]], colWidths=[CONTENT_W], splitByRow=1)
     t.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), SECTION_BG_DARK),
         ('LEFTPADDING', (0,0), (-1,-1), 12),
@@ -399,6 +401,19 @@ def code_block(code_str, language=""):
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
     ]))
     return t
+
+
+def code_block_split(code_str, max_lines=35):
+    """Split long code blocks into multiple smaller blocks separated by spacers.
+    Each chunk has at most max_lines lines."""
+    lines = code_str.split('\n')
+    chunks = []
+    for i in range(0, len(lines), max_lines):
+        chunk = '\n'.join(lines[i:i+max_lines])
+        chunks.append(code_block(chunk))
+        if i + max_lines < len(lines):
+            chunks.append(Spacer(1, 2))
+    return chunks  # list of flowables
 
 
 def data_table(headers, rows, col_widths=None, header_align="center"):
