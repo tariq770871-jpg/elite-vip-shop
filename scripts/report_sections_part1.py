@@ -74,14 +74,14 @@ def section_executive_summary(story):
     ))
     story.append(Spacer(1, 6*mm))
 
-    callout(
+    story.append(callout(
         "ملاحظة للذكاء الاصطناعي المحلِّل",
         "هذا التقرير مصمَّم خصيصاً ليكون غنياً بالمعلومات التقنية الدقيقة "
         "(أسماء ملفات، مسارات API، بنية الجداول، أكواد فعلية) بحيث يمكن "
         "لأداة الذكاء الاصطناعي تحليل البنية المعمارية، اكتشاف الأنماط، "
         "اقتراح تحسينات، أو توليد توثيق إضافي بناءً على المحتوى.",
         kind="gold"
-    )
+    ))
     story.append(PageBreak())
 
 
@@ -386,14 +386,14 @@ def section_auth_permissions(story):
         story
     )
 
-    callout(
+    story.append(callout(
         "ملاحظة مهمة حول الدور owner",
         "خلال التدقيق، اكتُشف أن الـ middleware يتحقق من 'admin' فقط بينما "
         "المكوّن <font face='Mono'>AdminRoute</font> يقبل 'admin' و 'owner'. "
         "تمّ توحيد المنطق ليقبل الـ middleware كلا الدورين، مما يضمن وصول "
         "المالك للوحة التحكم دون مشاكل.",
         kind="warning"
-    )
+    ))
 
     heading("الكود الفعلي — دالة verifyAdmin", level=2, story=story, toc_level=1)
     story.extend(code_block_split(
@@ -535,7 +535,7 @@ def section_api_routes(story):
     ))
     story.append(Spacer(1, 6*mm))
 
-    callout(
+    story.append(callout(
         "نمط موحّد للاستجابة بالأخطاء",
         "بعد التدقيق، تم توحيد كل نقاط API لترجع <b>خطأ 503 حقيقياً</b> عند "
         "عدم توفّر قاعدة البيانات، بدلاً من إرجاع نجاح وهمي ببيانات فارغة. "
@@ -543,5 +543,5 @@ def section_api_routes(story):
         "بيانات مضلّلة. كل الأخطاء ترجع بصيغة: "
         "<font face='Mono'>{ error: \"رسالة عربية\" }</font> مع HTTP status مناسب.",
         kind="success"
-    )
+    ))
     story.append(PageBreak())

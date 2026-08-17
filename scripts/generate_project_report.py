@@ -47,6 +47,9 @@ pdfmetrics.registerFont(TTFont("Naskh-Bold",    f"{FONT_DIR}/NotoNaskhArabic-Bol
 pdfmetrics.registerFont(TTFont("SansArabic",    f"{FONT_DIR}/NotoSansArabic-Regular.ttf"))
 pdfmetrics.registerFont(TTFont("SansArabic-Bold", f"{FONT_DIR}/NotoSansArabic-Bold.ttf"))
 pdfmetrics.registerFont(TTFont("Mono",          "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"))
+# Latin-only fonts for brand/version strings (Arabic fonts lack Latin glyphs)
+pdfmetrics.registerFont(TTFont("Latin",         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"))
+pdfmetrics.registerFont(TTFont("Latin-Bold",    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"))
 
 registerFontFamily("Naskh", normal="Naskh", bold="Naskh-Bold", italic="Naskh", boldItalic="Naskh-Bold")
 registerFontFamily("SansArabic", normal="SansArabic", bold="SansArabic-Bold",
@@ -66,10 +69,15 @@ def ar(text: str) -> str:
     return text
 
 def ar_para(text: str) -> str:
-    """For Paragraph XML — keep tags intact, reshape only Arabic text segments."""
+    """For Paragraph XML — keep tags intact, reshape only Arabic text segments.
+
+    Note: each non-tag segment is reshaped + BiDi'd independently. This means
+    mixed Arabic/Latin text that crosses tag boundaries may have visual-order
+    quirks. To minimize this, keep tag boundaries at natural word/sentence
+    boundaries in the source text.
+    """
     if not text:
         return ""
-    # Split on XML tags, reshape only non-tag segments
     import re
     parts = re.split(r'(<[^>]+>)', text)
     result = []
@@ -564,7 +572,8 @@ class ReportDocTemplate(BaseDocTemplate):
         canv.setFillColor(ACCENT_GOLD)
         canv.rect(PAGE_W - 28*mm, PAGE_H - 28*mm, 14*mm, 14*mm, fill=1, stroke=0)
         canv.setFillColor(PAGE_BG_DARK)
-        canv.setFont("SansArabic-Bold", 11)
+        # Use Latin-Bold (Arabic fonts have no Latin glyphs)
+        canv.setFont("Latin-Bold", 11)
         canv.drawCentredString(PAGE_W - 21*mm, PAGE_H - 23*mm, "EV")
         canv.restoreState()
 
@@ -581,7 +590,8 @@ class ReportDocTemplate(BaseDocTemplate):
         canv.setFont("SansArabic", 8.5)
         brand = ar("Elite VIP Shop — تقرير تفاصيل المشروع")
         canv.drawRightString(PAGE_W - MARGIN_R, PAGE_H - 12*mm, brand)
-        canv.setFont("Naskh", 8.5)
+        # Use Latin for version string (Arabic fonts have no Latin glyphs)
+        canv.setFont("Latin", 8.5)
         canv.drawString(MARGIN_L, PAGE_H - 12*mm, f"v0.2.0")
 
         # Footer
@@ -590,7 +600,7 @@ class ReportDocTemplate(BaseDocTemplate):
         canv.line(MARGIN_L, MARGIN_B - 8, PAGE_W - MARGIN_R, MARGIN_B - 8)
         canv.setFillColor(TEXT_MUTED)
         canv.setFont("Naskh", 8.5)
-        date_str = ar("30 يوليو 2026")
+        date_str = ar("18 أغسطس 2026")
         canv.drawRightString(PAGE_W - MARGIN_R, MARGIN_B - 16, date_str)
         # Page number (centered, with gold accent dot)
         page_num = canv.getPageNumber()
@@ -618,8 +628,8 @@ def build_cover(story):
     # Top spacer to push content down
     story.append(Spacer(1, 70*mm))
 
-    # Brand mark text
-    brand = Paragraph(ar_para("ELITE VIP SHOP"), STYLES["cover_meta"])
+    # Brand mark text — use Latin font inline because Naskh has no Latin glyphs
+    brand = Paragraph('<font face="Latin-Bold">ELITE VIP SHOP</font>', STYLES["cover_meta"])
     story.append(brand)
     story.append(Spacer(1, 4*mm))
 
@@ -655,9 +665,9 @@ def build_cover(story):
     # Meta info card
     meta_data = [
         [Paragraph(ar_para("الإصدار"), STYLES["cover_meta_muted"]),
-         Paragraph("v0.2.0", STYLES["cover_meta"])],
+         Paragraph('<font face="Latin">v0.2.0</font>', STYLES["cover_meta"])],
         [Paragraph(ar_para("تاريخ التقرير"), STYLES["cover_meta_muted"]),
-         Paragraph(ar_para("30 يوليو 2026"), STYLES["cover_meta"])],
+         Paragraph(ar_para("18 أغسطس 2026"), STYLES["cover_meta"])],
         [Paragraph(ar_para("الجمهور"), STYLES["cover_meta_muted"]),
          Paragraph(ar_para("المطورون وأدوات التحليل"), STYLES["cover_meta"])],
         [Paragraph(ar_para("نوع التقرير"), STYLES["cover_meta_muted"]),

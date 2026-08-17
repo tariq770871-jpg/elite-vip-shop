@@ -113,14 +113,14 @@ def section_database(story):
         ("FOREIGN KEY", "كل العلاقات مع ON DELETE SET NULL أو RESTRICT حسب الأهمية"),
     ], story=story)
 
-    callout(
+    story.append(callout(
         "إصلاح أمني — ssl: rejectUnauthorized",
         "في ملف <font face='Mono'>api/migrate/route.ts</font>، كان الإعداد "
         "<font face='Mono'>ssl: { rejectUnauthorized: false }</font> مما يسمح "
         "بهجمات man-in-the-middle. تم تغييره إلى <font face='Mono'>true</font> "
         "لضمان التحقق من شهادة Supabase SSL.",
         kind="danger"
-    )
+    ))
     story.append(PageBreak())
 
 
@@ -445,7 +445,7 @@ def section_future_improvements(story):
         story
     )
 
-    callout(
+    story.append(callout(
         "تحدّيات متوقّعة",
         "أكبر تحدٍّ للمنصة في المرحلة القادمة هو <b>غياب الاختبارات الآلية</b> "
         "— أي تغيير مستقبلي يحمل خطر كسر ميزة موجودة دون اكتشاف. الأولوية "
@@ -453,7 +453,7 @@ def section_future_improvements(story):
         "ثاني تحدٍّ هو <b>عدم وجود monitoring للإنتاج</b> — الأخطاء لا "
         "تُكتشف إلا من شكاوى المستخدمين.",
         kind="warning"
-    )
+    ))
     story.append(PageBreak())
 
 
@@ -544,7 +544,7 @@ def section_env_vars(story):
         max_lines=22
     ))
 
-    callout(
+    story.append(callout(
         "خلاصة التقرير",
         "منصة Elite VIP Shop في إصدارها v0.2.0 تعتبر <b>مستقرة وقابلة "
         "للنشر</b> بعد إصلاح 182 مشكلة عبر دورة تدقيق شاملة. البنية "
@@ -552,4 +552,4 @@ def section_env_vars(story):
         "أي نوع any. الخطوة التالية المنطقية هي إضافة اختبارات آمية "
         "ونظام مراقبة للإنتاج لضمان الاستدامة طويلة المدى.",
         kind="success"
-    )
+    ))
