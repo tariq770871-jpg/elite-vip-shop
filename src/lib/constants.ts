@@ -64,11 +64,15 @@ export const LEGACY_STATUS_LABELS: Record<string, string> = {
 };
 
 // ─── Locale / Timezone ─────────────────────────────────────────
+// Unified to ar-YE for both UI formatting and currency — the site targets
+// the Yemeni market (Aden timezone). Using ar-SA for currency caused
+// inconsistent digit formatting (Eastern Arabic numerals with Saudi
+// locale settings) which conflicted with the Yemeni locale used elsewhere.
 export const APP_LOCALE = "ar-YE";
 export const APP_TIMEZONE = "Asia/Aden";
 
 // ─── Number locale ─────────────────────────────────────────────
-export const CURRENCY_LOCALE = "ar-SA";
+export const CURRENCY_LOCALE = "ar-YE";
 export const CURRENCY_SUFFIX = "ر.ي";
 
 // ─── Order number generation ───────────────────────────────────

@@ -1,9 +1,16 @@
 import type { MetadataRoute } from "next";
-import { products } from "@/lib/mock-data";
 import { getAllPosts } from "@/lib/blog-data";
 import { SITE_URL } from "@/lib/site-config";
+import { supabase } from "@/lib/supabase";
+import { products as mockProducts } from "@/lib/mock-data";
 
-// Static page definitions with realistic lastModified dates and priorities
+// Static page definitions with changeFrequency + priority.
+// lastModified is computed at build/request time so the sitemap never
+// reports stale dates (H16 fix). Pages are grouped by update cadence:
+//   - daily  : home, products (inventory changes)
+//   - weekly : content sections + blog index
+//   - monthly: legal/about
+//   - yearly : policy pages
 const staticPages: {
   path: string;
   priority: number;
@@ -15,34 +22,69 @@ const staticPages: {
     | "monthly"
     | "yearly"
     | "never";
-  lastModified: string;
+  lastModified: Date;
 }[] = [
-  { path: "/", priority: 1.0, changeFrequency: "daily", lastModified: "2025-01-15" },
-  { path: "/products", priority: 0.9, changeFrequency: "daily", lastModified: "2025-01-20" },
-  { path: "/apps", priority: 0.8, changeFrequency: "weekly", lastModified: "2025-01-10" },
-  { path: "/ai-tools", priority: 0.8, changeFrequency: "weekly", lastModified: "2025-01-12" },
-  { path: "/academy", priority: 0.8, changeFrequency: "weekly", lastModified: "2025-01-08" },
-  { path: "/services", priority: 0.8, changeFrequency: "weekly", lastModified: "2025-01-05" },
-  { path: "/trading", priority: 0.8, changeFrequency: "weekly", lastModified: "2025-01-14" },
-  { path: "/earning", priority: 0.8, changeFrequency: "weekly", lastModified: "2025-01-11" },
-  { path: "/blog", priority: 0.8, changeFrequency: "weekly", lastModified: "2025-01-20" },
-  { path: "/about", priority: 0.6, changeFrequency: "monthly", lastModified: "2024-12-20" },
-  { path: "/contact", priority: 0.6, changeFrequency: "monthly", lastModified: "2024-12-20" },
-  { path: "/faq", priority: 0.6, changeFrequency: "monthly", lastModified: "2025-01-18" },
-  { path: "/zero-protocols", priority: 0.5, changeFrequency: "monthly", lastModified: "2024-12-20" },
-  { path: "/values", priority: 0.5, changeFrequency: "monthly", lastModified: "2024-12-20" },
-  { path: "/criticism", priority: 0.5, changeFrequency: "monthly", lastModified: "2024-12-20" },
-  { path: "/privacy", priority: 0.3, changeFrequency: "yearly", lastModified: "2024-11-01" },
-  { path: "/terms", priority: 0.3, changeFrequency: "yearly", lastModified: "2024-11-01" },
-  { path: "/return-policy", priority: 0.3, changeFrequency: "yearly", lastModified: "2024-11-01" },
-  { path: "/shipping-policy", priority: 0.3, changeFrequency: "yearly", lastModified: "2024-11-01" },
+  { path: "/", priority: 1.0, changeFrequency: "daily", lastModified: new Date() },
+  { path: "/products", priority: 0.9, changeFrequency: "daily", lastModified: new Date() },
+  { path: "/apps", priority: 0.8, changeFrequency: "weekly", lastModified: new Date() },
+  { path: "/ai-tools", priority: 0.8, changeFrequency: "weekly", lastModified: new Date() },
+  { path: "/academy", priority: 0.8, changeFrequency: "weekly", lastModified: new Date() },
+  { path: "/services", priority: 0.8, changeFrequency: "weekly", lastModified: new Date() },
+  { path: "/trading", priority: 0.8, changeFrequency: "weekly", lastModified: new Date() },
+  { path: "/earning", priority: 0.8, changeFrequency: "weekly", lastModified: new Date() },
+  { path: "/blog", priority: 0.8, changeFrequency: "weekly", lastModified: new Date() },
+  { path: "/about", priority: 0.6, changeFrequency: "monthly", lastModified: new Date() },
+  { path: "/contact", priority: 0.6, changeFrequency: "monthly", lastModified: new Date() },
+  { path: "/faq", priority: 0.6, changeFrequency: "monthly", lastModified: new Date() },
+  { path: "/zero-protocols", priority: 0.5, changeFrequency: "monthly", lastModified: new Date() },
+  { path: "/values", priority: 0.5, changeFrequency: "monthly", lastModified: new Date() },
+  { path: "/criticism", priority: 0.5, changeFrequency: "monthly", lastModified: new Date() },
+  { path: "/privacy", priority: 0.3, changeFrequency: "yearly", lastModified: new Date() },
+  { path: "/terms", priority: 0.3, changeFrequency: "yearly", lastModified: new Date() },
+  { path: "/return-policy", priority: 0.3, changeFrequency: "yearly", lastModified: new Date() },
+  { path: "/shipping-policy", priority: 0.3, changeFrequency: "yearly", lastModified: new Date() },
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+// Fetch real product IDs + their updated_at (or created_at) from Supabase.
+// Falls back to mock data when Supabase is unreachable so the sitemap
+// always returns a valid XML even during DB outages (H17 fix).
+async function fetchProductEntries(): Promise<MetadataRoute.Sitemap> {
+  const fallback = mockProducts
+    .filter((p) => p.availability)
+    .map((p) => ({
+      url: `${SITE_URL}/product/${p.id}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+      alternates: { languages: { ar: `${SITE_URL}/product/${p.id}` } },
+    }));
+  if (!supabase) return fallback;
+  try {
+    const { data, error } = await supabase
+      .from("products")
+      .select("product_id, updated_at, created_at, availability")
+      .eq("availability", true)
+      .order("created_at", { ascending: false })
+      .limit(1000);
+    if (error || !data || data.length === 0) return fallback;
+    return (data as Array<{ product_id: string; updated_at: string | null; created_at: string | null }>).map((p) => ({
+      url: `${SITE_URL}/product/${p.product_id}`,
+      // Prefer updated_at, fall back to created_at, then to now()
+      lastModified: new Date(p.updated_at || p.created_at || Date.now()),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+      alternates: { languages: { ar: `${SITE_URL}/product/${p.product_id}` } },
+    }));
+  } catch {
+    return fallback;
+  }
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages
   const staticEntries: MetadataRoute.Sitemap = staticPages.map((page) => ({
     url: `${SITE_URL}${page.path}`,
-    lastModified: new Date(page.lastModified),
+    lastModified: page.lastModified,
     changeFrequency: page.changeFrequency,
     priority: page.priority,
     alternates: {
@@ -52,20 +94,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   }));
 
-  // Dynamic product pages
-  const productEntries: MetadataRoute.Sitemap = products
-    .filter((product) => product.availability)
-    .map((product) => ({
-      url: `${SITE_URL}/product/${product.id}`,
-      lastModified: new Date("2025-01-20"),
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-      alternates: {
-        languages: {
-          ar: `${SITE_URL}/product/${product.id}`,
-        },
-      },
-    }));
+  // Dynamic product pages — fetched from Supabase (H17 fix)
+  const productEntries = await fetchProductEntries();
 
   // Blog post pages
   const blogPosts = getAllPosts();

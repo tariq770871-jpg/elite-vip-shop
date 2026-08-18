@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: BlogPostPageProps) {
       description: post.excerpt,
       url: `${SITE_URL}/blog/${post.slug}`,
       siteName: SITE_NAME,
-      locale: "ar_AR",
+      locale: "ar_YE",
       type: "article",
       publishedTime: post.date,
       authors: [post.author],

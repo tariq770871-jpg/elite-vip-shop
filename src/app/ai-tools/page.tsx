@@ -16,7 +16,7 @@ export const metadata: Metadata = {
       "أدوات ذكاء اصطناعي مجانية ومدفوعة لتحسين إنتاجيتك. أدوات كتابة، تصميم، وبرمجة ذكية — ChatGPT، Midjourney، Canva AI وأكثر.",
     url: `${SITE_URL}/ai-tools`,
     type: "website",
-    locale: "ar_AR",
+    locale: "ar_YE",
     siteName: SITE_NAME,
     images: [
       {

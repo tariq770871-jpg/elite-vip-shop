@@ -17,7 +17,7 @@ export const metadata: Metadata = {
       "سياسة الخصوصية الخاصة بمتجر النخبة — تعرّف على كيفية جمع واستخدام وحماية بياناتك الشخصية.",
     url: `${SITE_URL}/privacy`,
     type: "website",
-    locale: "ar_AR",
+    locale: "ar_YE",
     siteName: SITE_NAME,
     images: [
       {

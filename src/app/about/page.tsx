@@ -16,7 +16,7 @@ export const metadata: Metadata = {
       "تعرف على Elite VIP Shop — منصة إلكترونية تجمع متجر منتجات، تطبيقات وأدوات، وخدمات رقمية. الطلب عبر واتساب مباشرة.",
     url: `${SITE_URL}/about`,
     type: "website",
-    locale: "ar_AR",
+    locale: "ar_YE",
     siteName: SITE_NAME,
     images: [
       {

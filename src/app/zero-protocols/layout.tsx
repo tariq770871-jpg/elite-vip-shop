@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     description: "بروتوكولات الأمان والجودة في متجر النخبة.",
     url: `${SITE_URL}/zero-protocols`,
     siteName: SITE_NAME,
-    locale: "ar_AR",
+    locale: "ar_YE",
     type: "website",
   },
 };

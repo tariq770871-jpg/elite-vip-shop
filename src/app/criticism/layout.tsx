@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     description: "شاركنا نقدك واقتراحاتك لتحسين متجر النخبة.",
     url: `${SITE_URL}/criticism`,
     siteName: SITE_NAME,
-    locale: "ar_AR",
+    locale: "ar_YE",
     type: "website",
   },
 };

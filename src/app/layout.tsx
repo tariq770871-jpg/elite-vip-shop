@@ -64,7 +64,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   openGraph: {
     type: "website",
-    locale: "ar_AR",
+    locale: "ar_YE",
     url: SITE_URL,
     siteName: SITE_NAME,
     title: SITE_NAME,

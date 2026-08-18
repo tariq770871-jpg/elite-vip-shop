@@ -16,7 +16,7 @@ export const metadata: Metadata = {
       "تواصل معنا عبر واتساب، تيليجرام أو البريد الإلكتروني. نحن هنا لخدمتك والإجابة على استفساراتك بسرعة واحترافية.",
     url: `${SITE_URL}/contact`,
     type: "website",
-    locale: "ar_AR",
+    locale: "ar_YE",
     siteName: SITE_NAME,
     images: [
       {

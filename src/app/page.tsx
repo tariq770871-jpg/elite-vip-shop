@@ -16,7 +16,7 @@ export const metadata: Metadata = {
       "منصة النخبة المتكاملة — متجر منتجات، تطبيقات وأدوات، خدمات رقمية، تداول، وربح من الإنترنت. أفضل المنتجات بأسعار تنافسية.",
     url: SITE_URL,
     type: "website",
-    locale: "ar_AR",
+    locale: "ar_YE",
     siteName: SITE_NAME,
     images: [
       {

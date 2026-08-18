@@ -18,7 +18,7 @@ export const metadata: Metadata = {
       "إجابات على الأسئلة الأكثر شيوعاً حول Elite VIP Shop — الطلبات، الشحن، الاسترجاع، الدفع والتواصل.",
     url: `${SITE_URL}/faq`,
     type: "website",
-    locale: "ar_AR",
+    locale: "ar_YE",
     siteName: SITE_NAME,
     images: [
       {

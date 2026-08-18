@@ -16,7 +16,7 @@ export const metadata: Metadata = {
       "مقالات ونصائح متخصصة في التسويق الرقمي، الربح من الإنترنت، التجارة الإلكترونية، الذكاء الاصطناعي، تصميم المواقع والتداول.",
     url: `${SITE_URL}/blog`,
     siteName: SITE_NAME,
-    locale: "ar_AR",
+    locale: "ar_YE",
     type: "website",
     images: [
       {

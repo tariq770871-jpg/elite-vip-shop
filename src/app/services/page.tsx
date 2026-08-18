@@ -16,7 +16,7 @@ export const metadata: Metadata = {
       "خدمات تصميم مواقع، تطوير تطبيقات، تسويق رقمي، هويات بصرية، إدارة محتوى واستشارات تقنية. اطلب خدمتك عبر واتساب مباشرة.",
     url: `${SITE_URL}/services`,
     type: "website",
-    locale: "ar_AR",
+    locale: "ar_YE",
     siteName: SITE_NAME,
     images: [
       {

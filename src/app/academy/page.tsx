@@ -16,7 +16,7 @@ export const metadata: Metadata = {
       "أكاديمية النخبة لتعلم التداول والأسواق المالية. دورات في التحليل الفني، العملات الرقمية، وإدارة المخاطر من الصفر للاحتراف.",
     url: `${SITE_URL}/academy`,
     type: "website",
-    locale: "ar_AR",
+    locale: "ar_YE",
     siteName: SITE_NAME,
     images: [
       {

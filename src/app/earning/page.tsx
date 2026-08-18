@@ -16,7 +16,7 @@ export const metadata: Metadata = {
       "أفكار ومحتوى تعليمي حول الربح من الإنترنت. طرق مجانية ومدفوعة لتحقيق دخل إضافي — تسويق بالعمولة، عمل حر، تجارة إلكترونية وأكثر.",
     url: `${SITE_URL}/earning`,
     type: "website",
-    locale: "ar_AR",
+    locale: "ar_YE",
     siteName: SITE_NAME,
     images: [
       {

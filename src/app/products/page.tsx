@@ -16,7 +16,7 @@ export const metadata: Metadata = {
       "تسوّق أفضل المنتجات الإلكترونية والرقمية في متجر النخبة. سماعات، ساعات ذكية، برامج، كورسات وأكثر — اطلب عبر واتساب مباشرة.",
     url: `${SITE_URL}/products`,
     type: "website",
-    locale: "ar_AR",
+    locale: "ar_YE",
     siteName: SITE_NAME,
     images: [
       {

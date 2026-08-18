@@ -16,7 +16,7 @@ export const metadata: Metadata = {
       "سياسة الاسترجاع والاستبدال في Elite VIP Shop. شروط الاسترجاع خلال 14 يوماً، إجراءات الاستبدال، واسترداد المبالغ بالكامل.",
     url: `${SITE_URL}/return-policy`,
     type: "website",
-    locale: "ar_AR",
+    locale: "ar_YE",
     siteName: SITE_NAME,
     images: [
       {

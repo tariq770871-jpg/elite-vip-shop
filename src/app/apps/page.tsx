@@ -18,7 +18,7 @@ export const metadata: Metadata = {
       "مجموعة من التطبيقات والأدوات المفيدة. جميع روابط التحميل من المصادر الرسمية مثل Google Play — تطبيقات إنتاجية وتعليمية وصحية.",
     url: `${SITE_URL}/apps`,
     type: "website",
-    locale: "ar_AR",
+    locale: "ar_YE",
     siteName: SITE_NAME,
     images: [
       {

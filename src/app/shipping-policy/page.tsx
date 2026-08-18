@@ -16,7 +16,7 @@ export const metadata: Metadata = {
       "سياسة الشحن والتوصيل في Elite VIP Shop. معلومات عن مناطق الشحن، مدة التوصيل، رسوم الشحن، وتتبع الطلبات بشكل مفصل.",
     url: `${SITE_URL}/shipping-policy`,
     type: "website",
-    locale: "ar_AR",
+    locale: "ar_YE",
     siteName: SITE_NAME,
     images: [
       {

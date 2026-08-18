@@ -16,7 +16,7 @@ export const metadata: Metadata = {
       "محتوى تعليمي وشروحات في التداول والأسواق المالية. تعلم أصول التداول بأمان — تحليل فني، مؤشرات، وإدارة مخاطر احترافية.",
     url: `${SITE_URL}/trading`,
     type: "website",
-    locale: "ar_AR",
+    locale: "ar_YE",
     siteName: SITE_NAME,
     images: [
       {

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     description: "تعرف على القيم والمبادئ التي تقوم عليها منصة النخبة.",
     url: `${SITE_URL}/values`,
     siteName: SITE_NAME,
-    locale: "ar_AR",
+    locale: "ar_YE",
     type: "website",
   },
 };

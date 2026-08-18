@@ -16,7 +16,7 @@ export const metadata: Metadata = {
       "شروط وأحكام استخدام موقع Elite VIP Shop. الطلبات عبر واتساب، سياسة الاسترجاع، وحقوق المستخدم ومسؤولياته.",
     url: `${SITE_URL}/terms`,
     type: "website",
-    locale: "ar_AR",
+    locale: "ar_YE",
     siteName: SITE_NAME,
     images: [
       {

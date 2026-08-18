@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
       description,
       url: `${SITE_URL}/product/${id}`,
       type: "website",
-      locale: "ar_AR",
+      locale: "ar_YE",
       siteName: SITE_NAME,
       images: product.images[0]
         ? [
