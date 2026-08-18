@@ -91,8 +91,18 @@ class RateLimiter {
   }
 }
 
-// Singleton instance — shared across the server process
-export const rateLimiter = new RateLimiter();
+// Singleton instance — shared across warm serverless invocations via globalThis.
+// Cold starts reset the Map, so rate limiting is best-effort, not a hard cap.
+// For strict production rate limiting, use Upstash Redis or Vercel KV.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const globalForRateLimit = globalThis as unknown as { __rateLimiter?: RateLimiter };
+
+export const rateLimiter =
+  globalForRateLimit.__rateLimiter ?? new RateLimiter();
+
+if (!globalForRateLimit.__rateLimiter) {
+  globalForRateLimit.__rateLimiter = rateLimiter;
+}
 
 /**
  * Extract a client identifier from a Request object.

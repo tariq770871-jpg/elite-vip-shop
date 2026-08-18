@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { ProductDetailSection } from "@/components/sections/product-detail-section";
 import { BreadcrumbSchema } from "@/components/breadcrumb-schema";
 import { products } from "@/lib/mock-data";
@@ -66,48 +67,49 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
   const { id } = await params;
   const product = products.find((p) => p.id === id);
 
-  const productSchema = product
-    ? {
-        "@context": "https://schema.org",
-        "@type": "Product",
-        name: product.name,
-        description: product.description,
-        image: product.images.map(
-          (img) => `${SITE_URL}${img}`
-        ),
-        offers: {
-          "@type": "Offer",
-          url: `${SITE_URL}/product/${product.id}`,
-          priceCurrency: "YER",
-          price: (product.salePrice ?? product.price).toString(),
-          availability: product.availability
-            ? "https://schema.org/InStock"
-            : "https://schema.org/OutOfStock",
-          seller: {
-            "@type": "Organization",
-            name: product.seller,
-          },
-        },
-        brand: {
-          "@type": "Brand",
-          name: "Elite VIP Shop",
-        },
-      }
-    : null;
+  // Return real 404 for non-existent products (SEO: prevents indexing of empty pages)
+  if (!product) {
+    notFound();
+  }
+
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description,
+    image: product.images.map(
+      (img) => (img.startsWith("http") ? img : `${SITE_URL}${img}`)
+    ),
+    offers: {
+      "@type": "Offer",
+      url: `${SITE_URL}/product/${product.id}`,
+      priceCurrency: "YER",
+      price: (product.salePrice ?? product.price).toString(),
+      availability: product.availability
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      seller: {
+        "@type": "Organization",
+        name: product.seller,
+      },
+    },
+    brand: {
+      "@type": "Brand",
+      name: "Elite VIP Shop",
+    },
+  };
 
   return (
     <>
-      {productSchema && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: safeJsonLd(productSchema) }}
-        />
-      )}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(productSchema) }}
+      />
       <BreadcrumbSchema
         items={[
           { name: "الرئيسية", url: "/" },
           { name: "المتجر", url: "/products" },
-          ...(product ? [{ name: product.name, url: `/product/${product.id}` }] : []),
+          { name: product.name, url: `/product/${product.id}` },
         ]}
       />
       <ProductDetailSection productId={id} />

@@ -512,9 +512,9 @@ function AdminDashboard() {
   });
   const [productSaving, setProductSaving] = useState(false);
 
-  const fetchAdminProducts = async () => {
+  const fetchAdminProducts = async (signal?: AbortSignal) => {
     try {
-      const res = await fetch("/api/admin/products?limit=100&count=true", { headers: authHeaders });
+      const res = await fetch("/api/admin/products?limit=100&count=true", { headers: authHeaders, signal });
       if (res.ok) {
         const data = await res.json();
         if (data.products) {
@@ -542,9 +542,10 @@ function AdminDashboard() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchAdminProducts();
+    fetchAdminProducts(controller.signal);
     return () => controller.abort();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authHeaders]);
 
   const openAddProduct = () => {
     setEditingProduct(null);
@@ -702,7 +703,8 @@ function AdminDashboard() {
     const controller = new AbortController();
     fetchAdminData(controller.signal);
     return () => controller.abort();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authHeaders]);
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     setUpdatingOrderId(orderId);
@@ -1286,7 +1288,8 @@ function SellerDashboard() {
     };
     load();
     return () => controller.abort();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authHeaders]);
 
   const openAddProduct = () => {
     setEditingProduct(null);
@@ -1681,7 +1684,8 @@ function UserDashboard() {
     }
     fetchOrders();
     return () => {};
-  }, [user?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, authHeaders]);
 
   return (
     <div className="space-y-8">

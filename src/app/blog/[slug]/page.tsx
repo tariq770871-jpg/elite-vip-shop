@@ -123,7 +123,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   });
 
   return (
-    <main className="min-h-screen">
+    <div className="min-h-screen">
       <BreadcrumbSchema
         items={[
           { name: "الرئيسية", url: "/" },
@@ -287,6 +287,6 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

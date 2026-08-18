@@ -43,7 +43,7 @@ export default function BlogPage() {
   const posts = getAllPosts();
 
   return (
-    <main className="min-h-screen">
+    <div className="min-h-screen">
       <BreadcrumbSchema
         items={[
           { name: "الرئيسية", url: "/" },
@@ -129,6 +129,6 @@ export default function BlogPage() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
