@@ -46,6 +46,10 @@ function extractUser(user: User, fallbackEmail?: string, serverRole?: string): A
 }
 
 let authListenerInitialized = false
+// Flag to suppress the SIGNED_IN auth listener during password change.
+// signInWithPassword (used to verify the current password) fires SIGNED_IN,
+// which would otherwise reset user state and trigger an unnecessary role fetch.
+let suppressAuthEvents = false
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
@@ -80,6 +84,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
 
     supabase.auth.onAuthStateChange((event, session) => {
+      // Suppress SIGNED_IN during password change flow (see changePassword)
+      if (suppressAuthEvents && event === 'SIGNED_IN') return
       if (event === 'SIGNED_IN' && session?.user) {
         // Set user immediately with default role, then update with server role
         set({
@@ -184,6 +190,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ error: null, isLoading: true, needsEmailConfirmation: false })
     if (!supabase) { set({ error: 'النظام غير متاح حالياً', isLoading: false }); return false }
     try {
+      // ⚠️ Never put `role` in user_metadata — clients can read and tamper with it.
+      // The authoritative role lives in public.users / public.profiles and is
+      // fetched server-side via /api/auth/role. Storing role client-side here
+      // violates the distrust principle (extractUser already ignores it).
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -192,7 +202,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             full_name: name,
             name: name,
             phone: phone || '',
-            role: 'user',
           },
         },
       })
@@ -334,12 +343,20 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       // Verify current password by re-signing in
       const email = get().user?.email
       if (!email) return { success: false, error: 'البريد الإلكتروني غير متوفر' }
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password: currentPassword })
-      if (signInError) return { success: false, error: 'كلمة المرور الحالية غير صحيحة' }
-      // Update password
-      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
-      if (updateError) return { success: false, error: 'فشل تحديث كلمة المرور' }
-      return { success: true, error: null }
+      // Suppress the SIGNED_IN side effects (state reset + role fetch) that
+      // signInWithPassword would otherwise trigger. The user is already signed in;
+      // this re-authentication is purely to verify the current password.
+      suppressAuthEvents = true
+      try {
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password: currentPassword })
+        if (signInError) return { success: false, error: 'كلمة المرور الحالية غير صحيحة' }
+        // Update password
+        const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
+        if (updateError) return { success: false, error: 'فشل تحديث كلمة المرور' }
+        return { success: true, error: null }
+      } finally {
+        suppressAuthEvents = false
+      }
     } catch {
       return { success: false, error: 'حدث خطأ غير متوقع' }
     }
