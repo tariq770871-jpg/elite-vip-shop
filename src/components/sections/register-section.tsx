@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuthStore } from "@/store/auth-store";
 import { useNavigation } from "@/lib/navigation";
-import { getAuthHeaders } from "@/lib/api-auth";
+import { supabase } from "@/lib/supabase";
 import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail, ArrowRight } from "lucide-react";
 
 function PasswordStrength({ password }: { password: string }) {
@@ -116,20 +116,27 @@ export function RegisterSection() {
     const success = await register(name.trim(), email.trim(), password, phone.trim() || undefined);
 
     if (success) {
-      // Notify Telegram about new registration — include Authorization header so /api/notify accepts it.
-      // register() has just established the session (when email confirmation is disabled),
-      // so getAuthHeaders() will return the new token.
-      fetch("/api/notify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({
-          event: "register",
-          data: { name: name.trim(), email: email.trim(), phone: phone.trim() || "" },
-        }),
-      }).catch((err) => {
-        // Non-critical — notification is best-effort; log for monitoring
-        console.warn("Register notification failed:", err instanceof Error ? err.message : String(err));
-      });
+      // Fetch the fresh session token directly from Supabase (Zustand store may not have updated yet)
+      // For email-confirmation flows, no session exists yet — skip notification (handled on first login)
+      if (!supabase) return;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (token) {
+        fetch("/api/notify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            event: "register",
+            data: { name: name.trim(), email: email.trim(), phone: phone.trim() || "" },
+          }),
+        }).catch((err) => {
+          // Non-critical — notification is best-effort; log for monitoring
+          console.warn("Register notification failed:", err instanceof Error ? err.message : String(err));
+        });
+      }
     }
 
     if (success && needsEmailConfirmation) {

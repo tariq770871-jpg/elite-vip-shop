@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuthStore } from "@/store/auth-store";
 import { useNavigation } from "@/lib/navigation";
-import { getAuthHeaders } from "@/lib/api-auth";
+import { supabase } from "@/lib/supabase";
 import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail } from "lucide-react";
 
 export function LoginSection() {
@@ -59,11 +59,16 @@ export function LoginSection() {
     const success = await login(email.trim(), password);
     if (success) {
       setSuccessMessage("تم تسجيل الدخول بنجاح! جارٍ التحويل...");
-      // Notify Telegram about login — include Authorization header so /api/notify accepts it.
-      // login() has just established the session, so getAuthHeaders() will return the new token.
+      // Fetch the fresh session token directly from Supabase (Zustand store may not have updated yet)
+      if (!supabase) { setTimeout(() => navigateTo("home"), 800); return; }
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
       fetch("/api/notify", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           event: "login",
           data: { email: email.trim() },
