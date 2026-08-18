@@ -27,8 +27,14 @@ import { cookies } from "next/headers";
 
 /**
  * Extract the Supabase access token from a Request object.
- * Checks the `Authorization: Bearer <token>` header first,
- * then falls back to the `sb-access-token` cookie.
+ *
+ * Resolution order:
+ *   1. Authorization: Bearer <token> header (preferred — set by client-side API calls)
+ *   2. `sb-<project-ref>-auth-token` cookie (single-chunk form, supabase-js v2)
+ *   3. `sb-<project-ref>-auth-token.0` + `.1` + ... chunked cookies (@supabase/ssr v0.10+)
+ *
+ * Note: @supabase/ssr v0.10+ chunks cookies larger than ~3180 bytes into
+ * `<name>.0`, `<name>.1`, ... parts. We must reassemble them in order.
  *
  * @param request - The incoming Request (or NextRequest)
  * @returns The access token string, or null if not found
@@ -40,15 +46,74 @@ export function extractAccessToken(request: Request): string | null {
     authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
   if (headerToken) return headerToken;
 
-  // 2. Cookie: try structured API first (NextRequest), then raw header parsing
-  //    NextRequest has request.cookies.get(), generic Request does not.
+  // 2 & 3. Cookie-based extraction.
+  //    NextRequest exposes `request.cookies.get()`, but generic Request does not.
+  //    Fall back to raw header parsing to support both call sites.
   const cookieHeader = request.headers.get("cookie");
-  if (cookieHeader) {
-    const match = cookieHeader.match(/sb-access-token=([^;]+)/);
-    if (match) return match[1];
+  if (!cookieHeader) return null;
+
+  // Parse all cookies once into a Map (key → value)
+  const cookies = new Map<string, string>();
+  for (const part of cookieHeader.split(";")) {
+    const idx = part.indexOf("=");
+    if (idx === -1) continue;
+    const key = part.slice(0, idx).trim();
+    const val = part.slice(idx + 1).trim();
+    cookies.set(key, val);
   }
 
-  return null;
+  // Match `sb-<project-ref>-auth-token` (single-chunk) first.
+  // Project ref is the middle segment of the Supabase URL host
+  // (e.g., https://abcdefgh.supabase.co → ref = abcdefgh).
+  const singleMatch = /^sb-[\w-]+-auth-token$/;
+  for (const [key, value] of cookies) {
+    if (singleMatch.test(key)) return decodeCookieValue(value);
+  }
+
+  // Otherwise, reassemble chunked form: `sb-<ref>-auth-token.0`, `.1`, ...
+  const chunkPrefix = /^sb-[\w-]+-auth-token\.(\d+)$/;
+  const chunks: Array<{ index: number; value: string }> = [];
+  for (const [key, value] of cookies) {
+    const m = key.match(chunkPrefix);
+    if (m) chunks.push({ index: parseInt(m[1], 10), value });
+  }
+  if (chunks.length === 0) return null;
+
+  chunks.sort((a, b) => a.index - b.index);
+  return decodeCookieValue(chunks.map((c) => c.value).join(""));
+}
+
+/**
+ * Decode a Supabase session cookie value into a raw access token.
+ *
+ * The cookie value may be either:
+ *   - URL-encoded JSON:  `%7B%22access_token%22%3A%22eyJ...%22%7D`  → parse → access_token
+ *   - Raw JSON:           `{"access_token":"eyJ...","refresh_token":"..."}` → parse → access_token
+ *   - Raw JWT:            `eyJhbGciOi...` (no curly braces) → return as-is
+ *
+ * Returns null on malformed JSON.
+ */
+function decodeCookieValue(raw: string): string | null {
+  if (!raw) return null;
+
+  // Fast path: looks like a JWT (header.payload.signature) — return as-is.
+  if (raw.startsWith("eyJ")) return raw;
+
+  // Try URL-decode first (some browsers/SSR layers encode the value).
+  let decoded = raw;
+  try {
+    if (raw.includes("%")) decoded = decodeURIComponent(raw);
+  } catch {
+    // decodeURIComponent can throw on malformed input — keep `raw`.
+  }
+
+  // Try JSON parse to extract access_token.
+  try {
+    const parsed = JSON.parse(decoded) as { access_token?: string };
+    return parsed.access_token ?? null;
+  } catch {
+    return null;
+  }
 }
 
 // ─── Environment variables ──────────────────────────────────────

@@ -135,12 +135,22 @@ export async function POST(request: Request) {
     // Get the first product info for the order snapshot
     const primaryProduct = validatedItems.length > 0 ? validatedItems[0] : null;
 
+    // ── Compute final total AFTER coupon discount ──
+    // The user-facing UI shows: finalTotal = subtotal - discount
+    // The DB must store the SAME value the user paid, otherwise reports,
+    // revenue stats, and seller payouts are all wrong.
+    const discountAmount = Math.max(0, Number(discount) || 0);
+    const finalTotal = Math.max(0, calculatedTotal - discountAmount);
+
     // Insert order with ALL new columns
     const orderInsert: OrderInsertPayload = {
       order_number: orderNumber,
       user_id: userId,
-      status: "new",
-      total_amount: calculatedTotal,
+      // Use "pending" — matches chk_order_status constraint added in Migration 002.
+      // The legacy "new" value is rejected by the constraint.
+      status: "pending",
+      // Store the FINAL total (after coupon discount), not the pre-discount subtotal.
+      total_amount: finalTotal,
       notes: notesContent,
       // New chat-based ordering columns
       delivery_type: deliveryType || "pickup",
@@ -157,7 +167,9 @@ export async function POST(request: Request) {
       product_name_snapshot: primaryProduct?.productName || null,
       unit_price: primaryProduct?.price || null,
       quantity: primaryProduct?.quantity || 1,
-      total_price: primaryProduct ? primaryProduct.price * primaryProduct.quantity : calculatedTotal,
+      // Snapshot total_price is for the primary product line only.
+      // The order-level total_amount (above) reflects the FULL order after discount.
+      total_price: primaryProduct ? primaryProduct.price * primaryProduct.quantity : finalTotal,
     };
 
     // Try extended insert first, fallback to basic if migration not run yet
@@ -180,8 +192,8 @@ export async function POST(request: Request) {
       const basicInsert: Partial<OrderInsertPayload> = {
         order_number: orderNumber,
         user_id: userId,
-        status: "new",
-        total_amount: calculatedTotal,
+        status: "pending",
+        total_amount: finalTotal,
         notes: notesContent,
       };
       const basicResult = await serviceClient
@@ -244,7 +256,8 @@ export async function POST(request: Request) {
       customerName: customerName || undefined,
       customerPhone: customerPhone || undefined,
       customerAddress: customerAddress || undefined,
-      total: calculatedTotal,
+      // Use the final total (after coupon discount) — matches what the user paid.
+      total: finalTotal,
       items: orderItems.map((i) => ({
         name: i.product_name,
         quantity: i.quantity,

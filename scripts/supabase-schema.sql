@@ -743,9 +743,14 @@ CREATE POLICY "reviews_admin_all" ON public.reviews
 -- ══════════════════════════════════════════════════════════════
 ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
 
--- Public can read settings (needed for site configuration)
+-- Public can read ONLY non-secret settings (e.g., site_name, logo_url).
+-- Secrets (telegram_bot_token, smtp_password, etc.) are admin-only.
 CREATE POLICY "site_settings_public_read" ON public.site_settings
-  FOR SELECT USING (true);
+  FOR SELECT USING (type <> 'secret');
+
+-- Only admins can read secret settings (telegram_bot_token, etc.)
+CREATE POLICY "site_settings_secret_admin_read" ON public.site_settings
+  FOR SELECT USING (type = 'secret' AND public.is_admin());
 
 -- Only admins can modify settings
 CREATE POLICY "site_settings_admin_write" ON public.site_settings

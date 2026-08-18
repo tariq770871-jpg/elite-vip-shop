@@ -22,9 +22,19 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS landmark VARCHAR(255);
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS seller_id UUID;
 
 -- 3. Update status constraint to include 'pending' and 'processing'
--- First drop the old constraint
+-- CRITICAL: Normalize legacy status values BEFORE adding the new constraint.
+--   - 'new'         → 'pending'   (was the old DEFAULT)
+--   - 'reviewing'   → 'pending'   (intermediate legacy state)
+--   - 'completed'   → 'delivered'  (legacy terminal state)
+--   - 'rejected'    → 'cancelled'  (legacy terminal state)
+-- Without this UPDATE, ALTER TABLE ADD CONSTRAINT fails on existing rows
+-- and the migration is left half-applied (columns added but no constraint).
+UPDATE orders SET status = 'pending'   WHERE status IN ('new', 'reviewing');
+UPDATE orders SET status = 'delivered' WHERE status = 'completed';
+UPDATE orders SET status = 'cancelled' WHERE status = 'rejected';
+
+-- Now drop the old constraint and add the new one with updated status values
 ALTER TABLE orders DROP CONSTRAINT IF EXISTS chk_order_status;
--- Add the new constraint with updated status values
 ALTER TABLE orders ADD CONSTRAINT chk_order_status
   CHECK (status IN ('pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'));
 
