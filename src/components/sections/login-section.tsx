@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuthStore } from "@/store/auth-store";
 import { useNavigation } from "@/lib/navigation";
+import { getAuthHeaders } from "@/lib/api-auth";
 import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Mail } from "lucide-react";
 
 export function LoginSection() {
@@ -58,10 +59,11 @@ export function LoginSection() {
     const success = await login(email.trim(), password);
     if (success) {
       setSuccessMessage("تم تسجيل الدخول بنجاح! جارٍ التحويل...");
-      // Notify Telegram about login
+      // Notify Telegram about login — include Authorization header so /api/notify accepts it.
+      // login() has just established the session, so getAuthHeaders() will return the new token.
       fetch("/api/notify", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({
           event: "login",
           data: { email: email.trim() },

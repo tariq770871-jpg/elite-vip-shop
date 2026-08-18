@@ -28,7 +28,9 @@ export function TestimonialsSection() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/reviews?limit=10")
+    // Use /api/reviews/featured (NOT /api/reviews) because the regular endpoint
+    // requires a product_id param. Featured returns approved reviews across all products.
+    fetch("/api/reviews/featured?limit=10")
       .then((res) => (res.ok ? safeReadJson<{ reviews?: SupabaseReviewRow[] }>(res) : null))
       .then((data) => {
         if (cancelled) return;

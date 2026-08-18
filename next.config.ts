@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 
+// CSP is generated dynamically in src/middleware.ts (per-request nonce).
+// The static CSP here is a FALLBACK for routes not matched by middleware.
+// It uses 'unsafe-inline' for script-src (weaker) only as a safety net.
 const securityHeaders = [
   {
     key: "X-DNS-Prefetch-Control",
@@ -29,22 +32,9 @@ const securityHeaders = [
     key: "X-Permitted-Cross-Domain-Policies",
     value: "none",
   },
-  {
-    key: "Content-Security-Policy",
-    value: [
-      "default-src 'self'",
-      "script-src 'self' 'strict-dynamic' https://www.googletagmanager.com",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com data:",
-      "img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in",
-      "connect-src 'self' https://*.supabase.co https://*.supabase.in https://www.google-analytics.com https://www.googletagmanager.com https://api.telegram.org",
-      "media-src 'self'",
-      "worker-src 'self' blob:",
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self' https://*.supabase.co",
-    ].join("; "),
-  },
+  // NOTE: No Content-Security-Policy here — middleware generates it per-request
+  // with a fresh nonce. If you need a static fallback, add it here but be aware
+  // that the nonce-based version is stronger.
 ];
 
 const nextConfig: NextConfig = {

@@ -325,9 +325,52 @@ CREATE INDEX IF NOT EXISTS idx_reviews_user_product ON public.reviews(user_id, p
 CREATE INDEX IF NOT EXISTS idx_orders_seller ON public.orders(seller_id);
 -- ── Index for order_items product_id lookups (used by reviews purchase check) ──
 CREATE INDEX IF NOT EXISTS idx_orderitems_product ON public.order_items(product_id);
+
+-- ============================================================
+-- 14b. TABLE: profiles (ملفات المستخدمين — مكمّل لـ Supabase Auth)
+-- ============================================================
+-- Mirrors auth.users.id as user_id (kept in sync by trg_sync_public_user).
+-- The is_admin column is the authoritative source for admin role checks
+-- (used by is_admin() SQL function and verifyAdmin TS function).
+CREATE TABLE IF NOT EXISTS public.profiles (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  full_name VARCHAR(255),
+  avatar_url TEXT,
+  phone VARCHAR(30),
+  is_admin BOOLEAN DEFAULT FALSE,
+  is_seller BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Trigger: keep profiles.updated_at fresh
+DROP TRIGGER IF EXISTS trg_profiles_updated ON public.profiles;
+CREATE TRIGGER trg_profiles_updated
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+
 -- ── Index for profiles user_id lookups (used by auth role check) ──
--- Note: profiles table may be created by Supabase Auth; this index ensures fast lookups
+-- Note: PK already indexes user_id, but kept for explicit documentation
 CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON public.profiles(user_id);
+
+-- ── RLS for profiles ──
+-- Users can read their own profile; admins can read all
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS profiles_self_read ON public.profiles;
+CREATE POLICY profiles_self_read
+  ON public.profiles FOR SELECT
+  USING (user_id = auth.uid() OR public.is_admin());
+DROP POLICY IF EXISTS profiles_self_update ON public.profiles;
+CREATE POLICY profiles_self_update
+  ON public.profiles FOR UPDATE
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid() AND is_admin = (SELECT is_admin FROM public.profiles WHERE user_id = auth.uid()));
+-- Prevent privilege escalation via self-update — is_admin can only be set by another admin
+DROP POLICY IF EXISTS profiles_admin_all ON public.profiles;
+CREATE POLICY profiles_admin_all
+  ON public.profiles FOR ALL
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
 
 -- ============================================================
 -- 15. TABLE: site_settings (إعدادات الموقع)
@@ -430,39 +473,53 @@ CREATE TRIGGER trg_settings_updated BEFORE UPDATE ON public.site_settings
 
 -- ──────────────────────────────────────────────────────────────
 -- Helper function: Check if the current user is an admin
--- Resolves auth.uid() → users.email → users.role_id → roles.role_name
+--
+-- Resolution order (must match verifyAdmin in src/lib/admin-auth.ts):
+--   1. profiles.is_admin = true  (new schema — preferred)
+--   2. legacy users/roles join  (role_name = 'admin' OR 'owner')
+--
+-- Both paths checked with OR — keeps behavior consistent with the TS layer.
 -- ──────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
 DECLARE
-  v_role_name VARCHAR(50);
+  v_auth_uid UUID := auth.uid();
+  v_legacy_role VARCHAR(50);
 BEGIN
-  SELECT r.role_name INTO v_role_name
+  IF v_auth_uid IS NULL THEN
+    RETURN FALSE;
+  END IF;
+
+  -- Path 1: profiles.is_admin (new schema)
+  IF EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE user_id = v_auth_uid AND is_admin = TRUE
+  ) THEN
+    RETURN TRUE;
+  END IF;
+
+  -- Path 2: legacy users/roles join (admin OR owner)
+  SELECT r.role_name INTO v_legacy_role
   FROM public.users u
   JOIN public.roles r ON u.role_id = r.role_id
   WHERE u.email = auth.jwt() ->> 'email'
   LIMIT 1;
 
-  RETURN v_role_name = 'admin';
+  RETURN v_legacy_role IN ('admin', 'owner');
 EXCEPTION WHEN OTHERS THEN
   RETURN FALSE;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
 -- Helper function: Get the user_id for the currently authenticated user
+--
+-- IMPORTANT: Returns auth.uid() directly — this is what the API layer stores
+-- in orders.user_id, reviews.user_id, etc. The auth.users.id and public.users.user_id
+-- are kept in sync by the trg_sync_public_user trigger (see below).
 CREATE OR REPLACE FUNCTION public.current_user_id()
 RETURNS UUID AS $$
-DECLARE
-  v_user_id UUID;
 BEGIN
-  SELECT u.user_id INTO v_user_id
-  FROM public.users u
-  WHERE u.email = auth.jwt() ->> 'email'
-  LIMIT 1;
-
-  RETURN v_user_id;
-EXCEPTION WHEN OTHERS THEN
-  RETURN NULL;
+  RETURN auth.uid();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
@@ -794,35 +851,93 @@ ON CONFLICT (role_name) DO NOTHING;
 
 -- ──────────────────────────────────────────────────────────────
 -- المدير: tariq770871@gmail.com — ترقيته لأدمن تلقائياً عند التسجيل
+-- + مزامنة auth.users.id → public.users.user_id (يحل مشكلة FK في orders)
 -- ──────────────────────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION public.auto_promote_first_user()
+
+-- ──────────────────────────────────────────────────────────────
+-- 1) Sync trigger: when a new auth.users row is inserted (Supabase Auth signup),
+--    mirror it into public.users with user_id = auth.users.id.
+--    This makes the FK constraint fk_order_user (orders.user_id → public.users.user_id)
+--    satisfiable for orders placed by authenticated users.
+--
+--    Without this trigger, the API inserts orders.user_id = auth.users.id,
+--    but public.users.user_id is a separate random UUID → FK violation.
+-- ──────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.sync_auth_user_to_public_users()
 RETURNS TRIGGER AS $$
 DECLARE
+  v_user_role VARCHAR(50) := 'user';
   v_admin_role_id UUID;
+  v_existing_count INTEGER;
 BEGIN
-  -- Auto-promote tariq770871@gmail.com to admin
-  IF NEW.email = 'tariq770871@gmail.com' THEN
-    SELECT role_id INTO v_admin_role_id FROM public.roles WHERE role_name = 'admin' LIMIT 1;
-    IF v_admin_role_id IS NOT NULL THEN
-      NEW.role_id := v_admin_role_id;
-    END IF;
+  -- Don't re-insert if a row with the same email already exists
+  SELECT COUNT(*) INTO v_existing_count FROM public.users WHERE email = NEW.email;
+  IF v_existing_count > 0 THEN
+    -- Update the existing row's user_id to match auth.users.id (FK integrity)
+    UPDATE public.users
+    SET user_id = NEW.id, name = COALESCE(NULLIF(NEW.raw_user_meta_data->>'full_name', ''), name)
+    WHERE email = NEW.email;
     RETURN NEW;
   END IF;
 
-  -- Also promote the very first user if no users exist yet
-  IF (SELECT COUNT(*) FROM public.users) = 0 THEN
-    SELECT role_id INTO v_admin_role_id FROM public.roles WHERE role_name = 'admin' LIMIT 1;
-    IF v_admin_role_id IS NOT NULL THEN
-      NEW.role_id := v_admin_role_id;
-    END IF;
+  -- Auto-promote the very first registered user to admin (bootstrap admin)
+  -- AND auto-promote tariq770871@gmail.com explicitly (owner email)
+  IF NEW.email = 'tariq770871@gmail.com' THEN
+    v_user_role := 'admin';
+  ELSEIF (SELECT COUNT(*) FROM public.users) = 0 THEN
+    v_user_role := 'admin';
   END IF;
+
+  SELECT role_id INTO v_admin_role_id
+  FROM public.roles
+  WHERE role_name = v_user_role
+  LIMIT 1;
+
+  -- Fallback to 'user' role if not found
+  IF v_admin_role_id IS NULL THEN
+    SELECT role_id INTO v_admin_role_id FROM public.roles WHERE role_name = 'user' LIMIT 1;
+  END IF;
+
+  INSERT INTO public.users (
+    user_id,
+    name,
+    email,
+    phone,
+    role_id,
+    is_active
+  ) VALUES (
+    NEW.id,  -- CRITICAL: use auth.users.id, not a fresh random UUID
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)),
+    NEW.email,
+    NEW.raw_user_meta_data->>'phone',
+    v_admin_role_id,
+    TRUE
+  )
+  ON CONFLICT (email) DO UPDATE
+    SET user_id = NEW.id,
+        name = EXCLUDED.name,
+        phone = COALESCE(EXCLUDED.phone, public.users.phone);
 
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Attach trigger — fires BEFORE insert on users
+-- Drop old trigger on public.users (was dead code — never fired for Supabase Auth signups)
 DROP TRIGGER IF EXISTS trg_auto_admin ON public.users;
-CREATE TRIGGER trg_auto_admin
-  BEFORE INSERT ON public.users
-  FOR EACH ROW EXECUTE FUNCTION public.auto_promote_first_user();
+
+-- Attach trigger to auth.users (Supabase Auth's internal table — fires on real signups)
+DROP TRIGGER IF EXISTS trg_sync_public_user ON auth.users;
+CREATE TRIGGER trg_sync_public_user
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.sync_auth_user_to_public_users();
+
+-- Keep the old function name as a no-op alias for backward compatibility
+-- (in case any code references it). The new function supersedes it.
+CREATE OR REPLACE FUNCTION public.auto_promote_first_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Intentionally empty — superseded by sync_auth_user_to_public_users.
+  -- Kept only to avoid breaking references in old migration files.
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
