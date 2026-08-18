@@ -77,19 +77,24 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { product_id, rating, comment } = body;
 
-    if (!product_id || !rating) {
+    if (!product_id || typeof product_id !== "string") {
       return NextResponse.json(
         { error: "بيانات غير مكتملة" },
         { status: 400 }
       );
     }
 
-    if (rating < 1 || rating > 5) {
+    // Rating must be an integer between 1 and 5 (no floats, no strings)
+    const numericRating = Number(rating);
+    if (!Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5) {
       return NextResponse.json(
-        { error: "التقييم يجب أن يكون بين 1 و 5" },
+        { error: "التقييم يجب أن يكون عددًا صحيحًا بين 1 و 5" },
         { status: 400 }
       );
     }
+
+    // Comment: optional string, max 1000 chars (prevents storage DoS)
+    const trimmedComment = typeof comment === "string" ? comment.trim().slice(0, 1000) : "";
 
     const sc = getSupabaseServiceClient();
     if (!sc) {
@@ -124,14 +129,17 @@ export async function POST(request: Request) {
     }
 
     // Insert the review using service role client
+    // Reviews require manual admin approval — prevents spam/abuse from auto-approve.
+    // Featured/product reviews endpoints filter by is_approved=true, so unapproved
+    // reviews remain invisible to the public until an admin moderates them.
     const { data: review, error: insertError } = await serviceClient
       .from("reviews")
       .insert({
         product_id,
         user_id: user.id,
-        rating,
-        comment: comment || "",
-        is_approved: true, // Auto-approve reviews from authenticated users
+        rating: numericRating,
+        comment: trimmedComment,
+        is_approved: false, // Requires admin moderation before publication
       })
       .select()
       .single();

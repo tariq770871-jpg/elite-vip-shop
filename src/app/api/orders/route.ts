@@ -135,11 +135,47 @@ export async function POST(request: Request) {
     // Get the first product info for the order snapshot
     const primaryProduct = validatedItems.length > 0 ? validatedItems[0] : null;
 
-    // ── Compute final total AFTER coupon discount ──
-    // The user-facing UI shows: finalTotal = subtotal - discount
-    // The DB must store the SAME value the user paid, otherwise reports,
-    // revenue stats, and seller payouts are all wrong.
-    const discountAmount = Math.max(0, Number(discount) || 0);
+    // ── Server-side coupon re-validation (H10) ──
+    // Never trust the client-sent `discount` value — clients can tamper with it.
+    // Re-fetch the coupon from DB, validate active/expiry/max_uses/min_order_amount,
+    // and recompute the discount from the DB-stored discount_value (not client-sent).
+    let discountAmount = 0;
+    if (couponCode) {
+      const upperCode = String(couponCode).toUpperCase().trim();
+      const { data: coupon, error: couponErr } = await serviceClient
+        .from("coupons")
+        .select("code, discount_value, min_order_amount, max_uses, used_count, is_active, valid_from, valid_until")
+        .eq("code", upperCode)
+        .single();
+
+      if (couponErr || !coupon) {
+        return NextResponse.json({ error: "كود الخصم غير صالح" }, { status: 400 });
+      }
+      if (!coupon.is_active) {
+        return NextResponse.json({ error: "كود الخصم غير مفعل" }, { status: 400 });
+      }
+      if (coupon.valid_until && new Date(coupon.valid_until) < new Date()) {
+        return NextResponse.json({ error: "كود الخصم منتهي الصلاحية" }, { status: 400 });
+      }
+      if (coupon.valid_from && new Date(coupon.valid_from) > new Date()) {
+        return NextResponse.json({ error: "كود الخصم لم يبدأ بعد" }, { status: 400 });
+      }
+      if (coupon.max_uses && Number(coupon.used_count) >= Number(coupon.max_uses)) {
+        return NextResponse.json({ error: "تم استخدام كود الخصم الحد الأقصى" }, { status: 400 });
+      }
+      if (calculatedTotal < Number(coupon.min_order_amount)) {
+        return NextResponse.json(
+          { error: `الحد الأدنى للطلب ${Number(coupon.min_order_amount).toLocaleString("ar-SA")} ر.ي` },
+          { status: 400 }
+        );
+      }
+
+      // Recompute discount from DB-stored discount_value (percentage).
+      // Math.round to avoid floating-point drift on monetary amounts.
+      discountAmount = Math.round((calculatedTotal * Number(coupon.discount_value)) / 100);
+    }
+
+    // ── Compute final total AFTER server-validated coupon discount ──
     const finalTotal = Math.max(0, calculatedTotal - discountAmount);
 
     // Insert order with ALL new columns
@@ -230,6 +266,14 @@ export async function POST(request: Request) {
 
     if (itemsError) {
       console.error("Order items insert error:", itemsError);
+      // Rollback: delete the orphaned order to prevent partial data (H9)
+      // Without this, the orders table fills with empty orders that have no items,
+      // corrupting revenue stats and seller payouts.
+      try {
+        await serviceClient.from("orders").delete().eq("order_id", orderId);
+      } catch (rollbackErr) {
+        console.error("Order rollback failed:", rollbackErr instanceof Error ? rollbackErr.message : String(rollbackErr));
+      }
       return NextResponse.json({ error: "فشل في حفظ بنود الطلب" }, { status: 500 });
     }
 

@@ -10,11 +10,49 @@ export async function POST(request: Request) {
   if (blocked) return blocked;
   try {
     const body = await request.json();
-    const { name, email, phone, subject, message } = body;
+    const rawName = typeof body?.name === "string" ? body.name.trim() : "";
+    const rawEmail = typeof body?.email === "string" ? body.email.trim() : "";
+    const rawPhone = typeof body?.phone === "string" ? body.phone.trim() : "";
+    const rawSubject = typeof body?.subject === "string" ? body.subject.trim() : "";
+    const rawMessage = typeof body?.message === "string" ? body.message.trim() : "";
 
-    if (!name || !message) {
+    // Required fields
+    if (!rawName || !rawMessage) {
       return NextResponse.json({ error: "يرجى ملء الاسم والرسالة" }, { status: 400 });
     }
+
+    // Length limits (prevents storage DoS and abuse)
+    if (rawName.length > 100) {
+      return NextResponse.json({ error: "الاسم طويل جدًا" }, { status: 400 });
+    }
+    if (rawMessage.length > 5000) {
+      return NextResponse.json({ error: "الرسالة طويلة جدًا (الحد الأقصى 5000 حرف)" }, { status: 400 });
+    }
+    if (rawSubject.length > 200) {
+      return NextResponse.json({ error: "الموضوع طويل جدًا" }, { status: 400 });
+    }
+    if (rawPhone.length > 30) {
+      return NextResponse.json({ error: "رقم الهاتف طويل جدًا" }, { status: 400 });
+    }
+
+    // Email format validation (when provided)
+    if (rawEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(rawEmail) || rawEmail.length > 254) {
+        return NextResponse.json({ error: "البريد الإلكتروني غير صالح" }, { status: 400 });
+      }
+    }
+
+    // Phone format validation (when provided) — allow +, digits, spaces, dashes
+    if (rawPhone && !/^\+?[0-9\s\-]{7,20}$/.test(rawPhone)) {
+      return NextResponse.json({ error: "رقم الهاتف غير صالح" }, { status: 400 });
+    }
+
+    const name = rawName;
+    const email = rawEmail || null;
+    const phone = rawPhone || null;
+    const subject = rawSubject || "رسالة عامة";
+    const message = rawMessage;
 
     const serviceClient = getSupabaseServiceClient();
     if (serviceClient) {
