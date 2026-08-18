@@ -126,8 +126,17 @@ export function validateEnv(): {
         `⚠️ Running with missing env vars — some features will use fallback/mock data.`
       );
     } else {
-      // In production, this is a critical error
+      // In production: fail-fast. A deployment missing required env vars
+      // will produce 503s on every endpoint with no obvious root cause.
+      // Throwing here surfaces the failure at boot so the operator can
+      // fix it immediately instead of debugging mysterious runtime errors.
+      // (instrumentation.ts runs this once at server start.)
       console.error(message);
+      throw new Error(
+        `Missing required environment variables: ${missing.join(", ")}. ` +
+        `Application cannot start in production without these. ` +
+        `See .env.example for the full list.`
+      );
     }
   }
 

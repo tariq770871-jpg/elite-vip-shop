@@ -63,6 +63,21 @@ export async function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
 
+  // ─── Step 0a: Strip any inbound x-user-* headers from the client ──
+  // These headers are SERVER-ONLY signals set by this middleware after
+  // a successful admin token verification (see Step 2 below). If a
+  // malicious client sends `x-user-id`, `x-user-email`, or `x-user-role`
+  // in the raw request, those would propagate to every downstream
+  // handler (including non-admin routes) and any handler that reads
+  // `headers().get("x-user-id")` would be trivially spoofable.
+  //
+  // Deleting them up-front guarantees the only way they reappear on
+  // the request is via the explicit `adminReqHeaders.set(...)` block
+  // inside the admin-token verification branch.
+  requestHeaders.delete("x-user-id");
+  requestHeaders.delete("x-user-email");
+  requestHeaders.delete("x-user-role");
+
   // ─── Step 1: Refresh session cookies on ALL matched routes ────────
   // This ensures that server components always have fresh session data.
   let supabaseResponse = NextResponse.next({

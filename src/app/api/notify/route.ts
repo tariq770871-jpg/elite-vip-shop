@@ -3,6 +3,7 @@ import { sendTelegramNotification } from "@/lib/telegram";
 import { verifyAuthToken } from "@/lib/supabase-server";
 import { rateLimitResponse } from "@/lib/rate-limit";
 import { escapeHtml, formatAdenTimestamp } from "@/lib/utils";
+import { isSameOrigin } from "@/lib/origin-check";
 
 const EMOJIS: Record<string, string> = {
   visit: "👁️",
@@ -16,6 +17,20 @@ const EMOJIS: Record<string, string> = {
 export async function POST(request: Request) {
   const blocked = rateLimitResponse(request, "api");
   if (blocked) return blocked;
+
+  // CSRF / Origin check: even though authenticated events require a
+  // token, the "visit" event is unauthenticated and any malicious site
+  // could otherwise flood the admin's Telegram with fake "visit" notices
+  // from a victim's browser. Browsers always send Origin or Referer on
+  // cross-origin POSTs, so requiring a matching Origin stops CSRF-style
+  // abuse without breaking legitimate same-site usage.
+  if (!isSameOrigin(request)) {
+    return NextResponse.json(
+      { ok: false, error: "الطلب غير مصرح به (Origin)" },
+      { status: 403 }
+    );
+  }
+
   try {
     const body = await request.json();
     const { event, data = {} } = body;

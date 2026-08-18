@@ -4,10 +4,25 @@ import { verifyAdmin } from "@/lib/admin-auth";
 import { rateLimitResponse } from "@/lib/rate-limit";
 import { sendTelegramNotification } from "@/lib/telegram";
 import { escapeHtml, formatAdenTimestamp } from "@/lib/utils";
+import { isSameOrigin } from "@/lib/origin-check";
 
 export async function POST(request: Request) {
   const blocked = rateLimitResponse(request, "contact");
   if (blocked) return blocked;
+
+  // CSRF / Origin check: this endpoint accepts unauthenticated POSTs from
+  // the browser. Without an Origin check, a malicious site could submit
+  // fake contact messages via a victim's browser. Browsers always send
+  // `Origin` or `Referer` on cross-origin/same-origin POSTs, so the
+  // absence of a matching Origin is a strong signal of CSRF or scripted
+  // abuse.
+  if (!isSameOrigin(request)) {
+    return NextResponse.json(
+      { error: "الطلب غير مصرح به (Origin)" },
+      { status: 403 }
+    );
+  }
+
   try {
     const body = await request.json();
     const rawName = typeof body?.name === "string" ? body.name.trim() : "";

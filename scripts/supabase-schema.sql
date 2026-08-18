@@ -422,6 +422,41 @@ CREATE INDEX IF NOT EXISTS idx_coupons_code ON public.coupons(code);
 CREATE INDEX IF NOT EXISTS idx_coupons_active ON public.coupons(is_active);
 
 -- ============================================================
+-- FUNCTION: increment_coupon_usage(p_code) — atomic, gated by max_uses
+-- ============================================================
+-- Called from src/app/api/orders/route.ts after a successful order insert.
+-- SECURITY DEFINER lets any authenticated caller invoke it safely; the
+-- WHERE clause guarantees only valid+active+under-limit coupons increment.
+DROP FUNCTION IF EXISTS public.increment_coupon_usage(p_code VARCHAR);
+CREATE OR REPLACE FUNCTION public.increment_coupon_usage(p_code VARCHAR)
+RETURNS TABLE(success BOOLEAN, new_count INTEGER)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_new_count INTEGER;
+BEGIN
+  UPDATE public.coupons
+     SET used_count = used_count + 1
+   WHERE code = UPPER(p_code)
+     AND is_active = TRUE
+     AND (max_uses IS NULL OR used_count < max_uses)
+     AND (valid_from  IS NULL OR valid_from  <= NOW())
+     AND (valid_until IS NULL OR valid_until >= NOW())
+  RETURNING used_count INTO v_new_count;
+
+  IF v_new_count IS NULL THEN
+    RETURN QUERY SELECT FALSE, NULL::INTEGER;
+  ELSE
+    RETURN QUERY SELECT TRUE, v_new_count;
+  END IF;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.increment_coupon_usage(VARCHAR) FROM PUBLIC, ANON;
+GRANT EXECUTE ON FUNCTION public.increment_coupon_usage(VARCHAR) TO AUTHENTICATED;
+
+-- ============================================================
 -- FUNCTION: Auto-update updated_at timestamp
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.update_updated_at()

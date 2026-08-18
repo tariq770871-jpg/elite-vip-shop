@@ -22,13 +22,20 @@ export async function POST(request: Request) {
     const {
       items, notes, paymentMethod,
       customerName, customerPhone, customerAddress,
-      discount, couponCode,
+      // `discount` is intentionally ignored — the server recomputes it
+      // from the coupon code (H10) and uses `discountAmount` everywhere.
+      // Destructuring it under a `_`-prefixed name keeps the intent
+      // explicit for future readers.
+      discount: _discountFromClient,
+      couponCode,
       deliveryType,    // "delivery" or "pickup"
       province,        // المحافظة
       district,        // المديرية
       street,          // الشارع
       landmark,        // جوار أقرب معلم
     } = body;
+    // Mark as intentionally unused (suppress lint warning).
+    void _discountFromClient;
 
     // Use authenticated user's ID instead of client-sent userId
     const userId = user.id;
@@ -127,7 +134,15 @@ export async function POST(request: Request) {
       notesContent += ` | نوع الاستلام: استلام شخصي`;
     }
 
-    if (discount) notesContent += ` | خصم: ${discount} ر.ي`;
+    // Use the SERVER-COMPUTED discount amount (discountAmount), never the
+    // client-sent `discount` value. Clients can tamper with the latter to
+    // inject a fake discount into notes/Telegram even though the DB
+    // total_amount is computed correctly — this corrupts the audit trail
+    // and confuses admins reviewing orders in Telegram.
+    //
+    // The actual append happens AFTER `discountAmount` is computed below
+    // (it's declared at line ~149, so we can't reference it here).
+    // For now, only add the coupon code placeholder if provided.
     if (couponCode) notesContent += ` | كود: ${sanitize(couponCode)}`;
 
     // Get the first product's seller_id for the order (primary seller)
@@ -173,6 +188,14 @@ export async function POST(request: Request) {
       // Recompute discount from DB-stored discount_value (percentage).
       // Math.round to avoid floating-point drift on monetary amounts.
       discountAmount = Math.round((calculatedTotal * Number(coupon.discount_value)) / 100);
+    }
+
+    // Append the server-computed discount amount to the order notes.
+    // This is deferred to here because `discountAmount` is only declared
+    // above (let = 0) and assigned inside the coupon branch. We must NOT
+    // use the client-sent `discount` value here — see comment block above.
+    if (discountAmount > 0) {
+      notesContent += ` | خصم: ${discountAmount} ر.ي`;
     }
 
     // ── Compute final total AFTER server-validated coupon discount ──
@@ -309,7 +332,11 @@ export async function POST(request: Request) {
       })),
       paymentMethod,
       couponCode: couponCode || undefined,
-      discount: discount || undefined,
+      // Use server-computed discountAmount (already validated against DB)
+      // instead of the client-sent `discount` value. Prevents a malicious
+      // client from injecting a fake discount into the Telegram audit
+      // message even though total_amount in DB is correct.
+      discount: discountAmount > 0 ? discountAmount : undefined,
       deliveryType: deliveryType || undefined,
       province: province || undefined,
       district: district || undefined,
