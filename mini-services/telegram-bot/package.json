@@ -1,6 +1,10 @@
 {
   "name": "telegram-bot",
+  "version": "0.3.0-secured",
+  "description": "Secured Telegram bot notification service for Elite VIP Shop",
   "scripts": {
-    "dev": "bun --hot index.ts"
-  }
+    "dev": "bun --hot index.ts",
+    "start": "bun index.ts"
+  },
+  "requires": ["bun>=1.0.0"]
 }
