@@ -71,3 +71,7 @@ tool-results/
 # Lock files (using package.json + vercel auto-detect)
 bun.lock
 package-lock.json
+
+# Local audit / download artifacts (never commit)
+audit-remote/
+download/
