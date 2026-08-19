@@ -574,9 +574,24 @@ CREATE POLICY "roles_admin_write" ON public.roles
 -- ══════════════════════════════════════════════════════════════
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
--- Anyone can read basic user info (needed for display names, reviews, etc.)
-CREATE POLICY "users_public_read" ON public.users
-  FOR SELECT USING (true);
+-- ⚠️ SECURITY: The previous `users_public_read FOR SELECT USING (true)`
+-- policy exposed password_hash, email, and phone to anon API consumers.
+-- It has been REMOVED in migration 008_rls_security_hardening.sql.
+--
+-- Replacement strategy:
+--   1. `users_self_read` — users can read ONLY their own row
+--   2. `users_admin_read` — admins can read all rows
+--   3. `public.users_public_view` — a VIEW exposing only safe columns
+--      (user_id, name, avatar, is_active, created_at, role_id)
+--      granted to anon+authenticated for reviewer names etc.
+--
+-- Direct table access for anon is REVOKED.
+
+CREATE POLICY "users_self_read" ON public.users
+  FOR SELECT USING (user_id = public.current_user_id());
+
+CREATE POLICY "users_admin_read" ON public.users
+  FOR SELECT USING (public.is_admin());
 
 -- Users can update their own profile
 CREATE POLICY "users_update_own" ON public.users
@@ -589,6 +604,20 @@ CREATE POLICY "users_admin_insert" ON public.users
 
 CREATE POLICY "users_admin_delete" ON public.users
   FOR DELETE USING (public.is_admin());
+
+-- Safe public view (no password_hash, no email, no phone)
+CREATE OR REPLACE VIEW public.users_public_view AS
+  SELECT
+    user_id,
+    name,
+    avatar,
+    is_active,
+    created_at,
+    role_id
+  FROM public.users
+  WHERE is_active = true;
+
+GRANT SELECT ON public.users_public_view TO anon, authenticated;
 
 -- ══════════════════════════════════════════════════════════════
 -- 3. RLS: categories
