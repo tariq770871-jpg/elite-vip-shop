@@ -52,3 +52,22 @@ prompt
 server.log
 # Skills directory
 /skills/
+# Internal logs / multi-agent worklog (must never be committed)
+WORKLOG.md
+worklog.md
+worklog/
+agent-ctx/
+
+# Cleanup artifacts
+scripts/_cleanup/
+
+# Server config (kept locally, deployed via infra)
+Caddyfile
+
+# Tool result snapshots
+tool-results/
+.tool-results/
+
+# Lock files (using package.json + vercel auto-detect)
+bun.lock
+package-lock.json
