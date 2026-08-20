@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getAllPosts } from "@/lib/blog-data";
 import { SITE_URL } from "@/lib/site-config";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseServiceClient } from "@/lib/supabase-server";
 import { products as mockProducts } from "@/lib/mock-data";
 
 // Static page definitions with changeFrequency + priority.
@@ -58,9 +58,10 @@ async function fetchProductEntries(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
       alternates: { languages: { ar: `${SITE_URL}/product/${p.id}` } },
     }));
-  if (!supabase) return fallback;
+  const sc = getSupabaseServiceClient();
+  if (!sc) return fallback;
   try {
-    const { data, error } = await supabase
+    const { data, error } = await sc
       .from("products")
       .select("product_id, updated_at, created_at, availability")
       .eq("availability", true)

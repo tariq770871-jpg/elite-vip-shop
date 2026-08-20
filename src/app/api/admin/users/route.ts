@@ -84,9 +84,16 @@ export async function PATCH(request: Request) {
     const body = await request.json();
     const { userId, name } = body;
 
-    if (!userId || !name) {
-      return NextResponse.json({ error: "معرف المستخدم والاسم مطلوبان" }, { status: 400 });
+    if (!userId || typeof userId !== 'string') {
+      return NextResponse.json({ error: "معرف المستخدم غير صالح" }, { status: 400 });
     }
+
+    // Validate name: string, 1-100 chars, no control characters
+    if (!name || typeof name !== 'string' || name.trim().length < 1 || name.length > 100) {
+      return NextResponse.json({ error: "الاسم مطلوب ويجب أن يكون بين 1 و 100 حرف" }, { status: 400 });
+    }
+
+    const trimmedName = name.trim();
 
     const sc = getSupabaseServiceClient();
     if (!sc) {
@@ -95,7 +102,7 @@ export async function PATCH(request: Request) {
 
     const { error } = await sc
       .from("users")
-      .update({ name })
+      .update({ name: trimmedName })
       .eq("user_id", userId);
 
     if (error) {

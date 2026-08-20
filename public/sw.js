@@ -105,7 +105,17 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // CRITICAL: Never cache /_next/data/ RSC payloads — these contain
+  // user-specific auth state, cart data, and dynamic content.
+  // Caching them causes stale auth/data for users.
+  if (url.pathname.startsWith('/_next/data/')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   // For other static assets (images, fonts, etc.): Stale-while-revalidate
+  // NOTE: .json extension removed from here — RSC .json is excluded above,
+  //   and manifest.json should use Cache-Control from vercel.json, not SW.
   if (
     url.pathname.endsWith('.js') ||
     url.pathname.endsWith('.css') ||
@@ -116,8 +126,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname.endsWith('.svg') ||
     url.pathname.endsWith('.woff2') ||
     url.pathname.endsWith('.woff') ||
-    url.pathname.endsWith('.ico') ||
-    url.pathname.endsWith('.json')
+    url.pathname.endsWith('.ico')
   ) {
     event.respondWith(
       caches.match(request).then((cachedResponse) => {

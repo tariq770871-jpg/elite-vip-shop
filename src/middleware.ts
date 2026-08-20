@@ -31,6 +31,7 @@ function buildCSP(nonce: string): string {
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self' https://*.supabase.co",
+    "report-uri /api/csp-report",
   ].join("; ");
 }
 
