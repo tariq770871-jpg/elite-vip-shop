@@ -610,7 +610,7 @@ CREATE OR REPLACE VIEW public.users_public_view AS
   SELECT
     user_id,
     name,
-    avatar,
+    avatar_url,
     is_active,
     created_at,
     role_id

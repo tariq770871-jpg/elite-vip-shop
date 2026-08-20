@@ -40,7 +40,11 @@ BEGIN; -- atomic — all-or-nothing
 -- ══════════════════════════════════════════════════════════════
 
 -- Step 1: Drop the dangerous policy
-DROP POLICY IF EXISTS "users_public_read" ON public.users;
+-- Also drop legacy dangerous policies that were found during live migration
+DROP POLICY IF EXISTS "all_read_users" ON public.users;
+DROP POLICY IF EXISTS "users_select_all" ON public.users;
+DROP POLICY IF EXISTS "insert_users" ON public.users;
+DROP POLICY IF EXISTS "update_users" ON public.users;
 
 -- Step 2: Allow users to read ONLY their own row (full row, including password_hash for auth)
 DROP POLICY IF EXISTS "users_self_read" ON public.users;
@@ -59,14 +63,17 @@ CREATE VIEW public.users_public_view AS
   SELECT
     user_id,
     name,
-    avatar,
+    avatar_url,
     is_active,
     created_at,
     role_id
   FROM public.users
   WHERE is_active = true;
 
--- Grant SELECT on the safe view to anon + authenticated
+-- Revoke any default grants first (Supabase auto-grants ALL on new views)
+REVOKE ALL ON public.users_public_view FROM anon, authenticated, service_role;
+
+-- Grant SELECT on the safe view to anon + authenticated only
 GRANT SELECT ON public.users_public_view TO anon, authenticated;
 
 -- Step 5: Revoke ALL direct table access from anon + authenticated
