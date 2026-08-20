@@ -58,10 +58,13 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   };
 }
 
-// Enable static generation for product pages (ISR-friendly)
-export async function generateStaticParams() {
-  return products.map((product) => ({ id: product.id }));
-}
+// Product pages are dynamically rendered (SSR) at request time.
+// Static generation with mock IDs was removed because real products
+// use UUIDs — pre-rendering mock IDs would waste build time and
+// not match any real product.
+// When Supabase is connected, products are fetched server-side.
+
+export const dynamic = 'force-dynamic';
 
 export default async function ProductDetailPage({ params }: ProductPageProps) {
   const { id } = await params;

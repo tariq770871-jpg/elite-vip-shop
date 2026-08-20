@@ -20,10 +20,14 @@ interface RateLimitConfig {
 }
 
 // Preset configurations
+// NOTE: In-memory rate limiting on Vercel serverless is per-instance.
+// Cold starts create fresh Maps, so the limit is best-effort, not a hard cap.
+// For strict production rate limiting, use Upstash Redis or Vercel KV.
+// The globalThis singleton ensures warm instances share state across invocations.
 export const RATE_LIMIT_PRESETS: Record<string, RateLimitConfig> = {
   api: { limit: 10, windowMs: 60_000 },       // 10 req / 60s
   contact: { limit: 5, windowMs: 60_000 },     // 5 req / 60s
-  coupon: { limit: 5, windowMs: 60_000 },       // 5 req / 60s (prevents brute-force coupon guessing)
+  coupon: { limit: 3, windowMs: 60_000 },       // 3 req / 60s (brute-force protection, stricter)
 };
 
 class RateLimiter {

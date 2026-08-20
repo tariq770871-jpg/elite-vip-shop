@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <!-- Safe zone for Android maskable: icon must be within center 80% -->
+  <!-- Background circle filling the full canvas -->
+  <circle cx="96" cy="96" r="96" fill="#0d0d1a"/>
+  <!-- Icon content in center 80% safe zone (radius 76.8, centered) -->
+  <rect x="38" y="38" width="116" height="116" rx="24" fill="#d4a843"/>
+  <text x="96" y="112" font-family="Arial,sans-serif" font-size="52" font-weight="bold" fill="#0d0d1a" text-anchor="middle">VIP</text>
+</svg>
