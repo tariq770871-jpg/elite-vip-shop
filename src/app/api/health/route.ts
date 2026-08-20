@@ -6,7 +6,7 @@ import { getSupabaseServiceClient } from "@/lib/supabase-server";
  *
  * Health check endpoint for production monitoring.
  * Verifies database connectivity and environment configuration.
- * Returns a structured status response.
+ * SECURITY: Does NOT expose env var names or DB error details to callers.
  */
 export async function GET() {
   const startTime = Date.now();
@@ -19,14 +19,20 @@ export async function GET() {
     "SUPABASE_SERVICE_ROLE_KEY",
   ];
 
-  const missingEnvVars = requiredEnvVars.filter(
+  const missingCount = requiredEnvVars.filter(
     (name) => !process.env[name]
-  );
+  ).length;
 
-  checks.environment = missingEnvVars.length > 0
+  // Log names server-side only (visible in Vercel/logs, not to API callers)
+  if (missingCount > 0) {
+    const missingNames = requiredEnvVars.filter((n) => !process.env[n]);
+    console.error("[health] Missing env vars:", missingNames.join(", "));
+  }
+
+  checks.environment = missingCount > 0
     ? {
         status: "error",
-        detail: `Missing: ${missingEnvVars.join(", ")}`,
+        detail: `${missingCount} required configuration value(s) missing`,
       }
     : { status: "ok" };
 
@@ -36,7 +42,7 @@ export async function GET() {
     if (!serviceClient) {
       checks.database = {
         status: "error",
-        detail: "Supabase service client unavailable — check environment variables",
+        detail: "Service client unavailable",
       };
     } else {
       const dbStart = Date.now();
@@ -46,13 +52,15 @@ export async function GET() {
         .limit(1);
 
       checks.database = error
-        ? { status: "error", detail: error.message }
+        ? { status: "error", detail: "Database query failed" }
         : { status: "ok", latency: Date.now() - dbStart };
     }
   } catch (err) {
+    // Log real error server-side, return generic message to caller
+    console.error("[health] DB connection error:", err instanceof Error ? err.message : err);
     checks.database = {
       status: "error",
-      detail: err instanceof Error ? err.message : "Unknown database error",
+      detail: "Database connection failed",
     };
   }
 
@@ -65,9 +73,7 @@ export async function GET() {
     {
       status: overallStatus,
       timestamp: new Date().toISOString(),
-      version: process.env.NEXT_PUBLIC_SITE_URL ? "production" : "development",
-      uptime: process.uptime(),
-      responseTime: Date.now() - startTime,
+      // Only indicate env type, never expose internal details
       checks,
     },
     { status: httpStatus }

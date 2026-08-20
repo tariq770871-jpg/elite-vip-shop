@@ -80,3 +80,11 @@ package-lock.json
 # Local audit / download artifacts (never commit)
 audit-remote/
 download/
+upload/
+
+# Temporary scripts (one-time audit/debug)
+scripts/check_pages.py
+scripts/generate_project_report.py
+scripts/generate_report_main.py
+scripts/report_sections_part1.py
+scripts/report_sections_part2.py

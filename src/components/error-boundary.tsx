@@ -43,11 +43,6 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             <p className="text-sm text-muted-foreground max-w-md">
               نعتذر عن هذا الخطأ. يرجى المحاولة مرة أخرى أو العودة للرئيسية.
             </p>
-            {this.state.error && (
-              <p className="mt-2 text-xs text-muted-foreground font-mono" dir="ltr">
-                {this.state.error.message}
-              </p>
-            )}
           </div>
           <div className="flex gap-3">
             <Button

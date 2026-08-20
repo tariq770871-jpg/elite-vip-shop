@@ -151,8 +151,8 @@ export default function GlobalError({
               الصفحة الرئيسية
             </button>
           </div>
-          {error?.message && (
-            <div className="error-detail">{error.message}</div>
+          {error?.digest && (
+            <div className="error-detail">Ref: {error.digest}</div>
           )}
         </div>
       </body>
