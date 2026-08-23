@@ -40,7 +40,9 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  output: 'standalone',
+  // Vercel's Next.js 16 adapter does not need standalone output and can fail
+  // while packaging next-server.js.nft.json. Keep standalone for Docker only.
+  output: process.env.VERCEL ? undefined : 'standalone',
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
