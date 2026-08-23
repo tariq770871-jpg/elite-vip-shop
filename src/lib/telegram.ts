@@ -81,7 +81,7 @@ export async function sendOrderNotification(order: {
     order.customerName ? `👤 <b>العميل:</b> ${escapeHtml(order.customerName)}` : null,
     order.customerPhone ? `📞 <b>الهاتف:</b> ${escapeHtml(order.customerPhone)}` : null,
     order.deliveryType ? `🚚 <b>نوع الاستلام:</b> ${order.deliveryType === "delivery" ? "توصيل" : "استلام شخصي"}` : null,
-    order.province || order.district ? `📍 <b>العنوان:</b> ${[order.province, order.district, order.street, order.landmark].filter(Boolean).map(s => escapeHtml(s!)).join("، ")}` : null,
+    order.province || order.district ? `📍 <b>العنوان:</b> ${[order.province, order.district, order.street, order.landmark].filter((s): s is string => Boolean(s)).map(s => escapeHtml(s)).join("، ")}` : null,
     order.customerAddress && !order.province ? `📍 <b>العنوان:</b> ${escapeHtml(order.customerAddress)}` : null,
     ``,
     `🧾 <b>المنتجات:</b>`,

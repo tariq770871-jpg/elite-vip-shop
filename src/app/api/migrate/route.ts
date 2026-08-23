@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   }
 
   // Step 1: Check if columns already exist
-  const { data: testData, error: testError } = await serviceClient
+  const { error: testError } = await serviceClient
     .from("orders")
     .select("order_id, delivery_type, customer_name, customer_phone, province, district, street, landmark, seller_id, product_id, product_name_snapshot, unit_price, quantity, total_price")
     .limit(1);

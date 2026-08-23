@@ -95,12 +95,18 @@ export function CartDrawer() {
         body: JSON.stringify({ code: couponCode.toUpperCase(), orderTotal: subtotal }),
       });
       const data = await safeReadJson<{ valid?: boolean; code?: string; discount?: number; discountAmount?: number; finalTotal?: number; error?: string }>(res);
-      if (data?.valid) {
+      if (
+        data?.valid &&
+        data.code &&
+        data.discount != null &&
+        data.discountAmount != null &&
+        data.finalTotal != null
+      ) {
         applyCoupon({
-          code: data.code!,
-          discount: data.discount!,
-          discountAmount: data.discountAmount!,
-          finalTotal: data.finalTotal!,
+          code: data.code,
+          discount: data.discount,
+          discountAmount: data.discountAmount,
+          finalTotal: data.finalTotal,
         });
         toast.success(`تم تطبيق كود الخصم! خصم ${data.discount}% 🎉`);
       } else {

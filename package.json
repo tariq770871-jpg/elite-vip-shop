@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "secret-scan": "node scripts/check-secrets.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "build:docker": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",

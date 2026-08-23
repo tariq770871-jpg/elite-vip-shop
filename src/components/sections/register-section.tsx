@@ -97,7 +97,7 @@ export function RegisterSection() {
       return;
     }
 
-    if (phone && !/^[\+]?[0-9\s\-]{7,15}$/.test(phone)) {
+    if (phone && !/^[+]?[0-9\s-]{7,15}$/.test(phone)) {
       setLocalError("رقم الهاتف غير صالح");
       return;
     }

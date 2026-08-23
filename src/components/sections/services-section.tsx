@@ -1,7 +1,7 @@
 "use client";
 
 import { Palette } from "lucide-react";
-import { servicesData, WHATSAPP_LINK, getWhatsAppServiceLink } from "@/lib/mock-data";
+import { servicesData, getWhatsAppServiceLink } from "@/lib/mock-data";
 import { WebDesignIcon, CodeIcon, MegaphoneIcon, BrandIcon, ContentIcon, ConsultIcon } from "@/components/icons";
 import { WhatsAppIcon } from "@/components/whatsapp-icon";
 

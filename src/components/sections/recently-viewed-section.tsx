@@ -1,14 +1,12 @@
 "use client";
 
-import { ShoppingBag, Eye, X } from "lucide-react";
+import { Eye, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useRecentlyViewedStore } from "@/store/recently-viewed-store";
-import { useCartStore } from "@/store/cart-store";
 import { getCategoryIcon } from "@/components/icons";
 
 export function RecentlyViewedSection() {
   const { items, clearAll } = useRecentlyViewedStore();
-  const addItem = useCartStore((s) => s.addItem);
 
   if (items.length === 0) return null;
 

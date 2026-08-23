@@ -25,7 +25,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Crown,
   LayoutDashboard,
   Package,
   Users,
@@ -582,7 +581,7 @@ function AdminDashboard() {
     }
     setProductSaving(true);
     try {
-      const payload: Record<string, any> = {
+      const payload: Record<string, unknown> = {
         name: productForm.name.trim(),
         description: productForm.description.trim(),
         price: Number(productForm.price),
@@ -1234,7 +1233,7 @@ function AdminDashboard() {
 /* ------------------------------------------------------------------ */
 
 function SellerDashboard() {
-  const { user, session } = useAuthStore();
+  const { session } = useAuthStore();
   const authToken = session?.access_token || "";
   const authHeaders = useMemo<Record<string, string>>(() => {
     const headers: Record<string, string> = {};
@@ -1332,7 +1331,7 @@ function SellerDashboard() {
     }
     setProductSaving(true);
     try {
-      const payload: Record<string, any> = {
+      const payload: Record<string, unknown> = {
         name: productForm.name.trim(),
         description: productForm.description.trim(),
         price: Number(productForm.price),
@@ -1706,7 +1705,7 @@ function UserDashboard() {
     }
     fetchOrders();
     return () => {};
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [user?.id, authHeaders]);
 
   return (

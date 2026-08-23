@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     }
 
     // Phone format validation (when provided) — allow +, digits, spaces, dashes
-    if (rawPhone && !/^\+?[0-9\s\-]{7,20}$/.test(rawPhone)) {
+    if (rawPhone && !/^\+?[0-9\s-]{7,20}$/.test(rawPhone)) {
       return NextResponse.json({ error: "رقم الهاتف غير صالح" }, { status: 400 });
     }
 

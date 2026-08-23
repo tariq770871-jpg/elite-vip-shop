@@ -21,7 +21,6 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     };
   }
 
-  const price = product.salePrice ?? product.price;
   const title = `${product.name} | Elite VIP Shop`;
   const description = product.description;
 

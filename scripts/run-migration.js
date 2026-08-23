@@ -7,8 +7,14 @@
  * Usage: node scripts/run-migration.js
  */
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://nssmnftpcnkrcbtzjpuf.supabase.co';
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'REDACTED_SUPABASE_SECRET';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const DB_PASSWORD = process.env.SUPABASE_DB_PASSWORD || '';
+
+if (!SUPABASE_URL || !SERVICE_KEY) {
+  console.error('❌ NEXT_PUBLIC_SUPABASE_URL و SUPABASE_SERVICE_ROLE_KEY مطلوبان. لا تستخدم قيمًا احتياطية داخل الكود.');
+  process.exit(1);
+}
 
 // We'll use the Supabase REST API with service role key for DDL operations
 // since the service role key bypasses RLS
@@ -97,31 +103,19 @@ async function runMigration() {
     const { Client } = await import('pg');
     console.log('\n🔌 وجدت مكتبة pg، محاولة الاتصال المباشر...');
 
-    const projectRef = SUPABASE_URL.replace('https://', '').replace('.supabase.co', '');
-    
-    const configs = [
-      {
-        host: 'aws-0-us-east-1.pooler.supabase.com',
-        port: 5432,
-        database: 'postgres',
-        user: `postgres.${projectRef}`,
-        password: SERVICE_KEY,
-      },
-      {
-        host: 'aws-0-us-east-1.pooler.supabase.com',
-        port: 6543,
-        database: 'postgres',
-        user: `postgres.${projectRef}`,
-        password: SERVICE_KEY,
-      },
-      {
-        host: 'db.nssmnftpcnkrcbtzjpuf.supabase.co',
-        port: 5432,
-        database: 'postgres',
-        user: 'postgres',
-        password: SERVICE_KEY,
-      },
-    ];
+    const configs = process.env.SUPABASE_DB_HOST && DB_PASSWORD
+      ? [{
+          host: process.env.SUPABASE_DB_HOST,
+          port: Number(process.env.SUPABASE_DB_PORT || 5432),
+          database: process.env.SUPABASE_DB_NAME || 'postgres',
+          user: process.env.SUPABASE_DB_USER || 'postgres',
+          password: DB_PASSWORD,
+        }]
+      : [];
+
+    if (configs.length === 0) {
+      console.log('  ℹ️ تخطّي اتصال PostgreSQL المباشر: عرّف SUPABASE_DB_HOST وSUPABASE_DB_PASSWORD عند الحاجة فقط.');
+    }
 
     for (const config of configs) {
       const client = new Client({
@@ -183,11 +177,16 @@ async function runMigration() {
         
         return;
       } catch (err) {
-        try { await client.end(); } catch {}
-        console.log(`  ⚠️ فشل الاتصال بـ ${config.host}:${config.port} — ${err.message?.substring(0, 60)}`);
+        try {
+          await client.end();
+        } catch {
+          // Connection cleanup is best-effort after a failed attempt.
+        }
+        const msg = err instanceof Error ? err.message.substring(0, 60) : 'Unknown error';
+        console.log(`  ⚠️ فشل الاتصال بـ ${config.host}:${config.port} — ${msg}`);
       }
     }
-  } catch (err) {
+  } catch {
     console.log('  ⚠️ مكتبة pg غير متاحة');
   }
 

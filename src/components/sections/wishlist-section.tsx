@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 
 export function WishlistSection() {
-  const { items, removeItem, toggleItem, isInWishlist } = useWishlistStore();
+  const { items, removeItem } = useWishlistStore();
   const addItem = useCartStore((s) => s.addItem);
   const openCart = useCartStore((s) => s.openCart);
   const { navigateTo, navigateToProduct } = useNavigation();
@@ -33,16 +33,6 @@ export function WishlistSection() {
     toast.success(`تمت إزالة "${name}" من المفضلة`);
   };
 
-  const handleToggleWishlist = (item: typeof items[0]) => {
-    toggleItem({
-      id: item.id,
-      name: item.name,
-      price: item.price,
-      salePrice: item.salePrice,
-      image: item.image,
-      category: item.category,
-    });
-  };
 
   if (items.length === 0) {
     return (

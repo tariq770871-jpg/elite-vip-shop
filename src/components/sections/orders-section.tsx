@@ -1,18 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuthStore } from "@/store/auth-store";
 import { getAuthHeaders } from "@/lib/api-auth";
 import { useNavigation } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import {
   ClipboardList, LogIn, Package, RefreshCw,
   Clock, CheckCircle2, Truck, XCircle,
   Calendar, ChevronDown, ChevronUp,
   MapPin, User, Phone, Store, Hash,
-  FileText, ArrowRight,
+  FileText,
 } from "lucide-react";
 import type { SupabaseOrderRow } from "@/types/db";
 
@@ -355,7 +354,7 @@ export function OrdersSection() {
   const [orders, setOrders] = useState<Order[]>([]);
   const userId = user?.id;
 
-  const fetchOrders = (signal?: AbortSignal) => {
+  const fetchOrders = useCallback((signal?: AbortSignal) => {
     if (!isAuthenticated || !userId) {
       return;
     }
@@ -407,7 +406,7 @@ export function OrdersSection() {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setIsLoading(false);
       });
-  };
+  }, [isAuthenticated, userId]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -416,7 +415,7 @@ export function OrdersSection() {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [isAuthenticated, userId]);
+  }, [fetchOrders]);
 
   const filteredOrders = activeFilter === "all"
     ? orders

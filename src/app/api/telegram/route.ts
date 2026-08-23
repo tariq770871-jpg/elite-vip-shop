@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   if (blocked) return blocked;
   try {
     // Admin authorization check — only admins can configure Telegram bot
-    const { user, errorResponse } = await verifyAdmin(request);
+    const { errorResponse } = await verifyAdmin(request);
     if (errorResponse) return errorResponse;
 
     const body = await request.json();

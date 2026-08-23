@@ -182,8 +182,12 @@ async function runMigrationWithPg() {
 
       return success > 0 || skipped > 0;
     } catch (err) {
-      try { await client.end(); } catch {}
-      const msg = err.message?.substring(0, 100) || 'Unknown error';
+      try {
+        await client.end();
+      } catch {
+        // Connection cleanup is best-effort after a failed attempt.
+      }
+      const msg = err instanceof Error ? err.message.substring(0, 100) : 'Unknown error';
       log('❌', RED, `فشل الاتصال: ${msg}`);
     }
   }
@@ -206,7 +210,7 @@ async function verifyMigration() {
 
   let allOk = true;
   for (const table of tables) {
-    const { data, error } = await client.from(table).select('*').limit(1);
+    const { error } = await client.from(table).select('*').limit(1);
     if (error) {
       log('❌', RED, `${table}: ${error.message.substring(0, 50)}`);
       allOk = false;

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { TrendingUp, ArrowLeft } from "lucide-react";
 import { tradingData } from "@/lib/mock-data";
-import { TradingBasicsIcon, RiskShieldIcon, BrainIcon, CryptoIcon, FreelancingIcon } from "@/components/icons";
+import { TradingBasicsIcon, RiskShieldIcon, CryptoIcon, FreelancingIcon } from "@/components/icons";
 import { WHATSAPP_LINK } from "@/lib/site-config";
 
 const tradingIcons: Record<string, React.FC<{ className?: string }>> = {

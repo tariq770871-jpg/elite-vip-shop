@@ -107,8 +107,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const rawHtml = post.content
     .replace(/^### (.+)$/gm, '<h3 class="text-base font-bold mt-6 mb-3">$1</h3>')
     .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold mt-8 mb-4 text-foreground">$1</h2>')
-    .replace(/^\- \*\*(.+?)\*\*: (.+)$/gm, '<li class="mb-2 mr-4"><strong class="text-foreground">$1:</strong> $2</li>')
-    .replace(/^\- (.+)$/gm, '<li class="mb-2 mr-4">$1</li>')
+    .replace(/^- \*\*(.+?)\*\*: (.+)$/gm, '<li class="mb-2 mr-4"><strong class="text-foreground">$1:</strong> $2</li>')
+    .replace(/^- (.+)$/gm, '<li class="mb-2 mr-4">$1</li>')
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\n\n/g, "</p><p class='mb-4 leading-relaxed text-muted-foreground'>")
     .replace(

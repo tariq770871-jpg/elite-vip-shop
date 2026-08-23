@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ExternalLink, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { getApps } from "@/lib/supabase-data";
 import type { FreeItem } from "@/lib/mock-data";
 import {

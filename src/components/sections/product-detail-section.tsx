@@ -146,7 +146,7 @@ export function ProductDetailSection({ productId: productIdProp }: ProductDetail
               )}
               {hasSale && (
                 <Badge className="absolute top-4 right-4 z-10 bg-red-500 text-white hover:bg-red-500 shadow-lg text-sm px-3 py-1">
-                  خصم {Math.round(((product.price - product.salePrice!) / product.price) * 100)}%
+                  خصم {Math.round(((product.price - (product.salePrice ?? product.price)) / product.price) * 100)}%
                 </Badge>
               )}
             </div>
@@ -176,7 +176,7 @@ export function ProductDetailSection({ productId: productIdProp }: ProductDetail
                   <span className="text-3xl font-bold text-gold-gradient">{product.salePrice} ر.ي</span>
                   <span className="text-lg text-muted-foreground line-through">{product.price} ر.ي</span>
                   <Badge className="bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400 border-0">
-                    وفّر {(product.price - product.salePrice!).toLocaleString("ar-SA")} ر.ي
+                    وفّر {(product.price - (product.salePrice ?? product.price)).toLocaleString("ar-SA")} ر.ي
                   </Badge>
                 </>
               ) : (

@@ -6,8 +6,6 @@ import { useNavigation } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { User, LogIn, Save, Lock, CheckCircle } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -181,8 +179,10 @@ export function ProfileSection() {
                 dir="ltr"
               />
             </div>
-            <Button type="submit" className="btn-3d-sm gap-2">
-              {saved ? (
+            <Button type="submit" className="btn-3d-sm gap-2" disabled={saving}>
+              {saving ? (
+                <>جاري الحفظ...</>
+              ) : saved ? (
                 <>
                   <CheckCircle className="size-4" />
                   تم الحفظ
@@ -245,8 +245,10 @@ export function ProfileSection() {
               <p className="text-sm text-destructive">{passwordError}</p>
             )}
 
-            <Button type="submit" className="btn-3d-sm gap-2">
-              {passwordSaved ? (
+            <Button type="submit" className="btn-3d-sm gap-2" disabled={changingPassword}>
+              {changingPassword ? (
+                <>جارٍ تغيير كلمة المرور...</>
+              ) : passwordSaved ? (
                 <>
                   <CheckCircle className="size-4" />
                   تم تغيير كلمة المرور

@@ -1,8 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://nssmnftpcnkrcbtzjpuf.supabase.co';
-const ANON_KEY = 'REDACTED_SUPABASE_ANON';
-const SERVICE_KEY = 'REDACTED_SUPABASE_SECRET';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+if (!SUPABASE_URL || !SERVICE_KEY) {
+  console.error('❌ NEXT_PUBLIC_SUPABASE_URL و SUPABASE_SERVICE_ROLE_KEY مطلوبان.');
+  process.exit(1);
+}
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }
@@ -11,7 +15,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
 console.log('🔍 Checking orders table columns...\n');
 
 // Test if extended columns exist
-const { data: testOrders, error: orderError } = await supabase
+const { error: orderError } = await supabase
   .from('orders')
   .select('order_id, delivery_type, customer_name, customer_phone, province, district, street, landmark, seller_id, product_id, product_name_snapshot, unit_price, quantity, total_price')
   .limit(1);

@@ -158,7 +158,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ error: null, isLoading: true, needsEmailConfirmation: false })
     if (!supabase) { set({ error: 'النظام غير متاح حالياً', isLoading: false }); return false }
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
@@ -250,7 +250,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ error: null, isLoading: true })
     if (!supabase) { set({ error: 'النظام غير متاح حالياً', isLoading: false }); return }
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}`,
@@ -270,7 +270,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ error: null, isLoading: true })
     if (!supabase) { set({ error: 'النظام غير متاح حالياً', isLoading: false }); return }
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
           redirectTo: `${window.location.origin}`,

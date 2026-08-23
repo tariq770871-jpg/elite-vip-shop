@@ -11,7 +11,6 @@ import { AnnouncementBanner } from "@/components/announcement-banner";
 import { FloatingWhatsApp } from "@/components/floating-whatsapp";
 import { CookieConsent } from "@/components/cookie-consent";
 import { useAuthStore } from "@/store/auth-store";
-import { useCartStore } from "@/store/cart-store";
 import { SCROLL_TO_TOP_THRESHOLD, SW_UPDATE_INTERVAL_MS } from "@/lib/constants";
 import { safeParseUrl } from "@/lib/utils";
 
@@ -112,6 +111,12 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:ring-2 focus:ring-primary"
+      >
+        تخطي إلى المحتوى الرئيسي
+      </a>
       <AnnouncementBanner />
       <Navbar onToggleSearch={() => { setSearchOpen((prev) => !prev); setSearchKey((k) => k + 1); }} />
       <SearchBar key={searchKey} isOpen={searchOpen} onClose={() => setSearchOpen(false)} />

@@ -12,7 +12,6 @@ import {
   MapPin,
   Truck,
   Store,
-  MessageCircle,
   Bot,
 } from "lucide-react";
 import {
@@ -109,7 +108,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
   const [quantity, setQuantity] = useState(1);
   const [deliveryType, setDeliveryType] = useState<"delivery" | "pickup">("pickup");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderNumber, setOrderNumber] = useState("");
+  const [, setOrderNumber] = useState("");
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const deliveryForm = useForm<DeliveryFormData>({
@@ -231,7 +230,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
     return () => clearTimeout(timer);
   }, [currentStep, product, quantity]);
 
-  async function submitOrder(params: {
+  const submitOrder = useCallback(async (params: {
       customerName: string;
       customerPhone: string;
       deliveryType: "delivery" | "pickup";
@@ -239,7 +238,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
       district?: string;
       street?: string;
       landmark?: string;
-    }) {
+    }) => {
       if (!product) return;
 
       const { user } = useAuthStore.getState();
@@ -307,7 +306,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
       } finally {
         setIsSubmitting(false);
       }
-    }
+    }, [addMessage, onOpenChange, product, quantity]);
 
   /* ────────────────────────────────────────────────────────────────── */
   /*  Handle user actions                                              */
@@ -391,7 +390,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
         landmark: data.landmark,
       });
     },
-    [addMessage, product, quantity]
+    [addMessage, submitOrder]
   );
 
   const handlePickupSubmit = useCallback(
@@ -407,7 +406,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
         deliveryType: "pickup",
       });
     },
-    [addMessage, product, quantity]
+    [addMessage, submitOrder]
   );
 
   /* ────────────────────────────────────────────────────────────────── */

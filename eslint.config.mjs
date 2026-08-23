@@ -54,6 +54,12 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     "no-useless-escape": "warn",
   },
 }, {
+  files: ["scripts/**/*.{js,mjs,ts}"],
+  rules: {
+    // CLI migration scripts intentionally report progress to stdout.
+    "no-console": "off",
+  },
+}, {
   ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills", "mini-services/**"]
 }];
 

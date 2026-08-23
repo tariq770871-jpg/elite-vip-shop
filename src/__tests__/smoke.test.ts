@@ -39,7 +39,7 @@ describe('Rate limiter', () => {
   });
 
   it('should block requests over the limit', async () => {
-    const { rateLimiter, RATE_LIMIT_PRESETS } = await import('@/lib/rate-limit');
+    const { rateLimiter } = await import('@/lib/rate-limit');
     rateLimiter.reset();
     const config = { limit: 2, windowMs: 60_000 };
     expect(rateLimiter.check('overflow-test', config).allowed).toBe(true);

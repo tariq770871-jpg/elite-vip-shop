@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Heart, Shield, Truck, RotateCcw, Headphones, HelpCircle, Info, Phone, BookOpen } from "lucide-react";
+import { Heart, Shield, Truck, RotateCcw, Headphones, HelpCircle, Info, Phone } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useNavigation, type PageName, PAGE_PATHS } from "@/lib/navigation";
 import { Logo } from "@/components/logo";

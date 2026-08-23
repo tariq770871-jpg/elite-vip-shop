@@ -75,6 +75,7 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       // Only indicate env type, never expose internal details
       checks,
+      latency: Date.now() - startTime,
     },
     { status: httpStatus }
   );

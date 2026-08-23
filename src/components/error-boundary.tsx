@@ -54,7 +54,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               إعادة المحاولة
             </Button>
             <Button
-              onClick={() => window.location.href = "/"}
+              onClick={() => window.location.replace("/")}
               className="btn-3d-sm gap-2"
             >
               <Home className="size-4" />
