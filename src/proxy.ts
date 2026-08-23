@@ -56,7 +56,7 @@ function buildCSP(nonce: string): string {
  *    - Allows all other routes to pass through
  */
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ─── Step 0: Generate per-request CSP nonce ───────────────────────

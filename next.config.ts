@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-// CSP is generated dynamically in src/middleware.ts (per-request nonce).
+// CSP is generated dynamically in src/proxy.ts (per-request nonce).
 // The static CSP here is a FALLBACK for routes not matched by middleware.
 // It uses 'unsafe-inline' for script-src (weaker) only as a safety net.
 const securityHeaders = [
