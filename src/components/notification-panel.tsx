@@ -163,11 +163,11 @@ export function NotificationButton() {
         size="icon"
         className="relative size-8 md:size-9"
         onClick={() => setOpen(true)}
-        aria-label="الإشعارات"
+        aria-label={`الإشعارات ${unread}`}
       >
-        <Bell className="size-[18px]" />
+        <Bell className="size-[18px]" aria-hidden="true" />
         {unread > 0 && (
-          <Badge className="absolute -top-0.5 -left-0.5 flex size-4 items-center justify-center rounded-full bg-red-500 p-0 text-[9px] text-white hover:bg-red-500">
+          <Badge aria-hidden="true" className="absolute -top-0.5 -left-0.5 flex size-4 items-center justify-center rounded-full bg-red-600 p-0 text-[9px] text-white hover:bg-red-700">
             {unread}
           </Badge>
         )}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { ShoppingBag, ShoppingCart, Flame, Clock, Heart, Loader2 } from "lucide-react";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { getProducts } from "@/lib/supabase-data";
 import type { Product } from "@/lib/mock-data";
@@ -61,7 +62,7 @@ function CountdownTimer({ hours, minutes, seconds }: { hours: number; minutes: n
         { value: seconds, label: "ث" },
       ].map((unit, i) => (
         <div key={i} className="flex items-center gap-1">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-red-500 text-sm font-black text-white shadow-md">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-red-600 text-sm font-black text-white shadow-md">
             {String(unit.value).padStart(2, "0")}
           </div>
           <span className="text-[10px] font-bold text-red-400">{unit.label}</span>
@@ -168,13 +169,19 @@ export function FlashDealsSection() {
                       addRecentlyViewed({ id: product.id, name: product.name, price: product.price, salePrice: product.salePrice, category: product.category, image: product.images[0] });
                     }}
                   >
-                    <ShoppingBag className="size-14 text-red-300/40" />
+                    {product.images[0] ? (
+                      <Image src={product.images[0]} alt={product.name} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" loading="lazy" />
+                    ) : (
+                      <ShoppingBag className="size-14 text-red-300/40" aria-hidden="true" />
+                    )}
                     {/* Discount badge */}
                     <Badge className="absolute top-3 right-3 z-10 bg-red-500 text-white hover:bg-red-500 shadow-lg text-sm px-2.5 py-0.5">
                       -{discount}%
                     </Badge>
                     {/* Wishlist button */}
                     <button
+                      type="button"
+                      aria-label={`${wishlisted ? "إزالة" : "إضافة"} ${product.name} من المفضلة`}
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleItem({ id: product.id, name: product.name, price: product.price, salePrice: product.salePrice, image: product.images[0], category: product.category });
@@ -183,7 +190,7 @@ export function FlashDealsSection() {
                         wishlisted ? "bg-red-500 text-white" : "bg-white/80 text-gray-500 dark:bg-gray-800/80"
                       }`}
                     >
-                      <Heart className={`size-4 ${wishlisted ? "fill-current" : ""}`} />
+                        <Heart aria-hidden="true" className={`size-4 ${wishlisted ? "fill-current" : ""}`} />
                     </button>
                     {/* Click overlay */}
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100 bg-black/5 active:bg-black/10">
@@ -239,8 +246,12 @@ export function FlashDealsSection() {
               </DialogHeader>
               <div className="space-y-4">
                 {/* Product image */}
-                <div className="flex h-48 items-center justify-center rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20">
-                  <ShoppingBag className="size-16 text-amber-300/40" />
+                <div className="relative flex h-48 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20">
+                  {selectedProduct.images[0] ? (
+                    <Image src={selectedProduct.images[0]} alt={selectedProduct.name} fill sizes="(max-width: 640px) 90vw, 420px" className="object-cover" />
+                  ) : (
+                    <ShoppingBag className="size-16 text-amber-300/40" aria-hidden="true" />
+                  )}
                 </div>
                 {/* Category */}
                 <Badge className="bg-gradient-to-r from-amber-500/10 to-amber-600/10 text-xs font-semibold text-gold-gradient border border-amber-500/20">
@@ -254,7 +265,7 @@ export function FlashDealsSection() {
                     <>
                       <span className="text-2xl font-extrabold text-gold-gradient">{selectedProduct.salePrice} ر.ي</span>
                       <span className="text-sm text-muted-foreground line-through">{selectedProduct.price} ر.ي</span>
-                      <Badge className="bg-red-500 text-white hover:bg-red-500">
+                      <Badge className="bg-red-600 text-white hover:bg-red-700">
                         خصم {Math.round(((selectedProduct.price - selectedProduct.salePrice) / selectedProduct.price) * 100)}%
                       </Badge>
                     </>
@@ -265,6 +276,7 @@ export function FlashDealsSection() {
                 {/* Actions */}
                 <div className="flex gap-3">
                   <button
+                    type="button"
                     className="btn-3d-sm flex-1 flex items-center justify-center gap-2"
                     onClick={() => {
                       handleAddToCart(selectedProduct);
@@ -275,12 +287,14 @@ export function FlashDealsSection() {
                     أضف للسلة
                   </button>
                   <button
+                    type="button"
+                    aria-label={`${isInWishlist(selectedProduct.id) ? "إزالة" : "إضافة"} ${selectedProduct.name} من المفضلة`}
                     className={`flex size-11 items-center justify-center rounded-xl border transition-all hover:scale-105 ${
                       isInWishlist(selectedProduct.id) ? "bg-red-500 text-white border-red-500" : "border-border text-muted-foreground hover:text-red-500"
                     }`}
                     onClick={() => toggleItem({ id: selectedProduct.id, name: selectedProduct.name, price: selectedProduct.price, salePrice: selectedProduct.salePrice, image: selectedProduct.images[0], category: selectedProduct.category })}
                   >
-                    <Heart className={`size-5 ${isInWishlist(selectedProduct.id) ? "fill-current" : ""}`} />
+                    <Heart aria-hidden="true" className={`size-5 ${isInWishlist(selectedProduct.id) ? "fill-current" : ""}`} />
                   </button>
                 </div>
               </div>

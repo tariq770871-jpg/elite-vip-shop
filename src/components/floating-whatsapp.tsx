@@ -39,14 +39,25 @@ export function FloatingWhatsApp() {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [showTooltip, setShowTooltip] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Keep the first viewport focused on the primary CTA; reveal support after scrolling.
+  useEffect(() => {
+    const onScroll = () => setHasScrolled(window.scrollY > 180);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Check localStorage for tooltip dismiss preference
   useEffect(() => {
     const wasDismissed = localStorage.getItem(TOOLTIP_DISMISSED_KEY);
     if (!wasDismissed) {
-      const timer = setTimeout(() => setShowTooltip(true), TOOLTIP_SHOW_DELAY_MS);
+      const timer = setTimeout(() => {
+        if (window.scrollY > 180) setShowTooltip(true);
+      }, TOOLTIP_SHOW_DELAY_MS);
       return () => clearTimeout(timer);
     }
   }, []);
@@ -130,19 +141,22 @@ export function FloatingWhatsApp() {
     setMessage(action.message);
   };
 
+  if (!hasScrolled && !isOpen) return null;
+
   return (
-    <div className="fixed bottom-20 left-4 z-50 md:bottom-6 md:left-6">
+    <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-4 z-50 md:bottom-6 md:left-6">
       {/* Tooltip */}
       {showTooltip && !isOpen && (
         <div
-          className="mb-2 flex items-center gap-2 whitespace-nowrap rounded-xl bg-card px-3 py-2 text-xs font-medium text-foreground shadow-lg border border-border animate-in fade-in-0 slide-in-from-bottom-2 duration-300"
-          onClick={() => {
-            openPanel();
-          }}
+          role="status"
+          aria-live="polite"
+          className="mb-2 flex items-center gap-2 whitespace-nowrap rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-lg animate-in fade-in-0 slide-in-from-bottom-2 duration-300"
         >
-          <MessageCircle className="size-3 text-green-500" />
-          <span>هل تحتاج مساعدة؟ تحدث معنا</span>
-          <button
+          <MessageCircle className="size-3 text-green-500" aria-hidden="true" />
+          <button type="button" onClick={openPanel} className="font-bold underline-offset-2 hover:underline">
+            هل تحتاج مساعدة؟ تحدث معنا
+          </button>
+          <button type="button"
             onClick={(e) => {
               e.stopPropagation();
               dismissTooltip();
@@ -186,7 +200,7 @@ export function FloatingWhatsApp() {
           {/* Body */}
           <div className="p-4">
             <div className="mb-4 rounded-xl bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-300">
-              <p className="font-medium">مرحباً! 👋</p>
+              <p className="font-medium">مرحبًا بك</p>
               <p className="mt-1 text-xs">
                 كيف يمكننا مساعدتك؟ اختر من الخيارات السريعة أو اكتب رسالتك.
               </p>
@@ -198,7 +212,7 @@ export function FloatingWhatsApp() {
                 <button
                   key={action.label}
                   onClick={() => handleQuickAction(action)}
-                  className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-[11px] font-medium transition-colors ${action.color}`}
+                  className={`flex min-h-11 items-center gap-1.5 rounded-lg border px-2.5 py-2 text-[11px] font-medium transition-colors ${action.color}`}
                 >
                   <action.icon className="size-3.5 shrink-0" />
                   <span className="truncate">{action.label}</span>
@@ -215,12 +229,15 @@ export function FloatingWhatsApp() {
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder="اكتب رسالتك..."
                 aria-label="رسالة واتساب"
+                enterKeyHint="send"
+                autoComplete="off"
                 className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500/30"
               />
               <button
+                type="button"
                 onClick={handleSend}
                 aria-label="إرسال الرسالة"
-                className="flex size-9 items-center justify-center rounded-xl bg-green-500 text-white transition-all hover:bg-green-600 hover:scale-105 active:scale-95"
+                className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-green-500 text-white transition-all hover:bg-green-600 hover:scale-105 active:scale-95"
               >
                 <Send className="size-4" />
               </button>
@@ -231,8 +248,10 @@ export function FloatingWhatsApp() {
 
       {/* FAB Button */}
       <button
+        type="button"
         onClick={isOpen ? closePanel : openPanel}
-        className={`flex size-14 items-center justify-center rounded-full shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 ${
+        aria-expanded={isOpen}
+        className={`flex size-12 items-center justify-center rounded-full shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 md:size-14 ${
           isOpen
             ? "bg-gray-600 hover:bg-gray-700 rotate-0"
             : "bg-green-500 hover:bg-green-600"

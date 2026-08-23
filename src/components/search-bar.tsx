@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Search, X } from "lucide-react";
+import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getProducts } from "@/lib/supabase-data";
@@ -70,7 +71,7 @@ export function SearchBar({ isOpen, onClose }: SearchBarProps) {
   };
 
   return (
-    <div className="border-b bg-background/95 backdrop-blur-md">
+    <div className="border-b bg-background/95 backdrop-blur-md" role="search" aria-label="البحث في المتجر">
       <div className="mx-auto max-w-7xl px-4 py-3 md:px-8">
         <div className="relative">
           <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -79,8 +80,10 @@ export function SearchBar({ isOpen, onClose }: SearchBarProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="ابحث عن منتجات، تطبيقات، أدوات..."
-            className="ps-10 pe-10 h-11 text-base"
+            className="h-11 ps-10 pe-10 text-base"
             aria-label="البحث عن منتجات"
+            aria-controls="search-results"
+            aria-expanded={debouncedQuery.trim().length > 0}
             onKeyDown={(e) => {
               if (e.key === "Escape") {
                 onClose();
@@ -88,6 +91,7 @@ export function SearchBar({ isOpen, onClose }: SearchBarProps) {
             }}
           />
           <Button
+            type="button"
             variant="ghost"
             size="icon"
             className="touch-target absolute left-1 top-1/2 size-11 -translate-y-1/2"
@@ -99,17 +103,24 @@ export function SearchBar({ isOpen, onClose }: SearchBarProps) {
 
           {/* Search results dropdown — uses debouncedQuery to avoid showing stale state */}
           {debouncedQuery.trim().length > 0 && (
-            <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-80 overflow-y-auto rounded-lg border bg-popover shadow-lg">
+            <div id="search-results" role="listbox" aria-label="نتائج البحث" className="absolute top-full right-0 left-0 z-50 mt-1 max-h-80 overflow-y-auto rounded-xl border bg-popover shadow-lg">
               {filteredProducts.length > 0 ? (
                 <div className="py-1">
                   {filteredProducts.map((product) => (
                     <button
+                      type="button"
                       key={product.id}
+                      role="option"
+                      aria-selected={false}
                       onClick={() => handleSelect(product.id)}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-right transition-colors hover:bg-accent"
+                      className="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-right transition-colors hover:bg-accent"
                     >
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                        <Search className="size-4 text-muted-foreground" />
+                      <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
+                        {product.images[0] ? (
+                          <Image src={product.images[0]} alt="" fill sizes="40px" className="object-cover" />
+                        ) : (
+                          <Search className="size-4 text-muted-foreground" aria-hidden="true" />
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">

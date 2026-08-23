@@ -51,7 +51,9 @@ export function CartDrawer() {
 
     const { user } = useAuthStore.getState();
     if (!user?.id) {
-      toast.error("يرجى تسجيل الدخول أولاً");
+      toast.error("يرجى تسجيل الدخول أولًا لإتمام الطلب");
+      closeCart();
+      router.push("/login?redirect=/cart");
       return;
     }
 
@@ -73,7 +75,7 @@ export function CartDrawer() {
 
       if (res.ok && data?.success) {
         clearCart();
-        toast.success("تم إرسال طلبك بنجاح! 🎉");
+        toast.success("تم إرسال طلبك بنجاح");
         closeCart();
       } else {
         toast.error(data?.error || "حدث خطأ أثناء إرسال الطلب");
@@ -148,6 +150,9 @@ export function CartDrawer() {
             <p className="text-sm text-muted-foreground">
               أضف منتجات للبدء بالتسوق
             </p>
+            <Button type="button" variant="outline" className="mt-2" onClick={() => { closeCart(); router.push("/products"); }}>
+              تصفح المنتجات
+            </Button>
           </div>
         ) : (
           <>
@@ -190,6 +195,7 @@ export function CartDrawer() {
                         <div className="mt-2 flex items-center gap-2">
                           <div className="flex items-center rounded-lg border">
                             <button
+                              type="button"
                               onClick={() => updateQuantity(item.id, item.quantity - 1)}
                               className="touch-target flex size-11 items-center justify-center transition-colors hover:bg-accent"
                               aria-label="تقليل الكمية"
@@ -200,6 +206,7 @@ export function CartDrawer() {
                               {item.quantity}
                             </span>
                             <button
+                              type="button"
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
                               className="touch-target flex size-11 items-center justify-center transition-colors hover:bg-accent"
                               aria-label="زيادة الكمية"
@@ -214,6 +221,7 @@ export function CartDrawer() {
                       </div>
 
                       <button
+                        type="button"
                         onClick={() => removeItem(item.id)}
                         className="touch-target shrink-0 flex items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
                         aria-label="حذف المنتج"
@@ -245,13 +253,14 @@ export function CartDrawer() {
                         </p>
                       </div>
                     </div>
-                    <button onClick={removeCoupon} className="text-red-500 hover:text-red-600">
+                    <button type="button" onClick={removeCoupon} aria-label="إزالة كود الخصم" className="rounded-md p-1 text-red-500 hover:bg-red-500/10 hover:text-red-600">
                       <X className="size-4" />
                     </button>
                   </div>
                 ) : (
                   <div className="flex gap-2">
                     <Input
+                      aria-label="كود الخصم"
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value)}
                       placeholder="كود الخصم..."
@@ -260,9 +269,11 @@ export function CartDrawer() {
                       onKeyDown={(e) => e.key === "Enter" && !couponLoading && handleApplyCoupon()}
                     />
                     <Button
+                      type="button"
                       variant="outline"
                       size="sm"
                       onClick={handleApplyCoupon}
+                      aria-label="تطبيق كود الخصم"
                       disabled={couponLoading || !couponCode.trim()}
                       className="h-9 gap-1 shrink-0"
                     >
@@ -294,6 +305,7 @@ export function CartDrawer() {
 
               {/* Checkout Button */}
               <Button
+                type="button"
                 onClick={handleSubmitOrder}
                 disabled={isSubmitting || items.length === 0}
                 className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-bold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:from-amber-400 hover:to-yellow-500 !py-3"
@@ -304,12 +316,14 @@ export function CartDrawer() {
 
               <div className="grid w-full grid-cols-2 gap-2">
                 <button
+                  type="button"
                   className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-medium transition-all hover:bg-accent"
                   onClick={() => { closeCart(); router.push("/cart"); }}
                 >
                   تفاصيل الطلب
                 </button>
                 <button
+                  type="button"
                   className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-medium text-destructive transition-all hover:bg-red-500/5"
                   onClick={clearCart}
                 >

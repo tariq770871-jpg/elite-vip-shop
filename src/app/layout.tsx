@@ -175,20 +175,17 @@ export default async function RootLayout({
             ]),
           }}
         />
+        {/* Prevent FOUC: apply dark class before React hydrates */}
+        <script
+          nonce={nonce}
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme:dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})()`,
+          }}
+        />
       </head>
-      {/* Prevent FOUC: apply dark class before React hydrates */}
-      <script
-        nonce={nonce}
-        dangerouslySetInnerHTML={{
-          __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme:dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})()`,
-        }}
-      />
       <body
         className={`${cairo.variable} font-sans antialiased bg-background text-foreground`}
       >
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:right-4 focus:z-[999] focus:bg-primary focus:text-primary-foreground focus:px-4 focus:py-2 focus:rounded-lg">
-          تخطي إلى المحتوى الرئيسي
-        </a>
         <ThemeProvider>
           <ErrorBoundary>
             <LayoutClient>

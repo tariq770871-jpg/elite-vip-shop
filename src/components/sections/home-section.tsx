@@ -124,12 +124,12 @@ function ScrollSection({
   return (
     <div className="relative">
       {canScrollLeft && (
-        <button onClick={() => scroll("left")} className="absolute -right-3 top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border bg-background shadow-md transition-all hover:scale-110" aria-label="السابق">
+        <button type="button" onClick={() => scroll("left")} className="absolute -right-3 top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full border bg-background shadow-md transition-all hover:scale-110" aria-label="المنتجات السابقة">
           <ChevronRight className="size-4" />
         </button>
       )}
       {canScrollRight && (
-        <button onClick={() => scroll("right")} className="absolute -left-3 top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border bg-background shadow-md transition-all hover:scale-110" aria-label="التالي">
+        <button type="button" onClick={() => scroll("right")} className="absolute -left-3 top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full border bg-background shadow-md transition-all hover:scale-110" aria-label="المنتجات التالية">
           <ChevronLeft className="size-4" />
         </button>
       )}
@@ -141,16 +141,17 @@ function ScrollSection({
 }
 
 export function HomeSection() {
-  const { navigateTo } = useNavigation();
+  const { navigateTo, navigateToProduct } = useNavigation();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [orderModalOpen, setOrderModalOpen] = useState(false);
   const [orderingProduct, setOrderingProduct] = useState<Product | null>(null);
   useEffect(() => {
-    getProducts().then((prods) => {
-      setAllProducts(prods);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    getProducts()
+      .then((prods) => setAllProducts(prods))
+      .catch(() => setLoadError(true))
+      .finally(() => setLoading(false));
   }, []);
 
   const featuredProducts = allProducts.filter((p) => p.availability).slice(0, 6);
@@ -158,45 +159,72 @@ export function HomeSection() {
   return (
     <div>
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-bl from-black via-black/95 to-black/90 py-8 md:py-20">
-        <div className="hero-shimmer absolute inset-0" />
-        <div className="absolute top-0 right-0 h-40 w-40">
-          <div className="absolute top-0 right-0 h-full w-1 bg-gradient-to-b from-gold/80 to-transparent" />
-          <div className="absolute top-0 right-0 h-1 w-full bg-gradient-to-l from-gold/80 to-transparent" />
-        </div>
-        <div className="absolute bottom-0 left-0 h-40 w-40">
-          <div className="absolute bottom-0 left-0 h-full w-1 bg-gradient-to-t from-gold/80 to-transparent" />
-          <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-gold/80 to-transparent" />
-        </div>
-        <div className="absolute top-20 right-1/4 h-64 w-64 rounded-full bg-gold/5 blur-[100px]" />
-        <div className="absolute bottom-20 left-1/4 h-48 w-48 rounded-full bg-gold/5 blur-[80px]" />
+      <section className="hero-shell relative overflow-hidden py-10 sm:py-14 lg:py-20">
+        <div className="hero-shimmer pointer-events-none absolute inset-0 opacity-60" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-gold/10 to-transparent" />
+        <div className="pointer-events-none absolute bottom-0 left-0 h-48 w-48 rounded-full bg-gold/10 blur-[90px]" />
 
-        <div className="relative mx-auto max-w-7xl px-4 md:px-8">
-          <div className="flex flex-col items-center text-center">
-            <div className="mb-6 flex items-center gap-3">
-              <div className="h-px w-16 bg-gradient-to-l from-gold/80 to-transparent" />
-              <span className="text-sm font-bold text-gold/80">مرحباً بكم في</span>
-              <div className="h-px w-16 bg-gradient-to-r from-gold/80 to-transparent" />
+        <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-8">
+          <div className="hero-copy text-center lg:text-right">
+            <div className="hero-kicker mx-auto mb-5 lg:mx-0">
+              <Sparkles className="size-3.5" aria-hidden="true" />
+              وجهتك الرقمية المتكاملة
             </div>
-            <h1 className="mb-3 text-3xl font-black leading-tight sm:text-5xl md:text-7xl lg:text-9xl">
-              <span className="text-gold-gradient">ELITE VIP SHOP</span>
+            <h1 className="hero-title mb-5 text-4xl font-black text-white sm:text-6xl lg:text-7xl">
+              كل ما تحتاجه،<br />
+              <span className="text-gold-gradient">بلمسة نخبة</span>
             </h1>
-            <p className="hidden mb-2 text-2xl font-light sm:block md:text-4xl" style={{ color: "#f0d078" }}>متجر النخبة</p>
-            <p className="mb-6 max-w-xl text-sm md:text-xl" style={{ color: "rgba(240, 208, 120, 0.8)" }}>
-              منصة تجمع بين متجر المنتجات، التطبيقات والأدوات، والخدمات الرقمية. الطلب يتم عبر واتساب والتطبيقات تُحمّل من مصادرها الرسمية.
+            <p className="mx-auto mb-7 max-w-2xl text-sm leading-8 text-white/70 sm:text-base lg:mx-0 lg:text-lg">
+              منتجات مختارة، خدمات رقمية احترافية، وأدوات تساعدك على الانتقال من الفكرة إلى النتيجة بثقة وسهولة.
             </p>
-            <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="btn-3d-whatsapp flex items-center justify-center gap-3 px-8 py-4 text-base sm:px-10 sm:py-5 no-underline">
-              <WhatsAppIcon size={24} className="size-6" />
-              تواصل معنا عبر واتساب
-            </a>
+            <div className="hero-actions justify-center lg:justify-start">
+              <button
+                type="button"
+                onClick={() => navigateTo("products")}
+                className="btn-3d inline-flex min-h-12 items-center justify-center gap-2 px-6 py-3 text-sm sm:text-base"
+              >
+                <ShoppingBag className="size-5" aria-hidden="true" />
+                اكتشف المتجر
+              </button>
+              <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="hero-secondary-action">
+                <WhatsAppIcon size={19} className="size-5" aria-hidden="true" />
+                تحدث مع مستشار
+              </a>
+            </div>
+            <div className="hero-proof mt-7 justify-center lg:justify-start">
+              <span><Shield className="size-4" aria-hidden="true" /> جودة موثوقة</span>
+              <span><Truck className="size-4" aria-hidden="true" /> توصيل آمن</span>
+              <span><Headphones className="size-4" aria-hidden="true" /> دعم مباشر</span>
+            </div>
+          </div>
+
+          <div className="hero-showcase order-first sm:min-h-[27rem] lg:order-none">
+            <div className="hero-showcase-badge hero-showcase-badge--top">
+              <BadgeCheck className="size-4 text-emerald-400" aria-hidden="true" />
+              مختارات النخبة
+            </div>
+            <div className="hero-showcase-image">
+              <Image
+                src="/products/product-1.webp"
+                alt="منتج مختار من متجر النخبة"
+                fill
+                priority
+                fetchPriority="high"
+                sizes="(max-width: 640px) 88vw, (max-width: 1024px) 55vw, 480px"
+              />
+            </div>
+            <div className="hero-showcase-badge hero-showcase-badge--bottom">
+              <Zap className="size-4" aria-hidden="true" />
+              تجربة شراء أبسط
+            </div>
           </div>
         </div>
       </section>
 
       {/* ===== 5 GATEWAYS ===== */}
-      <section className="relative py-8 md:py-14">
+      <section className="relative py-12 md:py-20">
         <div className="mx-auto max-w-6xl px-4 md:px-8">
-          <div className="mb-8 text-center md:mb-10">
+          <div className="section-intro mb-8 md:mb-10">
             <div className="mb-3 flex justify-center">
               <div className="flex size-12 items-center justify-center rounded-2xl" style={{ background: "linear-gradient(135deg, #d4a843, #f0d078, #d4a843)" }}>
                 <Sparkles className="size-6 text-black" />
@@ -212,7 +240,7 @@ export function HomeSection() {
               <button
                 key={section.page}
                 onClick={() => navigateTo(section.page)}
-                className={`group relative flex flex-col items-center gap-3 rounded-2xl border border-border/50 bg-gradient-to-b ${section.accentLight} p-4 sm:p-6 text-center transition-all duration-300 hover:scale-[1.03] hover:shadow-xl ${section.borderAccent} hover:-translate-y-1 min-h-[180px] sm:min-h-[220px]`}
+                className={`gateway-card group relative flex flex-col items-center gap-3 rounded-2xl border border-border/50 bg-gradient-to-b ${section.accentLight} p-4 text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${section.borderAccent} sm:p-6`}
               >
                 {/* Gold gradient accent line at top */}
                 <div className={`absolute top-0 right-4 left-4 h-[3px] rounded-b-full bg-gradient-to-l ${section.accent} opacity-60 transition-opacity group-hover:opacity-100`} />
@@ -237,25 +265,33 @@ export function HomeSection() {
       {/* Featured Products with WhatsApp */}
       <section className="section-gradient-products py-6 md:py-12">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
-          <div className="flex justify-center mb-6 md:mb-8">
-            <button onClick={() => navigateTo("products")} className="section-title-3d cursor-pointer">
-              <span className="title-icon"><ShoppingBag className="size-6" /></span>
-              متجر منتجات النخبة
+          <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between md:mb-9">
+            <div>
+              <span className="section-kicker mb-3 text-[11px] text-primary">مختارات النخبة</span>
+              <h2 className="text-2xl font-black tracking-tight sm:text-3xl">متجر منتجات النخبة</h2>
+              <p className="mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
+                تصفح منتجاتنا المتنوعة واختر طريقة الطلب الأنسب لك.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigateTo("products")}
+              className="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-xl border border-primary/30 px-4 py-2 text-sm font-bold text-primary transition-colors hover:bg-primary/10 sm:self-auto"
+            >
+              عرض كل المنتجات
+              <ArrowLeft className="size-4" aria-hidden="true" />
             </button>
           </div>
-          <p className="text-center text-muted-foreground mb-6 max-w-xl mx-auto text-sm md:text-base">
-            تصفح منتجاتنا المتنوعة — اطلب عبر واتساب مباشرة
-          </p>
 
           {loading ? (
             <div className="flex flex-col items-center justify-center gap-4 py-20">
               <Loader2 className="size-10 animate-spin text-gold-gradient" />
               <p className="text-muted-foreground">جارٍ تحميل المنتجات...</p>
             </div>
-          ) : (
+          ) : featuredProducts.length > 0 ? (
             <ScrollSection>
               {featuredProducts.map((product, index) => (
-                <div key={product.id} className="card-3d group min-w-[220px] max-w-[260px] shrink-0 md:min-w-[260px]">
+                <article key={product.id} className="product-card card-3d group shrink-0">
                   <div className="product-img-placeholder relative bg-muted">
                     {product.images[0] ? (
                       <Image src={product.images[0]} alt={product.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" priority={index < 3} loading={index < 3 ? undefined : "lazy"} />
@@ -270,6 +306,14 @@ export function HomeSection() {
                   </div>
                   <div className="p-4">
                     <h3 className="mb-2 line-clamp-1 text-sm font-bold">{product.name}</h3>
+                    <button
+                      type="button"
+                      onClick={() => navigateToProduct(product.id)}
+                      className="mb-3 inline-flex items-center gap-1 text-xs font-bold text-muted-foreground transition-colors hover:text-primary"
+                    >
+                      عرض التفاصيل
+                      <ArrowLeft className="size-3" aria-hidden="true" />
+                    </button>
                     <div className="mb-4 flex items-center gap-2">
                       {product.salePrice ? (
                         <>
@@ -283,6 +327,7 @@ export function HomeSection() {
                     <div className="flex items-center gap-2">
                       {/* Golden Order Button */}
                       <button
+                        type="button"
                         onClick={() => { setOrderingProduct(product); setOrderModalOpen(true); }}
                         className="flex-1 flex items-center justify-center gap-2 text-xs !py-3 !rounded-xl
                           bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-bold
@@ -293,15 +338,22 @@ export function HomeSection() {
                         اطلب الآن
                       </button>
                       {/* Inquiry Button */}
-                      <a href={getWhatsAppOrderLink(product.name)} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-1 rounded-xl border border-border bg-card px-3 py-3 text-xs font-medium transition-all hover:bg-accent no-underline shrink-0">
+                      <a href={getWhatsAppOrderLink(product.name)} target="_blank" rel="noopener noreferrer" aria-label={`الاستفسار عن ${product.name} عبر واتساب`}
+                        className="flex size-11 shrink-0 items-center justify-center gap-1 rounded-xl border border-border bg-card text-xs font-medium transition-all hover:bg-accent no-underline">
                         <WhatsAppIcon size={14} className="size-3.5" />
                       </a>
                     </div>
                   </div>
-                </div>
+                </article>
               ))}
             </ScrollSection>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border/70 py-14 text-center">
+              <ShoppingBag className="size-8 text-muted-foreground/60" aria-hidden="true" />
+              <p className="text-sm font-semibold">{loadError ? "تعذر تحميل المنتجات حاليًا" : "لا توجد منتجات متاحة الآن"}</p>
+              <p className="text-xs text-muted-foreground">يمكنك فتح المتجر الكامل للمحاولة مرة أخرى.</p>
+              <button type="button" onClick={() => navigateTo("products")} className="btn-3d-sm mt-2">فتح المتجر</button>
+            </div>
           )}
         </div>
       </section>
@@ -363,7 +415,7 @@ export function HomeSection() {
                 <p className="text-xs sm:text-sm leading-relaxed text-muted-foreground">{service.description}</p>
                 <button
                   onClick={() => navigateTo("services")}
-                  className="mt-auto flex items-center gap-1.5 text-xs font-bold text-primary transition-colors hover:text-primary/80"
+                  className="mt-auto flex items-center gap-1.5 text-xs font-bold text-amber-800 transition-colors hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-200"
                 >
                   اطلب خدمة
                   <ArrowLeft className="size-3" />

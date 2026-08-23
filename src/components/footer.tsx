@@ -124,7 +124,7 @@ export function Footer() {
                   key={link.page}
                   href={getPath(link.page)}
                   onClick={handleNavScroll}
-                  className="flex items-center gap-2 text-sm text-amber-500 transition-colors hover:text-amber-400 text-right"
+                  className="flex items-center gap-2 text-sm text-amber-800 transition-colors hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-200 text-right"
                 >
                   {link.icon}
                   {link.label}

@@ -29,9 +29,12 @@ export async function GET(request: Request) {
 
     const serviceClient = getSupabaseServiceClient();
     if (!serviceClient) {
+      // Testimonials are enhancement content, not a blocker for the storefront.
+      // Return an empty, cacheable payload when local/public Supabase is unavailable;
+      // real query failures below still return 500 and remain observable in logs.
       return NextResponse.json(
-        { error: "خدمة قاعدة البيانات غير متاحة" },
-        { status: 503 }
+        { reviews: [], averageRating: 0, totalCount: 0 },
+        { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" } }
       );
     }
 

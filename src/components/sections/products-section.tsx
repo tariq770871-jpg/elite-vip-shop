@@ -30,6 +30,7 @@ export function ProductsSection() {
   const [selectedCategory, setSelectedCategory] = useState("الكل");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [orderModalOpen, setOrderModalOpen] = useState(false);
   const [orderingProduct, setOrderingProduct] = useState<Product | null>(null);
   const { navigateToProduct } = useNavigation();
@@ -39,11 +40,13 @@ export function ProductsSection() {
   const currentPage = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
 
   useEffect(() => {
-    Promise.all([getProducts(), getCategories()]).then(([prods, cats]) => {
-      setProducts(prods);
-      setCategories(cats);
-      setLoading(false);
-    });
+    Promise.all([getProducts(), getCategories()])
+      .then(([prods, cats]) => {
+        setProducts(prods);
+        setCategories(cats);
+      })
+      .catch(() => setLoadError(true))
+      .finally(() => setLoading(false));
   }, []);
 
   const filteredProducts = useMemo(() => {
@@ -111,7 +114,7 @@ export function ProductsSection() {
 
   if (loading) {
     return (
-      <div className="section-gradient-products py-8 md:py-16">
+      <div className="section-gradient-products py-8 md:py-16" aria-busy="true">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           <div className="flex justify-center mb-6 sm:mb-8">
             <div className="section-title-3d">
@@ -122,6 +125,21 @@ export function ProductsSection() {
           <ProductGridSkeleton count={6} />
         </div>
       </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <section className="section-gradient-products py-16" aria-labelledby="products-error-title">
+        <div className="mx-auto flex max-w-xl flex-col items-center px-4 text-center">
+          <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+            <ShoppingBag className="size-7" aria-hidden="true" />
+          </div>
+          <h2 id="products-error-title" className="text-xl font-bold">تعذر تحميل المنتجات</h2>
+          <p className="mt-2 text-sm leading-7 text-muted-foreground">تحقق من اتصالك بالإنترنت وحاول مرة أخرى.</p>
+          <button type="button" className="btn-3d-sm mt-6" onClick={() => window.location.reload()}>إعادة المحاولة</button>
+        </div>
+      </section>
     );
   }
 
@@ -140,10 +158,10 @@ export function ProductsSection() {
           </p>
 
           <div className="relative mb-6">
-            <Search className="absolute right-3 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="ابحث عن منتج..." value={searchQuery} onChange={(e) => handleSearchChange(e.target.value)} className="ps-10 pe-10 rounded-xl" />
+            <Search className="pointer-events-none absolute right-3 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <Input type="search" inputMode="search" aria-label="البحث عن منتج" placeholder="ابحث عن منتج..." value={searchQuery} onChange={(e) => handleSearchChange(e.target.value)} className="h-12 rounded-xl ps-10 pe-10" />
             {searchQuery && (
-              <button onClick={() => handleSearchChange("")} className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground">مسح</button>
+              <button type="button" onClick={() => handleSearchChange("")} aria-label="مسح البحث" className="absolute left-3 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground">مسح</button>
             )}
           </div>
 
@@ -152,7 +170,9 @@ export function ProductsSection() {
               <button
                 key={cat}
                 className={selectedCategory === cat ? "btn-3d-sm shrink-0" : "shrink-0 rounded-xl border border-border bg-card px-4 py-2 text-sm font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground"}
+                type="button"
                 onClick={() => handleCategoryChange(cat)}
+                aria-pressed={selectedCategory === cat}
               >
                 {cat}
               </button>
@@ -160,14 +180,14 @@ export function ProductsSection() {
           </div>
         </div>
 
-        <p className="mb-6 text-sm text-muted-foreground">عرض {filteredProducts.length} منتج</p>
+        <p className="mb-6 text-sm text-muted-foreground" aria-live="polite">عرض {filteredProducts.length} منتج</p>
 
         {filteredProducts.length > 0 ? (
           <>
             <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {paginatedProducts.map((product) => (
                 <div key={product.id} className="card-3d group overflow-hidden">
-                  <div className="product-img-placeholder relative bg-muted cursor-pointer" onClick={() => navigateToProduct(product.id)}>
+                  <button type="button" className="product-img-placeholder relative block w-full bg-muted text-start" onClick={() => navigateToProduct(product.id)} aria-label={`عرض تفاصيل ${product.name}`}>
                     {product.images[0] ? (
                       <Image src={product.images[0]} alt={product.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" loading="lazy" />
                     ) : (
@@ -181,11 +201,11 @@ export function ProductsSection() {
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100 bg-black/10">
                       <span className="rounded-full bg-black/60 px-4 py-1.5 text-xs font-bold text-white backdrop-blur-sm">عرض التفاصيل</span>
                     </div>
-                  </div>
+                  </button>
                   <div className="p-4 sm:p-5">
-                    <Badge className="mb-2 cursor-pointer bg-gradient-to-r from-amber-500/10 to-amber-600/10 text-xs font-semibold text-gold-gradient border border-amber-500/20 transition-all hover:border-amber-500/50 hover:scale-105" onClick={() => handleCategoryChange(product.category === selectedCategory ? "الكل" : product.category)}>
+                    <button type="button" className="mb-2 inline-flex rounded-md bg-gradient-to-r from-amber-500/10 to-amber-600/10 px-2 py-0.5 text-xs font-semibold text-gold-gradient border border-amber-500/20 transition-all hover:border-amber-500/50" onClick={() => handleCategoryChange(product.category === selectedCategory ? "الكل" : product.category)}>
                       {product.category}
-                    </Badge>
+                    </button>
                     <h3 className="mb-2 line-clamp-1 text-lg font-bold">{product.name}</h3>
                     <p className="mb-3 line-clamp-2 text-sm text-muted-foreground">{product.description}</p>
                     <div className="mb-4 flex items-center gap-2">
@@ -201,6 +221,7 @@ export function ProductsSection() {
                     <div className="flex items-center gap-2">
                       {/* Golden Order Button */}
                       <button
+                        type="button"
                         onClick={(e) => { e.stopPropagation(); setOrderingProduct(product); setOrderModalOpen(true); }}
                         className="flex-1 flex items-center justify-center gap-2 text-sm !py-3 !rounded-xl
                           bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-bold
@@ -211,8 +232,8 @@ export function ProductsSection() {
                         اطلب الآن
                       </button>
                       {/* Inquiry Button */}
-                      <a href={getWhatsAppOrderLink(product.name)} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-1 rounded-xl border border-border bg-card px-3 py-3 text-xs font-medium transition-all hover:bg-accent no-underline shrink-0">
+                      <a href={getWhatsAppOrderLink(product.name)} target="_blank" rel="noopener noreferrer" aria-label={`الاستفسار عن ${product.name} عبر واتساب`}
+                        className="flex size-11 shrink-0 items-center justify-center gap-1 rounded-xl border border-border bg-card text-xs font-medium transition-all hover:bg-accent no-underline">
                         <WhatsAppIcon size={14} className="size-3.5" />
                       </a>
                     </div>

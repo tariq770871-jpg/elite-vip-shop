@@ -33,6 +33,7 @@ import {
   TrendingUp,
   HelpCircle,
   BookOpen,
+  ChevronDown,
 } from "lucide-react";
 import { NotificationButton, NotificationPanel } from "@/components/notification-panel";
 import { Button } from "@/components/ui/button";
@@ -148,7 +149,7 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
 
         {/* Center: Desktop nav links (hidden on mobile) */}
         <nav className="hidden items-center gap-1 lg:flex" role="navigation" aria-label="التنقل الرئيسي">
-          {navLinks.map((link) => (
+          {navLinks.slice(0, 4).map((link) => (
             <Link
               key={link.page}
               href={PAGE_PATHS[link.page]}
@@ -164,6 +165,24 @@ export function Navbar({ onToggleSearch }: NavbarProps) {
               )}
             </Link>
           ))}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-1 rounded-lg px-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground">
+                استكشف
+                <ChevronDown className="size-3.5" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>المزيد من الأقسام</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {navLinks.slice(4).map((link) => (
+                <DropdownMenuItem key={link.page} onClick={() => navigateTo(link.page)} className="gap-2">
+                  {link.icon}
+                  {link.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
 
         {/* Left side (RTL left): Actions */}

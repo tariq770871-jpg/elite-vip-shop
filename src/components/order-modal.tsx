@@ -421,6 +421,8 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
 
   const effectivePrice = getEffectivePrice(product.price, product.salePrice);
   const totalPrice = effectivePrice * quantity;
+  const progressStep = currentStep === "AUTH_GATE" || currentStep === "IDLE" ? 1 : currentStep === "PRODUCT_INFO" || currentStep === "CHOOSE_OPTION" ? 2 : currentStep === "SUCCESS" ? 4 : 3;
+  const progressLabel = currentStep === "SUCCESS" ? "اكتمل الطلب" : progressStep === 1 ? "بدء الطلب" : progressStep === 2 ? "اختيار طريقة الاستلام" : "بيانات العميل";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -439,6 +441,15 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
           <DialogDescription className="text-right text-xs">
             أكمِل الطلب عبر المحادثة
           </DialogDescription>
+          <div className="mt-3" aria-label={`تقدم الطلب: ${progressLabel}`}>
+            <div className="mb-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
+              <span>{progressLabel}</span>
+              <span>{progressStep}/4</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuemin={1} aria-valuemax={4} aria-valuenow={progressStep}>
+              <div className="h-full rounded-full bg-gold-gradient transition-[width] duration-300" style={{ width: `${(progressStep / 4) * 100}%` }} />
+            </div>
+          </div>
         </DialogHeader>
 
         {/* Quantity Selector */}
@@ -447,6 +458,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
             <span className="text-sm font-medium">الكمية</span>
             <div className="flex items-center gap-3">
               <button
+                type="button"
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
                 className="flex size-11 items-center justify-center rounded-lg border transition-colors hover:bg-accent"
                 aria-label="تقليل الكمية"
@@ -455,6 +467,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
               </button>
               <span className="w-8 text-center font-bold text-lg">{quantity}</span>
               <button
+                type="button"
                 onClick={() => setQuantity(Math.min(MAX_QUANTITY_PER_ITEM, quantity + 1))}
                 className="flex size-11 items-center justify-center rounded-lg border transition-colors hover:bg-accent"
                 aria-label="زيادة الكمية"
@@ -469,7 +482,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
         )}
 
         {/* ─── Chat Messages Area ─── */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[300px] max-h-[50vh]">
+        <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3 min-h-[300px] max-h-[50vh]" aria-live="polite" aria-label="محادثة الطلب">
           {messages.map((msg) => (
             <div key={msg.id}>
               {/* Bot / System messages */}
@@ -494,6 +507,7 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
                       <div className="mt-3 flex flex-wrap gap-2">
                         {msg.actions.map((action) => (
                           <button
+                            type="button"
                             key={action.value}
                             onClick={() => handleActionClick(action.value)}
                             className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold text-black transition-all

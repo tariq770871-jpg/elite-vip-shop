@@ -62,15 +62,20 @@ export function AnnouncementBanner() {
   const announcement = announcements[currentIndex];
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-l from-amber-600 via-amber-500 to-amber-600 text-black">
-      <div className="mx-auto flex h-9 items-center justify-center gap-2 px-10">
+    <div
+      className="relative overflow-hidden bg-gradient-to-l from-amber-600 via-amber-500 to-amber-600 text-black"
+      role="region"
+      aria-label="الإعلانات والعروض"
+      aria-live="polite"
+    >
+      <div className="mx-auto flex min-h-9 items-center justify-center gap-2 px-10 py-1">
         <Megaphone className="hidden size-4 sm:block" />
         <button
           onClick={() => handleClick(announcement.link)}
-          className="flex items-center gap-2 text-center text-sm font-bold transition-opacity hover:opacity-80"
+          className="flex items-center gap-2 text-center text-xs font-bold leading-5 transition-opacity hover:opacity-80 sm:text-sm"
         >
           {announcement.icon}
-          <span className="animate-marquee">{announcement.text}</span>
+          <span className="whitespace-nowrap">{announcement.text}</span>
         </button>
       </div>
       <button

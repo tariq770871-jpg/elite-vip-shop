@@ -86,7 +86,7 @@ export function BlogSection() {
         <div className="mt-8 text-center">
           <Link
             href="/blog"
-            className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-6 py-3 text-sm font-semibold text-primary transition-all duration-200 hover:bg-primary/10 hover:shadow-md"
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-800/30 bg-amber-500/5 px-6 py-3 text-sm font-semibold text-amber-800 transition-all duration-200 hover:bg-amber-500/10 hover:shadow-md dark:border-amber-300/30 dark:text-amber-300"
           >
             <span>شاهد جميع المقالات</span>
             <ArrowLeft className="size-4" />

@@ -36,12 +36,18 @@ export function CookieConsent() {
     setIsVisible(false);
   };
 
+  const handleDismiss = () => {
+    localStorage.setItem("cookie-consent", "dismissed");
+    localStorage.setItem("cookie-consent-date", new Date().toISOString());
+    setIsVisible(false);
+  };
+
   if (!isVisible) return null;
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
+      role="region"
+      aria-label="إشعار ملفات تعريف الارتباط"
       aria-labelledby="cookie-consent-title"
       className="fixed bottom-0 left-0 right-0 z-[60] p-3 md:p-4"
     >
@@ -62,6 +68,7 @@ export function CookieConsent() {
               نستخدم ملفات تعريف الارتباط لتحسين تجربتك على موقعنا وتقديم محتوى مخصص
               لك. بالموافقة، ساعدنا على تقديم خدمة أفضل. يمكنك قراءة{" "}
               <button
+                type="button"
                 onClick={() => {
                   router.push("/privacy");
                 }}
@@ -76,12 +83,14 @@ export function CookieConsent() {
           {/* Actions */}
           <div className="flex items-center justify-center gap-2 shrink-0">
             <button
+              type="button"
               onClick={handleDecline}
               className="rounded-xl border border-border px-4 py-2.5 text-xs font-medium text-muted-foreground transition-all hover:bg-accent"
             >
               رفض
             </button>
             <button
+              type="button"
               onClick={handleAccept}
               ref={acceptBtnRef}
               className="btn-3d-sm px-4 py-2.5 text-xs"
@@ -89,7 +98,8 @@ export function CookieConsent() {
               قبول الكل
             </button>
             <button
-              onClick={() => setIsVisible(false)}
+              type="button"
+              onClick={handleDismiss}
               className="absolute top-2 left-2 rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground md:relative md:top-auto md:left-auto"
               aria-label="إغلاق"
             >
