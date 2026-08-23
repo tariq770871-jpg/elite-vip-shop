@@ -80,6 +80,7 @@ export function ProductReviewsSection({ productId }: ProductReviewsSectionProps)
   const { navigateTo } = useNavigation();
 
   const fetchReviews = useCallback(async () => {
+    setLoading(true);
     try {
       const res = await fetch(`/api/reviews?product_id=${encodeURIComponent(productId)}`);
       const json = await res.json();
@@ -95,8 +96,8 @@ export function ProductReviewsSection({ productId }: ProductReviewsSectionProps)
 
   useEffect(() => {
     if (!productId) return;
-    setLoading(true);
-    fetchReviews();
+    const timer = window.setTimeout(() => { void fetchReviews(); }, 0);
+    return () => window.clearTimeout(timer);
   }, [productId, fetchReviews]);
 
   const handleSubmit = async () => {

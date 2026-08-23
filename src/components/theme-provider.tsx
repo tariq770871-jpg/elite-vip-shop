@@ -19,22 +19,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-
     // Priority: saved preference > system preference > default light
     const stored = localStorage.getItem("theme") as Theme | null;
-    let initial: Theme;
+    const initial: Theme = stored === "dark" || stored === "light"
+      ? stored
+      : window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 
-    if (stored === "dark" || stored === "light") {
-      initial = stored;
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      initial = "dark";
-    } else {
-      initial = "light";
-    }
-
-    setTheme(initial);
-    document.documentElement.classList.toggle("dark", initial === "dark");
+    const frame = window.requestAnimationFrame(() => {
+      setMounted(true);
+      setTheme(initial);
+      document.documentElement.classList.toggle("dark", initial === "dark");
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {

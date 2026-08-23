@@ -18,8 +18,8 @@ export function PWAInstallPrompt() {
     const isStandalone = window.matchMedia("(display-mode: standalone)").matches
       || (navigator as unknown as { standalone?: boolean }).standalone === true;
     if (isStandalone) {
-      setIsInstalled(true);
-      return;
+      const frame = window.requestAnimationFrame(() => setIsInstalled(true));
+      return () => window.cancelAnimationFrame(frame);
     }
 
     // Check if dismissed before
@@ -33,17 +33,19 @@ export function PWAInstallPrompt() {
       }
     }
 
+    let showTimer: number | undefined;
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       // Auto-show after 3 seconds
-      setTimeout(() => setShowPrompt(true), 3000);
+      showTimer = window.setTimeout(() => setShowPrompt(true), 3000);
     };
 
     window.addEventListener("beforeinstallprompt", handler);
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handler);
+      if (showTimer !== undefined) window.clearTimeout(showTimer);
     };
   }, []);
 

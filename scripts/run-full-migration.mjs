@@ -6,18 +6,24 @@
  * 
  * Usage:
  *   1. Add SUPABASE_DB_PASSWORD to .env file
- *   2. Run: node scripts/run-full-migration.js
+ *   2. Run: node scripts/run-full-migration.mjs
  */
 
-const fs = require('fs');
-const path = require('path');
-const dns = require('dns');
+import fs from 'node:fs';
+import path from 'node:path';
+import dns from 'node:dns';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+import { createClient } from '@supabase/supabase-js';
+import pg from 'pg';
 
 // Force IPv4 for DNS resolution
 dns.setDefaultResultOrder('ipv4first');
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://nssmnftpcnkrcbtzjpuf.supabase.co';
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'REDACTED_SUPABASE_SECRET';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const DB_PASSWORD = process.env.SUPABASE_DB_PASSWORD || '';
 const PROJECT_REF = SUPABASE_URL.replace('https://', '').replace('.supabase.co', '');
 
@@ -34,7 +40,11 @@ function log(icon, color, msg) {
 }
 
 async function checkTableState() {
-  const { createClient } = require('@supabase/supabase-js');
+  if (!SUPABASE_URL || !SERVICE_KEY) {
+    log('❌', RED, 'NEXT_PUBLIC_SUPABASE_URL و SUPABASE_SERVICE_ROLE_KEY مطلوبان لفحص القاعدة.');
+    return null;
+  }
+
   const client = createClient(SUPABASE_URL, SERVICE_KEY);
 
   const tables = [
@@ -88,7 +98,7 @@ async function runMigrationWithPg() {
     return false;
   }
 
-  const { Client } = require('pg');
+  const { Client } = pg;
 
   // Read the full migration SQL
   const sqlPath = path.join(__dirname, 'migration-full.sql');
@@ -122,7 +132,7 @@ async function runMigrationWithPg() {
   for (const config of connectionConfigs) {
     const client = new Client({
       ...config,
-      ssl: { rejectUnauthorized: false },
+      ssl: { rejectUnauthorized: true },
       connectionTimeoutMillis: 15000,
       query_timeout: 30000,
     });
@@ -183,7 +193,7 @@ async function runMigrationWithPg() {
 }
 
 async function verifyMigration() {
-  const { createClient } = require('@supabase/supabase-js');
+  if (!SUPABASE_URL || !SERVICE_KEY) return false;
   const client = createClient(SUPABASE_URL, SERVICE_KEY);
 
   const tables = [
@@ -228,6 +238,7 @@ async function main() {
 
   // Step 1: Check current state
   const state = await checkTableState();
+  if (!state) return;
   const missingCount = Object.values(state).filter(v => v === 'MISSING' || v === 'COLUMNS_MISSING').length;
 
   if (missingCount === 0) {

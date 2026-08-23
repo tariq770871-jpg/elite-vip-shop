@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuthStore } from "@/store/auth-store";
 import { useNavigation } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
@@ -144,7 +144,7 @@ function TelegramSettings({ authHeaders }: { authHeaders: Record<string, string>
   const [saving, setSaving] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
 
-  const checkStatus = async () => {
+  const checkStatus = useCallback(async () => {
     try {
       const res = await fetch("/api/telegram", { headers: authHeaders });
       if (res.ok) {
@@ -154,9 +154,12 @@ function TelegramSettings({ authHeaders }: { authHeaders: Record<string, string>
     } catch {
       setBotStatus({ configured: false });
     }
-  };
+  }, [authHeaders]);
 
-  useEffect(() => { checkStatus(); }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void checkStatus(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [checkStatus]);
 
   const handleSave = async () => {
     if (!botToken || !chatId) { toast.error("أدخل رمز البوت ومعرف المحادثة أولاً"); return; }
@@ -484,7 +487,11 @@ function DatabaseMigration({ authHeaders }: { authHeaders: Record<string, string
 function AdminDashboard() {
   const { session } = useAuthStore();
   const authToken = session?.access_token || "";
-  const authHeaders: Record<string, string> = authToken ? { Authorization: `Bearer ${authToken}` } : {};
+  const authHeaders = useMemo<Record<string, string>>(() => {
+    const headers: Record<string, string> = {};
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+    return headers;
+  }, [authToken]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [stats, setStats] = useState({ products: 0, users: 0, orders: 0, revenue: 0 });
@@ -512,7 +519,7 @@ function AdminDashboard() {
   });
   const [productSaving, setProductSaving] = useState(false);
 
-  const fetchAdminProducts = async (signal?: AbortSignal) => {
+  const fetchAdminProducts = useCallback(async (signal?: AbortSignal) => {
     try {
       const res = await fetch("/api/admin/products?limit=100&count=true", { headers: authHeaders, signal });
       if (res.ok) {
@@ -538,14 +545,16 @@ function AdminDashboard() {
     } finally {
       setProductsLoading(false);
     }
-  };
+  }, [authHeaders]);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchAdminProducts(controller.signal);
-    return () => controller.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authHeaders]);
+    const timer = window.setTimeout(() => { void fetchAdminProducts(controller.signal); }, 0);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [fetchAdminProducts]);
 
   const openAddProduct = () => {
     setEditingProduct(null);
@@ -647,7 +656,7 @@ function AdminDashboard() {
     }
   };
 
-  const fetchAdminData = async (signal?: AbortSignal) => {
+  const fetchAdminData = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
       // ── All 3 API calls are independent — fire in parallel ──
@@ -697,14 +706,16 @@ function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [authHeaders]);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchAdminData(controller.signal);
-    return () => controller.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authHeaders]);
+    const timer = window.setTimeout(() => { void fetchAdminData(controller.signal); }, 0);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [fetchAdminData]);
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     setUpdatingOrderId(orderId);
@@ -1225,7 +1236,11 @@ function AdminDashboard() {
 function SellerDashboard() {
   const { user, session } = useAuthStore();
   const authToken = session?.access_token || "";
-  const authHeaders: Record<string, string> = authToken ? { Authorization: `Bearer ${authToken}` } : {};
+  const authHeaders = useMemo<Record<string, string>>(() => {
+    const headers: Record<string, string> = {};
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+    return headers;
+  }, [authToken]);
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [stats, setStats] = useState({ products: 0, orders: 0, revenue: 0 });
@@ -1664,12 +1679,19 @@ interface UserOrder {
 function UserDashboard() {
   const { user, session } = useAuthStore();
   const authToken = session?.access_token || "";
-  const authHeaders: Record<string, string> = authToken ? { Authorization: `Bearer ${authToken}` } : {};
+  const authHeaders = useMemo<Record<string, string>>(() => {
+    const headers: Record<string, string> = {};
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+    return headers;
+  }, [authToken]);
   const [orders, setOrders] = useState<UserOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
 
   useEffect(() => {
-    if (!user?.id) { setOrdersLoading(false); return; }
+    if (!user?.id) {
+      const frame = window.requestAnimationFrame(() => setOrdersLoading(false));
+      return () => window.cancelAnimationFrame(frame);
+    }
     async function fetchOrders() {
       try {
         const res = await fetch(`/api/orders?limit=20`, { headers: authHeaders });

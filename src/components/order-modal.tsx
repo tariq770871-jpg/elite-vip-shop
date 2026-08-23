@@ -126,24 +126,6 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Reset when modal opens
-  useEffect(() => {
-    if (open && product) {
-      setMessages([]);
-      setQuantity(1);
-      setDeliveryType("pickup");
-      setIsSubmitting(false);
-      setOrderNumber("");
-      deliveryForm.reset();
-      pickupForm.reset();
-
-      const timer = setTimeout(() => {
-        startChatFlow();
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [open, product?.id]);
-
   const addMessage = useCallback((msg: Omit<ChatMessage, "id" | "timestamp">) => {
     const newMsg: ChatMessage = {
       ...msg,
@@ -171,28 +153,17 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
           { label: "إنشاء حساب جديد", value: "register" },
         ],
       });
-    } else {
-      showProductInfo();
+      return;
     }
-  }, [isAuthenticated, addMessage, product]);
 
-  /* ────────────────────────────────────────────────────────────────── */
-  /*  Step 2: Auto-message with product details                       */
-  /* ────────────────────────────────────────────────────────────────── */
-
-  const showProductInfo = useCallback(() => {
-    if (!product) return;
     setCurrentStep("PRODUCT_INFO");
-
     const effectivePrice = getEffectivePrice(product.price, product.salePrice);
-
     addMessage({
       type: "bot",
-      content: `📦 ${product.name}\n💰 السعر: ${effectivePrice.toLocaleString("ar-SA")} ر.ي\n📊 الكمية: ${quantity}\n💵 المجموع: ${(effectivePrice * quantity).toLocaleString("ar-SA")} ر.ي\n\n⚠️ لا تقم بأي عملية دفع إلا بعد تأكيد الطلب`,
+      content: `📦 ${product.name}\n💰 السعر: ${effectivePrice.toLocaleString("ar-SA")} ر.ي\n📊 الكمية: 1\n💵 المجموع: ${effectivePrice.toLocaleString("ar-SA")} ر.ي\n\n⚠️ لا تقم بأي عملية دفع إلا بعد تأكيد الطلب`,
     });
 
-    // Step 3: Show the 3 options after product info
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setCurrentStep("CHOOSE_OPTION");
       addMessage({
         type: "bot",
@@ -204,11 +175,45 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
         ],
       });
     }, ORDER_MODAL_OPTIONS_DELAY_MS);
-  }, [product, quantity, addMessage]);
 
-  // Update product info message when quantity changes
+    return () => clearTimeout(timer);
+  }, [isAuthenticated, addMessage, product]);
+
+  // Reset when modal opens after callbacks are defined.
   useEffect(() => {
-    if ((currentStep === "PRODUCT_INFO" || currentStep === "CHOOSE_OPTION") && product && messages.length > 0) {
+    if (!open || !product) return;
+
+    let chatTimer: number | undefined;
+    let optionsCleanup: (() => void) | undefined;
+    const frame = window.requestAnimationFrame(() => {
+      setMessages([]);
+      setQuantity(1);
+      setDeliveryType("pickup");
+      setIsSubmitting(false);
+      setOrderNumber("");
+      deliveryForm.reset();
+      pickupForm.reset();
+      chatTimer = window.setTimeout(() => {
+        optionsCleanup = startChatFlow();
+      }, 300);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      if (chatTimer !== undefined) window.clearTimeout(chatTimer);
+      optionsCleanup?.();
+    };
+  }, [open, product, startChatFlow, deliveryForm, pickupForm]);
+
+  /* ────────────────────────────────────────────────────────────────── */
+  /*  Step 2: Auto-message with product details                       */
+  /* ────────────────────────────────────────────────────────────────── */
+
+  // Update product info message when quantity changes.
+  useEffect(() => {
+    if ((currentStep !== "PRODUCT_INFO" && currentStep !== "CHOOSE_OPTION") || !product) return;
+
+    const timer = setTimeout(() => {
       const effectivePrice = getEffectivePrice(product.price, product.salePrice);
       setMessages((prev) =>
         prev.map((msg, idx) => {
@@ -221,8 +226,88 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
           return msg;
         })
       );
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [currentStep, product, quantity]);
+
+  async function submitOrder(params: {
+      customerName: string;
+      customerPhone: string;
+      deliveryType: "delivery" | "pickup";
+      province?: string;
+      district?: string;
+      street?: string;
+      landmark?: string;
+    }) {
+      if (!product) return;
+
+      const { user } = useAuthStore.getState();
+      if (!user?.id) {
+        toast.error("يرجى تسجيل الدخول أولاً");
+        return;
+      }
+
+      setIsSubmitting(true);
+      setCurrentStep("SUBMITTING");
+
+      const effectivePrice = getEffectivePrice(product.price, product.salePrice);
+      const totalPrice = effectivePrice * quantity;
+
+      try {
+        const res = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+          body: JSON.stringify({
+            items: [{ id: product.id, name: product.name, quantity, price: effectivePrice }],
+            total: totalPrice,
+            paymentMethod: "in_app",
+            customerName: params.customerName,
+            customerPhone: params.customerPhone,
+            deliveryType: params.deliveryType,
+            province: params.province,
+            district: params.district,
+            street: params.street,
+            landmark: params.landmark,
+          }),
+        });
+
+        const data = await safeReadJson<{ success?: boolean; orderNumber?: string; error?: string }>(res);
+
+        if (res.ok && data?.success) {
+          const ordNum = data.orderNumber || "N/A";
+          setOrderNumber(ordNum);
+          setCurrentStep("SUCCESS");
+
+          // Step 6: Confirmation message inside chat
+          addMessage({
+            type: "bot",
+            content: `شكراً لك، تم استلام طلبك بنجاح! 🎉\n\n📦 رقم الطلب: ${ordNum}\n📊 الحالة: قيد الانتظار\n\nسيتم التواصل معك قريباً لتأكيد الطلب.`,
+          });
+          toast.success("تم تأكيد طلبك بنجاح! 🎉");
+
+          setTimeout(() => {
+            onOpenChange(false);
+          }, ORDER_MODAL_CLOSE_DELAY_MS);
+        } else {
+          addMessage({
+            type: "system",
+            content: `❌ ${data?.error || "حدث خطأ أثناء إرسال الطلب"}`,
+          });
+          toast.error(data?.error || "حدث خطأ أثناء إرسال الطلب");
+          setCurrentStep("CHOOSE_OPTION");
+        }
+      } catch {
+        addMessage({
+          type: "system",
+          content: "❌ حدث خطأ في الاتصال بالخادم",
+        });
+        toast.error("حدث خطأ في الاتصال بالخادم");
+        setCurrentStep("CHOOSE_OPTION");
+      } finally {
+        setIsSubmitting(false);
+      }
     }
-  }, [quantity]);
 
   /* ────────────────────────────────────────────────────────────────── */
   /*  Handle user actions                                              */
@@ -328,87 +413,6 @@ export function OrderModal({ open, onOpenChange, product }: OrderModalProps) {
   /* ────────────────────────────────────────────────────────────────── */
   /*  Step 5: Create order in DB → Step 6: Confirmation               */
   /* ────────────────────────────────────────────────────────────────── */
-
-  const submitOrder = useCallback(
-    async (params: {
-      customerName: string;
-      customerPhone: string;
-      deliveryType: "delivery" | "pickup";
-      province?: string;
-      district?: string;
-      street?: string;
-      landmark?: string;
-    }) => {
-      if (!product) return;
-
-      const { user } = useAuthStore.getState();
-      if (!user?.id) {
-        toast.error("يرجى تسجيل الدخول أولاً");
-        return;
-      }
-
-      setIsSubmitting(true);
-      setCurrentStep("SUBMITTING");
-
-      const effectivePrice = getEffectivePrice(product.price, product.salePrice);
-      const totalPrice = effectivePrice * quantity;
-
-      try {
-        const res = await fetch("/api/orders", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-          body: JSON.stringify({
-            items: [{ id: product.id, name: product.name, quantity, price: effectivePrice }],
-            total: totalPrice,
-            paymentMethod: "in_app",
-            customerName: params.customerName,
-            customerPhone: params.customerPhone,
-            deliveryType: params.deliveryType,
-            province: params.province,
-            district: params.district,
-            street: params.street,
-            landmark: params.landmark,
-          }),
-        });
-
-        const data = await safeReadJson<{ success?: boolean; orderNumber?: string; error?: string }>(res);
-
-        if (res.ok && data?.success) {
-          const ordNum = data.orderNumber || "N/A";
-          setOrderNumber(ordNum);
-          setCurrentStep("SUCCESS");
-
-          // Step 6: Confirmation message inside chat
-          addMessage({
-            type: "bot",
-            content: `شكراً لك، تم استلام طلبك بنجاح! 🎉\n\n📦 رقم الطلب: ${ordNum}\n📊 الحالة: قيد الانتظار\n\nسيتم التواصل معك قريباً لتأكيد الطلب.`,
-          });
-          toast.success("تم تأكيد طلبك بنجاح! 🎉");
-
-          setTimeout(() => {
-            onOpenChange(false);
-          }, ORDER_MODAL_CLOSE_DELAY_MS);
-        } else {
-          addMessage({
-            type: "system",
-            content: `❌ ${data?.error || "حدث خطأ أثناء إرسال الطلب"}`,
-          });
-          toast.error(data?.error || "حدث خطأ أثناء إرسال الطلب");
-          setCurrentStep("CHOOSE_OPTION");
-        }
-      } catch {
-        addMessage({
-          type: "system",
-          content: "❌ حدث خطأ في الاتصال بالخادم",
-        });
-        toast.error("حدث خطأ في الاتصال بالخادم");
-        setCurrentStep("CHOOSE_OPTION");
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [product, quantity, addMessage, onOpenChange]
-  );
 
   /* ────────────────────────────────────────────────────────────────── */
   /*  Render                                                           */

@@ -411,8 +411,11 @@ export function OrdersSection() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchOrders(controller.signal);
-    return () => controller.abort();
+    const timer = window.setTimeout(() => fetchOrders(controller.signal), 0);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
   }, [isAuthenticated, userId]);
 
   const filteredOrders = activeFilter === "all"

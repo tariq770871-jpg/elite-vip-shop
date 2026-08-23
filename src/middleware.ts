@@ -3,14 +3,16 @@ import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { extractAccessToken } from "@/lib/supabase-server";
 import { extractRoleName } from "@/types/db";
-import { randomBytes } from "crypto";
-
 /**
  * Generate a fresh nonce for CSP per request.
- * Base64-encoded 18 bytes (24 chars) — sufficient entropy for CSP nonces.
+ * Uses the Web Crypto API, which is available in the Edge Runtime.
  */
 function generateNonce(): string {
-  return randomBytes(18).toString("base64");
+  const bytes = new Uint8Array(18);
+  crypto.getRandomValues(bytes);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
 }
 
 /**

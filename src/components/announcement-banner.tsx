@@ -34,9 +34,9 @@ export function AnnouncementBanner() {
 
   // Check dismissed state on mount (client-only)
   useEffect(() => {
-    if (sessionStorage.getItem("announcement-dismissed")) {
-      setIsVisible(false);
-    }
+    if (!sessionStorage.getItem("announcement-dismissed")) return;
+    const frame = window.requestAnimationFrame(() => setIsVisible(false));
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   const goNext = useCallback(() => {

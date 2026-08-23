@@ -83,10 +83,12 @@ export function ProductDetailSection({ productId: productIdProp }: ProductDetail
 
   // Auto-open order modal after login if user was trying to order
   useEffect(() => {
-    if (isAuthenticated && pendingOrderAfterLogin && product) {
+    if (!isAuthenticated || !pendingOrderAfterLogin || !product) return;
+    const frame = window.requestAnimationFrame(() => {
       setPendingOrderAfterLogin(false);
       setOrderModalOpen(true);
-    }
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [isAuthenticated, pendingOrderAfterLogin, product]);
 
   const handleOrderClick = () => {
