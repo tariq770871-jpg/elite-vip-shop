@@ -40,7 +40,7 @@
 
 تم رفع commit **`aa93e52`** إلى `main` بنجاح. GitHub أكد نجاح checks الخاصة بـ Vercel للـ commit. رابط deployment الجديد يعيد 302 إلى Vercel SSO، بينما النطاق الأساسي `https://elite-vip-shop.vercel.app` يعيد HTTP 500. هذه النتيجة تعني أن **عملية البناء والنشر نجحت، لكن runtime production يحتاج إعدادات البيئة الصحيحة**.
 
-المتغيرات المطلوبة التي لا يجوز تخمينها هي `NEXT_PUBLIC_SUPABASE_URL` و`NEXT_PUBLIC_SUPABASE_ANON_KEY` و`SUPABASE_SERVICE_ROLE_KEY`، إضافة إلى قيم التواصل العامة عند الحاجة. يجب ضبطها في Vercel Project Settings ثم إعادة deployment، وبعدها اختبار `/`, `/api/health`, `/products`, `/cart`, `/login`, وإنشاء طلب تجريبي بحساب غير إنتاجي.
+المتغيرات المطلوبة التي لا يجوز تخمينها هي `NEXT_PUBLIC_SUPABASE_URL` و`NEXT_PUBLIC_SUPABASE_ANON_KEY` و`SUPABASE_SERVICE_ROLE_KEY`، إضافة إلى قيم التواصل العامة عند الحاجة. يجب ضبطها في Vercel Project Settings ثم إعادة deployment، وبعدها اختبار `/`, `/api/health`, `/products`, `/cart`, `/login`, وإنشاء طلب تجريبي بحساب غير إنتاجي. آخر محاولة آلية لفحص إعدادات Vercel/Supabase أعادت 403 من خدمة الموصلات قبل عرض الإعدادات، لذلك لم يتم تعديل أي قيمة خارجية من هذه الجلسة.
 
 ## شروط إغلاق 10/10
 
