@@ -30,12 +30,10 @@ export async function register(): Promise<void> {
     const result = validateEnv();
 
     if (!result.valid && process.env.NODE_ENV === "production") {
-      // validateEnv() already threw inside its body in production, but
-      // belt-and-suspenders: if it ever stops throwing, we still exit.
-      // Avoid process.exit(1) so the platform gets a clean unhandled
-      // rejection that surfaces in logs as the source of the failure.
-      throw new Error(
-        `[instrumentation] Refusing to boot: missing required env vars: ${result.missing.join(", ")}`
+      // Keep the public storefront available with its documented fallbacks.
+      // Protected API/admin paths still fail closed when server credentials are absent.
+      console.error(
+        `[instrumentation] Missing required env vars; storefront will use fallbacks: ${result.missing.join(", ")}`
       );
     }
 
@@ -46,12 +44,14 @@ export async function register(): Promise<void> {
       );
     }
   } catch (err) {
-    // Re-throw so the boot visibly fails — do NOT swallow.
-    // The thrown Error message from validateEnv() is preserved.
+    // Do not take down the entire storefront because an optional integration
+    // or server-only credential is unavailable. Individual protected routes
+    // handle the missing client and return a safe error response.
+    const message = err instanceof Error ? err.message : String(err);
     if (process.env.NODE_ENV === "production") {
-      throw err;
+      console.error(`[instrumentation] Environment validation failed; continuing safely:`, message);
+    } else {
+      console.warn(`[instrumentation] Env validation warning:`, message);
     }
-    // In dev, log and continue (developer can fix at their pace).
-    console.warn(`[instrumentation] Env validation warning:`, err instanceof Error ? err.message : String(err));
   }
 }
