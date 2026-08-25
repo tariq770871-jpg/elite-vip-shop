@@ -56,6 +56,7 @@ import { useNavigation } from "@/lib/navigation";
 import { getCategoryIcon } from "@/components/icons";
 import { WhatsAppIcon } from "@/components/whatsapp-icon";
 import { WHATSAPP_LINK } from "@/lib/site-config";
+import { formatCurrency } from "@/lib/intl";
 
 const mainSections = [
   {
@@ -338,11 +339,11 @@ export function HomeSection() {
                     <div className="mb-4 flex items-center gap-2">
                       {product.salePrice ? (
                         <>
-                          <span className="text-gold-gradient text-lg font-extrabold">{product.salePrice} ر.ي</span>
-                          <span className="text-xs text-muted-foreground line-through">{product.price} ر.ي</span>
+                          <span className="text-gold-gradient text-lg font-extrabold">{formatCurrency(product.salePrice)}</span>
+                          <span className="text-xs text-muted-foreground line-through">{formatCurrency(product.price)}</span>
                         </>
                       ) : (
-                        <span className="text-lg font-extrabold text-gold-gradient">{product.price} ر.ي</span>
+                        <span className="text-lg font-extrabold text-gold-gradient">{formatCurrency(product.price)}</span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
