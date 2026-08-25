@@ -65,3 +65,7 @@
 - فحص الأسرار: 280 ملفًا متعقبًا، ناجح. `npm audit --omit=dev --audit-level=high`: صفر ثغرات إنتاجية.
 - حُسّن التخطيط العميل بتحميل SearchBar عند الفتح، وتحميل CartDrawer وPWAInstallPrompt وFloatingWhatsApp وCookieConsent وقت الخمول.
 - بقي تفعيل Supabase leaked-password protection غير ممكن بسبب خطة Supabase الحالية؛ البديل المجاني داخل التطبيق يفرض 12 حرفًا.
+
+- تم تحديث `docs/production-runbook.md` ليشمل النشر والرجوع وتدوير الأسرار والاستجابة للحوادث والتحقق بعد النشر.
+- أُضيف `x-request-id` مولد من Edge proxy إلى الاستجابات الناجحة وأخطاء API لتسهيل الرصد دون الثقة بمعرّف يرسله العميل.
+- حاولت إضافة `.github/workflows/quality.yml`، لكن GitHub رفض رفع workflow لأن رمز GitHub الحالي لا يملك صلاحية `workflows`. أُزيل workflow من commit المنشور حتى لا تبقى شجرة GitHub في حالة مضللة؛ يلزم رفعه لاحقًا عبر token يملك Actions/Workflows أو واجهة GitHub.
