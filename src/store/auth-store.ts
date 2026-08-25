@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
 import type { User, Session } from '@supabase/supabase-js'
+import { validatePassword } from '@/lib/password-policy'
 
 interface AuthUser {
   id: string
@@ -189,6 +190,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   register: async (name: string, email: string, password: string, phone?: string) => {
     set({ error: null, isLoading: true, needsEmailConfirmation: false })
     if (!supabase) { set({ error: 'النظام غير متاح حالياً', isLoading: false }); return false }
+    const passwordError = validatePassword(password)
+    if (passwordError) {
+      set({ error: passwordError, isLoading: false })
+      return false
+    }
     try {
       // ⚠️ Never put `role` in user_metadata — clients can read and tamper with it.
       // The authoritative role lives in public.users / public.profiles and is
@@ -211,7 +217,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         if (error.message.includes('already registered')) {
           errorMessage = 'البريد الإلكتروني مسجل مسبقاً. جرّب تسجيل الدخول أو استخدم بريد آخر'
         } else if (error.message.includes('Password should be at least')) {
-          errorMessage = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'
+          errorMessage = validatePassword('') ?? 'كلمة المرور غير صالحة'
         } else if (error.message.includes('valid email')) {
           errorMessage = 'البريد الإلكتروني غير صالح'
         }
@@ -340,6 +346,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   changePassword: async (currentPassword: string, newPassword: string) => {
     try {
       if (!supabase) return { success: false, error: 'النظام غير متاح' }
+      const passwordError = validatePassword(newPassword)
+      if (passwordError) {
+        return { success: false, error: passwordError.replace('كلمة المرور', 'كلمة المرور الجديدة') }
+      }
       // Verify current password by re-signing in
       const email = get().user?.email
       if (!email) return { success: false, error: 'البريد الإلكتروني غير متوفر' }
