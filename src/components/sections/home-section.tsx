@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import {
   ShoppingBag,
@@ -23,11 +24,27 @@ import {
   BarChart3,
   ShoppingCart,
 } from "lucide-react";
-import { FlashDealsSection } from "@/components/sections/flash-deals-section";
-import { TestimonialsSection } from "@/components/sections/testimonials-section";
-import { RecentlyViewedSection } from "@/components/sections/recently-viewed-section";
-import { BlogSection } from "@/components/sections/blog-section";
-import { CTASection } from "@/components/sections/cta-section";
+import { DeferredSection } from "@/components/deferred-section";
+
+const CTASection = dynamic(
+  () => import("@/components/sections/cta-section").then((mod) => mod.CTASection),
+  { ssr: false },
+);
+const FlashDealsSection = dynamic(
+  () => import("@/components/sections/flash-deals-section").then((mod) => mod.FlashDealsSection),
+  { ssr: false },
+);
+const TestimonialsSection = dynamic(
+  () => import("@/components/sections/testimonials-section").then((mod) => mod.TestimonialsSection),
+  { ssr: false },
+);
+const RecentlyViewedSection = dynamic(
+  () => import("@/components/sections/recently-viewed-section").then((mod) => mod.RecentlyViewedSection),
+  { ssr: false },
+);
+const BlogSection = dynamic(
+  () => import("@/components/sections/blog-section").then((mod) => mod.BlogSection),
+);
 import { getProducts } from "@/lib/supabase-data";
 import { getWhatsAppOrderLink } from "@/lib/mock-data";
 import type { Product } from "@/lib/mock-data";
@@ -290,11 +307,11 @@ export function HomeSection() {
             </div>
           ) : featuredProducts.length > 0 ? (
             <ScrollSection>
-              {featuredProducts.map((product, index) => (
+              {featuredProducts.map((product) => (
                 <article key={product.id} className="product-card card-3d group shrink-0">
                   <div className="product-img-placeholder relative bg-muted">
                     {product.images[0] ? (
-                      <Image src={product.images[0]} alt={product.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" priority={index < 3} loading={index < 3 ? undefined : "lazy"} />
+                        <Image src={product.images[0]} alt={product.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" loading="lazy" />
                     ) : (
                       getCategoryIcon(product.category, "size-12 text-muted-foreground/40")
                     )}
@@ -359,15 +376,19 @@ export function HomeSection() {
       </section>
 
       {/* CTA after products section */}
-      <CTASection
-        title="هل أعجبك منتج؟ اطلبه الآن عبر واتساب"
-        description="تواصل معنا مباشرة عبر واتساب لطلب أي منتج أو الاستفسار عن الأسعار والتوفر"
-        buttonText="اطلب الآن عبر واتساب"
-        whatsappMessage="مرحباً، أريد طلب منتج من متجركم"
-      />
+      <DeferredSection minHeight={220}>
+        <CTASection
+          title="هل أعجبك منتج؟ اطلبه الآن عبر واتساب"
+          description="تواصل معنا مباشرة عبر واتساب لطلب أي منتج أو الاستفسار عن الأسعار والتوفر"
+          buttonText="اطلب الآن عبر واتساب"
+          whatsappMessage="مرحباً، أريد طلب منتج من متجركم"
+        />
+      </DeferredSection>
 
       {/* Flash Deals */}
-      <FlashDealsSection />
+      <DeferredSection minHeight={480}>
+        <FlashDealsSection />
+      </DeferredSection>
 
       {/* Quick Stats Section */}
       <section className="py-6 md:py-10">
@@ -427,21 +448,27 @@ export function HomeSection() {
       </section>
 
       {/* CTA after services section */}
-      <CTASection
-        title="ابدأ مشروعك الرقمي اليوم"
-        description="فريقنا جاهز لتحويل أفكارك إلى واقع رقمي احترافي — تواصل معنا الآن"
-        buttonText="ابدأ مشروعك الآن"
-        whatsappMessage="مرحباً، أريد الاستفسار عن الخدمات الرقمية لبدء مشروعي"
-      />
+      <DeferredSection minHeight={220}>
+        <CTASection
+          title="ابدأ مشروعك الرقمي اليوم"
+          description="فريقنا جاهز لتحويل أفكارك إلى واقع رقمي احترافي — تواصل معنا الآن"
+          buttonText="ابدأ مشروعك الآن"
+          whatsappMessage="مرحباً، أريد الاستفسار عن الخدمات الرقمية لبدء مشروعي"
+        />
+      </DeferredSection>
 
-      {/* Blog Section */}
+      {/* Blog Section — server-rendered for SEO; content is static and lightweight */}
       <BlogSection />
 
       {/* Testimonials */}
-      <TestimonialsSection />
+      <DeferredSection minHeight={300}>
+        <TestimonialsSection />
+      </DeferredSection>
 
       {/* Recently Viewed */}
-      <RecentlyViewedSection />
+      <DeferredSection minHeight={160}>
+        <RecentlyViewedSection />
+      </DeferredSection>
 
       {/* Why Choose Us */}
       <section className="py-8 md:py-14">
@@ -475,12 +502,14 @@ export function HomeSection() {
       </section>
 
       {/* CTA before footer */}
-      <CTASection
-        title="تواصل معنا الآن واحصل على استشارة مجانية"
-        description="لا تتردد في التواصل معنا لأي استفسار أو طلب — فريقنا جاهز لخدمتك على مدار الساعة"
-        buttonText="احصل على استشارة مجانية"
-        whatsappMessage="مرحباً، أريد الحصول على استشارة مجانية حول خدماتكم"
-      />
+      <DeferredSection minHeight={220}>
+        <CTASection
+          title="تواصل معنا الآن واحصل على استشارة مجانية"
+          description="لا تتردد في التواصل معنا لأي استفسار أو طلب — فريقنا جاهز لخدمتك على مدار الساعة"
+          buttonText="احصل على استشارة مجانية"
+          whatsappMessage="مرحباً، أريد الحصول على استشارة مجانية حول خدماتكم"
+        />
+      </DeferredSection>
 
       {/* Order Modal */}
       <OrderModal

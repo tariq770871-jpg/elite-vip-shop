@@ -57,17 +57,22 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
     const referrerUrl = document.referrer ? safeParseUrl(document.referrer) : null;
     const referrer = referrerUrl?.hostname || (document.referrer ? "مباشر" : "مباشر");
 
-    fetch("/api/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        event: "visit",
-        data: { device, referrer },
-      }),
-    }).catch((err) => {
-      // Non-critical — visitor tracking is best-effort; log for monitoring
-      console.warn("Visitor tracking failed:", err instanceof Error ? err.message : String(err));
-    });
+    const trackingTimer = window.setTimeout(() => {
+      fetch("/api/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "visit",
+          data: { device, referrer },
+        }),
+        keepalive: true,
+      }).catch((err) => {
+        // Non-critical — visitor tracking is best-effort; log for monitoring
+        console.warn("Visitor tracking failed:", err instanceof Error ? err.message : String(err));
+      });
+    }, 1500);
+
+    return () => window.clearTimeout(trackingTimer);
   }, []);
 
   // Register Service Worker with update handling

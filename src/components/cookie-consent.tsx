@@ -12,7 +12,9 @@ export function CookieConsent() {
   useEffect(() => {
     const consent = localStorage.getItem("cookie-consent");
     if (!consent) {
-      const timer = setTimeout(() => setIsVisible(true), 2000);
+      // Keep consent available without allowing the fixed banner to become the
+      // largest element during the critical first paint.
+      const timer = setTimeout(() => setIsVisible(true), 6500);
       return () => clearTimeout(timer);
     }
   }, []);
