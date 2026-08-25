@@ -215,7 +215,8 @@ export function HomeSection() {
             </div>
           </div>
 
-          <div className="hero-showcase order-first sm:min-h-[27rem] lg:order-none">
+          {/* On narrow screens, show the value proposition before the decorative image. */}
+          <div className="hero-showcase order-none sm:min-h-[27rem] lg:order-none">
             <div className="hero-showcase-badge hero-showcase-badge--top">
               <BadgeCheck className="size-4 text-emerald-400" aria-hidden="true" />
               مختارات النخبة
