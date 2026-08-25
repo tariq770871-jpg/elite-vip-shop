@@ -7,7 +7,6 @@ import { SearchBar } from "@/components/search-bar";
 import { Footer } from "@/components/footer";
 import { CartDrawer } from "@/components/cart-drawer";
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
-import { AnnouncementBanner } from "@/components/announcement-banner";
 import { FloatingWhatsApp } from "@/components/floating-whatsapp";
 import { CookieConsent } from "@/components/cookie-consent";
 import { useAuthStore } from "@/store/auth-store";
@@ -122,7 +121,6 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
       >
         تخطي إلى المحتوى الرئيسي
       </a>
-      <AnnouncementBanner />
       <Navbar onToggleSearch={() => { setSearchOpen((prev) => !prev); setSearchKey((k) => k + 1); }} />
       <SearchBar key={searchKey} isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
       <main id="main-content" role="main" className="flex-1">

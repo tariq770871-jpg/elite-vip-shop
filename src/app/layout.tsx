@@ -7,6 +7,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LayoutClient } from "@/components/layout-client";
+import { AnnouncementBanner } from "@/components/announcement-banner";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { safeJsonLd } from "@/lib/utils";
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, WHATSAPP_NUMBER } from "@/lib/site-config";
@@ -188,6 +189,7 @@ export default async function RootLayout({
       >
         <ThemeProvider>
           <ErrorBoundary>
+            <AnnouncementBanner />
             <LayoutClient>
               {children}
             </LayoutClient>
