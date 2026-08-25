@@ -45,13 +45,16 @@ const RecentlyViewedSection = dynamic(
 const BlogSection = dynamic(
   () => import("@/components/sections/blog-section").then((mod) => mod.BlogSection),
 );
+const OrderModal = dynamic(
+  () => import("@/components/order-modal").then((mod) => mod.OrderModal),
+  { ssr: false, loading: () => null },
+);
 import { getProducts } from "@/lib/supabase-data";
 import { getWhatsAppOrderLink } from "@/lib/mock-data";
 import type { Product } from "@/lib/mock-data";
 import { useNavigation } from "@/lib/navigation";
 import { getCategoryIcon } from "@/components/icons";
 import { WhatsAppIcon } from "@/components/whatsapp-icon";
-import { OrderModal } from "@/components/order-modal";
 import { WHATSAPP_LINK } from "@/lib/site-config";
 
 const mainSections = [
