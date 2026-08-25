@@ -1,17 +1,34 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState, useEffect } from "react";
 import { ChevronUp } from "lucide-react";
 import { Navbar } from "@/components/navbar";
-import { SearchBar } from "@/components/search-bar";
 import { Footer } from "@/components/footer";
-import { CartDrawer } from "@/components/cart-drawer";
-import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
-import { FloatingWhatsApp } from "@/components/floating-whatsapp";
-import { CookieConsent } from "@/components/cookie-consent";
 import { useAuthStore } from "@/store/auth-store";
 import { SCROLL_TO_TOP_THRESHOLD, SW_UPDATE_INTERVAL_MS } from "@/lib/constants";
 import { safeParseUrl } from "@/lib/utils";
+
+const SearchBar = dynamic(
+  () => import("@/components/search-bar").then((module) => ({ default: module.SearchBar })),
+  { ssr: false, loading: () => null },
+);
+const CartDrawer = dynamic(
+  () => import("@/components/cart-drawer").then((module) => ({ default: module.CartDrawer })),
+  { ssr: false, loading: () => null },
+);
+const PWAInstallPrompt = dynamic(
+  () => import("@/components/pwa-install-prompt").then((module) => ({ default: module.PWAInstallPrompt })),
+  { ssr: false, loading: () => null },
+);
+const FloatingWhatsApp = dynamic(
+  () => import("@/components/floating-whatsapp").then((module) => ({ default: module.FloatingWhatsApp })),
+  { ssr: false, loading: () => null },
+);
+const CookieConsent = dynamic(
+  () => import("@/components/cookie-consent").then((module) => ({ default: module.CookieConsent })),
+  { ssr: false, loading: () => null },
+);
 
 function ScrollToTopButton() {
   const [visible, setVisible] = useState(false);
@@ -32,6 +49,37 @@ function ScrollToTopButton() {
     >
       <ChevronUp className="size-5" />
     </button>
+  );
+}
+
+function DeferredEnhancements() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const enable = () => setReady(true);
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+
+    if (idleWindow.requestIdleCallback) {
+      const idleId = idleWindow.requestIdleCallback(enable, { timeout: 1200 });
+      return () => idleWindow.cancelIdleCallback?.(idleId);
+    }
+
+    const timeoutId = window.setTimeout(enable, 700);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  if (!ready) return null;
+
+  return (
+    <>
+      <CartDrawer />
+      <PWAInstallPrompt />
+      <FloatingWhatsApp />
+      <CookieConsent />
+    </>
   );
 }
 
@@ -122,16 +170,15 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
         تخطي إلى المحتوى الرئيسي
       </a>
       <Navbar onToggleSearch={() => { setSearchOpen((prev) => !prev); setSearchKey((k) => k + 1); }} />
-      <SearchBar key={searchKey} isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+      {searchOpen ? (
+        <SearchBar key={searchKey} isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+      ) : null}
       <main id="main-content" role="main" className="flex-1">
         <div className="page-enter">{children}</div>
       </main>
       <Footer />
-      <CartDrawer />
       <ScrollToTopButton />
-      <PWAInstallPrompt />
-      <FloatingWhatsApp />
-      <CookieConsent />
+      <DeferredEnhancements />
     </div>
   );
 }

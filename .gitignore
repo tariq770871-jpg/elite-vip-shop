@@ -73,11 +73,12 @@ Caddyfile
 tool-results/
 .tool-results/
 
-# Lock files (using package.json + vercel auto-detect)
+# Lock files
 bun.lock
-package-lock.json
 
 # Local audit / download artifacts (never commit)
+/test-results/
+/playwright-report/
 audit-remote/
 download/
 upload/

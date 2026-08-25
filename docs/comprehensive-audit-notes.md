@@ -56,3 +56,12 @@
 محاولة حفظ `PASSWORD_HIBP_ENABLED` رُفضت من Supabase برسالة تفيد بأن ميزة تكوين حماية كلمات المرور المسربة عبر HaveIBeenPwned.org غير متاحة في الخطة الحالية. التبديل ظهر مفعّلًا في الواجهة مؤقتًا، لكن الحفظ لم ينجح؛ يلزم إما ترقية خطة Supabase أو إبقاء هذا البند كقيد خارجي موثق.
 
 بناءً على قيد الخطة، تم اعتماد البديل المجاني: رفع الحد الأدنى لطول كلمة المرور إلى 12 حرفًا مع الإبقاء على حماية الحسابات الإدارية وrate limiting كإجراءات مكملة. لم تُفعّل حماية HaveIBeenPwned لأنها تتطلب خطة مدفوعة في هذا المشروع.
+
+## تنفيذ التحسينات — 2026-08-25
+- أُضيفت سياسة مجانية موحدة لكلمات المرور بحد أدنى 12 حرفًا في التسجيل وتغيير كلمة المرور، مع اختبارات وحدات.
+- أُضيفت migration `011_security_performance_hardening.sql` إلى المستودع وطُبقت على Supabase بنجاح؛ أغلقت صلاحية EXECUTE العامة لـ `is_admin()` وأبقت سياسة قراءة الإدارة وظيفية وأضافت فهارس المفاتيح الخارجية.
+- أُضيف GitHub Actions في `.github/workflows/quality.yml` لفحص الأسرار و`npm audit` وlint وtypecheck والاختبارات وPlaywright وbuild.
+- أُضيف Playwright بمشروعي Desktop Chromium وMobile Chromium؛ النتيجة المحلية 14 اختبارًا ناجحًا بعد تصحيح تعريف جهاز iPhone ليعمل على Chromium.
+- فحص الأسرار: 280 ملفًا متعقبًا، ناجح. `npm audit --omit=dev --audit-level=high`: صفر ثغرات إنتاجية.
+- حُسّن التخطيط العميل بتحميل SearchBar عند الفتح، وتحميل CartDrawer وPWAInstallPrompt وFloatingWhatsApp وCookieConsent وقت الخمول.
+- بقي تفعيل Supabase leaked-password protection غير ممكن بسبب خطة Supabase الحالية؛ البديل المجاني داخل التطبيق يفرض 12 حرفًا.
