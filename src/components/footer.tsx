@@ -52,12 +52,16 @@ const socialLinks = [
     label: "تلغرام",
     hoverClass: "hover:bg-sky-500 hover:text-white hover:border-sky-500",
   },
-  {
-    icon: <EmailBrandIcon className="size-5" />,
-    href: `mailto:${CONTACT_EMAIL}`,
-    label: "البريد الإلكتروني",
-    hoverClass: "hover:bg-red-500 hover:text-white hover:border-red-500",
-  },
+  ...(CONTACT_EMAIL
+    ? [
+        {
+          icon: <EmailBrandIcon className="size-5" />,
+          href: `mailto:${CONTACT_EMAIL}`,
+          label: "البريد الإلكتروني",
+          hoverClass: "hover:bg-red-500 hover:text-white hover:border-red-500",
+        },
+      ]
+    : []),
   {
     icon: <FacebookBrandIcon className="size-5" />,
     href: FACEBOOK_LINK,
