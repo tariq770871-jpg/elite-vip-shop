@@ -27,4 +27,11 @@ test.describe("storefront smoke", () => {
       expect(response.status(), `${route} response`).toBe(200);
     }
   });
+
+  test("protected order API rejects unauthenticated requests", async ({ request }) => {
+    const response = await request.post("/api/orders", {
+      data: { items: [] },
+    });
+    expect(response.status()).toBe(401);
+  });
 });
