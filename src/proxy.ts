@@ -63,8 +63,11 @@ export async function proxy(request: NextRequest) {
   // The nonce is forwarded to the layout via the x-nonce request header
   // (so server components can read it via headers() from "next/headers").
   const nonce = generateNonce();
+  const requestId = crypto.randomUUID();
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
+  // Never trust an inbound request ID; generate one at the edge for tracing.
+  requestHeaders.set("x-request-id", requestId);
 
   // ─── Step 0a: Strip any inbound x-user-* headers from the client ──
   // These headers are SERVER-ONLY signals set by this middleware after
@@ -111,6 +114,7 @@ export async function proxy(request: NextRequest) {
             });
             // Re-apply the CSP header (the new NextResponse resets headers)
             supabaseResponse.headers.set("Content-Security-Policy", buildCSP(nonce));
+            supabaseResponse.headers.set("x-request-id", requestId);
             // Set cookies on the response so the browser stores them
             cookiesToSet.forEach(({ name, value, options }) =>
               supabaseResponse.cookies.set(name, value, options)
@@ -133,10 +137,12 @@ export async function proxy(request: NextRequest) {
     const accessToken = extractAccessToken(request);
 
     if (!accessToken) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: "Unauthorized — no authentication token provided" },
         { status: 401 }
       );
+      response.headers.set("x-request-id", requestId);
+      return response;
     }
 
     // Verify the token with Supabase Auth using service role
@@ -144,10 +150,12 @@ export async function proxy(request: NextRequest) {
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !serviceKey) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: "Authentication service unavailable" },
         { status: 503 }
       );
+      response.headers.set("x-request-id", requestId);
+      return response;
     }
 
     // Use a fresh client with service role to verify the token
@@ -162,10 +170,12 @@ export async function proxy(request: NextRequest) {
     } = await supabaseAdmin.auth.getUser(accessToken);
 
     if (error || !user) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: "Unauthorized — invalid or expired token" },
         { status: 401 }
       );
+      response.headers.set("x-request-id", requestId);
+      return response;
     }
 
     // Check if the user has an admin role
@@ -178,10 +188,12 @@ export async function proxy(request: NextRequest) {
     const roleName = extractRoleName(userProfile?.roles);
 
     if (roleName !== "admin" && roleName !== "owner") {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: "Forbidden — admin access required" },
         { status: 403 }
       );
+      response.headers.set("x-request-id", requestId);
+      return response;
     }
 
     // Token is valid and user is admin/owner — add user info to request headers for downstream use
@@ -197,6 +209,7 @@ export async function proxy(request: NextRequest) {
 
     // Set the CSP header on the admin response (with the same nonce)
     adminResponse.headers.set("Content-Security-Policy", buildCSP(nonce));
+    adminResponse.headers.set("x-request-id", requestId);
 
     // Preserve any cookie updates from the session refresh
     supabaseResponse.cookies.getAll().forEach((cookie) => {
@@ -261,6 +274,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // ─── All other routes — return session-refreshed response ─────────
+  supabaseResponse.headers.set("x-request-id", requestId);
   return supabaseResponse;
 }
 
